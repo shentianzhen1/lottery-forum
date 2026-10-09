@@ -17,9 +17,8 @@ class LedgerService:
             self._ensure_same_payload(existing, request)
             return existing
         self.store.ensure_account(request.account_id)
-        balance = self.store.balance(request.account_id)
-        if request.direction is Direction.DEBIT and balance < request.amount:
-            raise LedgerError("INSUFFICIENT_POINTS", "积分余额不足")
+        if request.direction is Direction.DEBIT and self.available(request.account_id) < request.amount:
+            raise LedgerError("INSUFFICIENT_POINTS", "可用积分不足")
         entry = Entry(
             entry_id=str(uuid4()),
             account_id=request.account_id,
@@ -39,6 +38,34 @@ class LedgerService:
     def balance(self, account_id: str) -> int:
         self.store.ensure_account(account_id)
         return self.store.balance(account_id)
+
+    def frozen(self, account_id: str) -> int:
+        self.store.ensure_account(account_id)
+        return self.store.frozen(account_id)
+
+    def available(self, account_id: str) -> int:
+        return self.balance(account_id) - self.frozen(account_id)
+
+    def hold(self, account_id: str, amount: int, idempotency_key: str, operator_id: str) -> str:
+        if amount <= 0 or not idempotency_key or not operator_id:
+            raise LedgerError("INVALID_AMOUNT", "冻结数量必须是正整数")
+        self.store.ensure_account(account_id)
+        existing = self.store.find_hold(account_id, idempotency_key)
+        if existing is not None:
+            if int(existing["amount"]) != amount:
+                raise LedgerError("IDEMPOTENCY_CONFLICT", "相同幂等键不能冻结不同数量")
+            return str(existing["hold_id"])
+        if self.available(account_id) < amount:
+            raise LedgerError("INSUFFICIENT_POINTS", "可用积分不足，不能冻结")
+        hold_id = str(uuid4())
+        self.store.add_hold(hold_id, account_id, amount, idempotency_key, operator_id)
+        return hold_id
+
+    def release(self, account_id: str, hold_id: str) -> None:
+        row = self.store.find_hold_by_id(hold_id)
+        if row is None or row["account_id"] != account_id or row["status"] != "active":
+            raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
+        self.store.release_hold(hold_id)
 
     def entries(self, account_id: str) -> list[Entry]:
         return self.store.entries(account_id)

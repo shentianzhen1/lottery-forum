@@ -10,7 +10,7 @@ router = APIRouter(prefix="/points", tags=["points"])
 @router.get("/balance")
 def balance(request: Request, account: object = Depends(current_account)) -> dict[str, object]:
     book_balance = request.app.state.services.ledger.balance(account.account_id)  # type: ignore[attr-defined]
-    frozen = 0
+    frozen = request.app.state.services.ledger.frozen(account.account_id)  # type: ignore[attr-defined]
     return {
         "account_id": account.account_id,  # type: ignore[attr-defined]
         "balance": book_balance,
