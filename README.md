@@ -11,7 +11,7 @@ M1 骨架已开始，未完成。
 已实现：
 
 - `GET /health`
-- 积分钱包写入 SQLite 文件，重启后余额仍在。PostgreSQL 迁移尚未执行
+- 设置 `DATABASE_URL` 时使用 PostgreSQL，并在启动时执行迁移。未设置时仍用 SQLite 文件。本环境没有 Docker，PostgreSQL 集成测试未实际执行
 - 横屏积分中心：左侧账面、冻结和可用余额，右侧变动明细。页面尚未请求接口
 - 登录后可用固定 10 积分记录一次参与。这是临时测试切片，不是最终结算规则，也不派奖
 - 玩法中心横屏骨架：左侧玩法，右侧输入区和结果区
@@ -34,8 +34,8 @@ M1 骨架已开始，未完成。
 ```bash
 python -m pip install -r apps/api/requirements.txt
 cd apps/api && python -m pytest tests
-cd apps/mobile && flutter pub get && flutter analyze && flutter test
-uvicorn app.main:app --app-dir apps/api --reload
+docker compose up -d postgres
+DATABASE_URL=postgresql://lottery:lottery@localhost:5432/lottery_forum uvicorn app.main:app --app-dir apps/api --reload
 ```
 
 不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。
