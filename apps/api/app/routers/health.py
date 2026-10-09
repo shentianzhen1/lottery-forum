@@ -9,6 +9,6 @@ def health() -> dict[str, object]:
         "status": "ok",
         "service": "lottery-forum-api",
         "landscape_first": True,
-        "implemented": ["health", "auth", "points_read"],
-        "not_implemented": ["moderator", "games", "points_mutation_api"],
+        "implemented": ["health", "auth", "points_read", "game_validation"],
+        "not_implemented": ["moderator", "game_settlement", "points_mutation_api"],
     }
