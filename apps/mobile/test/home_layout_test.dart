@@ -34,6 +34,15 @@ void main() {
     expect(find.text('审核流程未实现'), findsNothing);
     expect(find.text('申请版主、审核状态和权限记录尚未实现。'), findsOneWidget);
   });
+
+  testWidgets('play center uses separate input and result panels', (tester) async {
+    await _pumpAt(tester, const Size(1920, 1080));
+    await tester.tap(find.text('玩法中心'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('play-landscape-columns')), findsOneWidget);
+    expect(find.byKey(const Key('play-result-panel')), findsOneWidget);
+    expect(find.text('结算未接入积分账本'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpAt(WidgetTester tester, Size size) async {

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, health, moderator, points, users
+from app.routers import auth, games, health, moderator, points, users
 from app.state import build_state
 
 app = FastAPI(
@@ -13,4 +13,5 @@ app.include_router(health.router)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(points.router, prefix="/api/v1")
+app.include_router(games.router, prefix="/api/v1")
 app.include_router(moderator.router, prefix="/api/v1")
