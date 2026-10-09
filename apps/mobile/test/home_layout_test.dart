@@ -43,7 +43,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('play-landscape-columns')), findsOneWidget);
     expect(find.byKey(const Key('play-result-panel')), findsOneWidget);
-    expect(find.text('参与扣固定积分，不派奖'), findsOneWidget);
+    expect(find.text('福建31选7只展示选号，不扣分'), findsOneWidget);
   });
 }
 

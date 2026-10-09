@@ -77,7 +77,7 @@ class _PlayPanel extends StatelessWidget {
           child: ListTile(
             key: Key('play-result-panel'),
             title: Text('结果区'),
-            subtitle: Text('参与扣固定积分，不派奖'),
+            subtitle: Text('福建31选7只展示选号，不扣分'),
           ),
         ),
       ],
