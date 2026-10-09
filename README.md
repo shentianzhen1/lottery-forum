@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-框架边界见 `docs/FRAMEWORK_V0.1.md`。领域模型和 API 契约见 `docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。未列出的接口尚未实现。钱包、保证金和手续费都是积分，不是现金账户。
+近期目标是规划大框架，不是继续堆功能。范围见 `docs/decisions/2026-10-09-framework-first.md`。框架边界见 `docs/FRAMEWORK_V0.1.md`。领域模型和 API 契约见 `docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。未列出的接口尚未实现。钱包、保证金和手续费都是积分，不是现金账户。
 
 已实现：
 
