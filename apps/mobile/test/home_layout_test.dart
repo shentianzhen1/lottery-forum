@@ -29,10 +29,12 @@ void main() {
 
   testWidgets('selected destination survives rebuild', (tester) async {
     await _pumpAt(tester, const Size(1920, 1080));
-    await tester.tap(find.text('版主中心'));
+    await tester.tap(find.text('积分中心'));
     await tester.pumpAndSettle();
     expect(find.text('审核流程未实现'), findsNothing);
-    expect(find.text('申请版主、审核状态和权限记录尚未实现。'), findsOneWidget);
+    expect(find.byKey(const Key('points-landscape-columns')), findsOneWidget);
+    expect(find.text('可用余额 0'), findsOneWidget);
+    expect(find.text('接口尚未接入此页'), findsOneWidget);
   });
 
   testWidgets('play center uses separate input and result panels', (tester) async {
