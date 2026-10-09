@@ -6,16 +6,32 @@
 
 ## 当前状态
 
-M0：仓库已创建，尚无客户端、后端、数据库或玩法代码。下面均未实现：
+M1 骨架已开始，未完成。
 
-- 首页、玩法中心、积分中心、版主中心、个人中心
+已实现：
+
+- `GET /health`
+- 用户、积分、版主申请接口的未实现边界，返回 501
+- Flutter 横屏首页骨架：左导航、中部玩法入口、右侧积分与申请版主
+- 宽度低于 960 时提示使用横屏，不把窄屏页伪装成横屏首页
+- CI 工作流已添加；是否通过以 GitHub Actions 实际结果为准
+
+未实现：
+
+- 鉴权、角色、数据库和积分账本
+- 玩法规则与插件
+- 版主申请审核
 - 管理后台
-- 玩法插件与积分账本
+- Android 测试包
+- 真机或模拟器横屏验收
 
-## 约束
+## 本地运行
 
-- 产品名称固定为「彩票论坛」。
-- 主要页面以横屏为第一设计目标，参考 16:9，兼顾 16:10。
-- 用户界面使用「版主」「申请版主」「版主中心」。
-- 客户端预计 Flutter，后端预计 FastAPI，数据库预计 PostgreSQL。Android 测试版优先。
-- 不做聊天、好友、私信、社区动态、用户间积分转账、现金充值、提现或兑付。
+```bash
+python -m pip install -r apps/api/requirements.txt
+cd apps/api && python -m pytest tests
+cd apps/mobile && flutter pub get && flutter analyze && flutter test
+uvicorn app.main:app --app-dir apps/api --reload
+```
+
+不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。

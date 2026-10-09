@@ -1,0 +1,19 @@
+name: lottery_forum
+description: 彩票论坛横屏客户端骨架。玩法、账本和版主审核尚未实现。
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
