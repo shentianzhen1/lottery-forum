@@ -69,7 +69,7 @@ class _Summary extends StatelessWidget {
         Text('冻结 ${snapshot.frozen}'),
         Text('可用余额 ${snapshot.available}', key: const Key('points-available')),
         const SizedBox(height: 12),
-        const Text('冻结尚未用于版主保证金。不提供充值、提现或转账。'),
+        const Text('冻结会减少可用余额，不改变账面余额。保证金数量尚未确定。'),
       ],
     );
   }

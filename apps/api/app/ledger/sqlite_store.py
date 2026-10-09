@@ -29,6 +29,15 @@ class SqliteLedgerStore:
                 corrects_entry_id text references points_entries(entry_id),
                 unique (account_id, idempotency_key)
             );
+            create table if not exists points_holds (
+                hold_id text primary key,
+                account_id text not null references points_accounts(account_id),
+                amount integer not null check (amount > 0),
+                status text not null check (status in ('active', 'released')),
+                idempotency_key text not null,
+                operator_id text not null,
+                unique (account_id, idempotency_key)
+            );
             """
         )
 
@@ -74,6 +83,42 @@ class SqliteLedgerStore:
                 "update points_accounts set balance = balance + ? where account_id = ?",
                 (delta, entry.account_id),
             )
+
+    def frozen(self, account_id: str) -> int:
+        row = self.connection.execute(
+            "select coalesce(sum(amount), 0) as frozen from points_holds where account_id = ? and status = 'active'",
+            (account_id,),
+        ).fetchone()
+        return int(row["frozen"])
+
+    def add_hold(self, hold_id: str, account_id: str, amount: int, idempotency_key: str, operator_id: str) -> None:
+        self.connection.execute(
+            """
+            insert into points_holds(hold_id, account_id, amount, status, idempotency_key, operator_id)
+            values (?, ?, ?, 'active', ?, ?)
+            """,
+            (hold_id, account_id, amount, idempotency_key, operator_id),
+        )
+        self.connection.commit()
+
+    def find_hold(self, account_id: str, idempotency_key: str) -> sqlite3.Row | None:
+        return self.connection.execute(
+            "select * from points_holds where account_id = ? and idempotency_key = ?",
+            (account_id, idempotency_key),
+        ).fetchone()
+
+    def release_hold(self, hold_id: str) -> None:
+        self.connection.execute(
+            "update points_holds set status = 'released' where hold_id = ? and status = 'active'",
+            (hold_id,),
+        )
+        self.connection.commit()
+
+    def find_hold_by_id(self, hold_id: str) -> sqlite3.Row | None:
+        return self.connection.execute(
+            "select * from points_holds where hold_id = ?",
+            (hold_id,),
+        ).fetchone()
 
     def entries(self, account_id: str) -> list[Entry]:
         rows = self.connection.execute(
