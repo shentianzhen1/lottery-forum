@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('play-landscape-columns')), findsOneWidget);
     expect(find.byKey(const Key('play-result-panel')), findsOneWidget);
-    expect(find.text('结算未接入积分账本'), findsOneWidget);
+    expect(find.text('参与扣固定积分，不派奖'), findsOneWidget);
   });
 }
 
