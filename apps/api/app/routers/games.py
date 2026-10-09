@@ -38,6 +38,53 @@ def validate_game(game_id: str, body: dict[str, object], request: Request) -> di
     }
 
 
+@router.post("/{game_id}/selections")
+def save_selection(
+    game_id: str,
+    body: dict[str, object],
+    request: Request,
+    account: object = Depends(current_account),
+) -> dict[str, object]:
+    idempotency_key = body.get("idempotency_key")
+    if not isinstance(idempotency_key, str) or not idempotency_key:
+        raise HTTPException(status_code=400, detail={"code": "INVALID_ENTRY", "message": "缺少幂等键"})
+    if game_id != "fujian-31":
+        raise HTTPException(status_code=404, detail={"code": "GAME_NOT_FOUND", "message": "该玩法尚未开放选号记录"})
+    try:
+        result = request.app.state.services.games.validate(game_id, body)
+    except GameError as error:
+        raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
+    account_id = account.account_id  # type: ignore[attr-defined]
+    existing = request.app.state.services.selections.find(account_id, game_id, idempotency_key)
+    if existing is None:
+        numbers = result.normalized["numbers"]
+        existing = request.app.state.services.selections.add(
+            account_id,
+            game_id,
+            numbers,  # type: ignore[arg-type]
+            int(result.normalized["pair_count"]),
+            idempotency_key,
+        )
+    return {
+        "selection_id": existing.selection_id,
+        "numbers": existing.numbers,
+        "pair_count": existing.pair_count,
+        "stake": 0,
+        "payout": 0,
+    }
+
+
+@router.get("/{game_id}/selections")
+def list_selections(game_id: str, request: Request, account: object = Depends(current_account)) -> dict[str, object]:
+    rows = request.app.state.services.selections.for_account(account.account_id, game_id)  # type: ignore[attr-defined]
+    return {
+        "selections": [
+            {"selection_id": row.selection_id, "numbers": row.numbers, "pair_count": row.pair_count, "stake": 0, "payout": 0}
+            for row in rows
+        ]
+    }
+
+
 @router.post("/{game_id}/entries")
 def enter_game(
     game_id: str,

@@ -4,6 +4,7 @@ from app.auth.service import AuthService
 from app.auth.store import AccountStore
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
+from app.games.selections import SelectionStore
 from app.ledger.service import LedgerService
 import os
 from pathlib import Path
@@ -17,6 +18,7 @@ class AppState:
     ledger: LedgerService
     games: GameRegistry
     participation: GameParticipation
+    selections: SelectionStore
 
 
 def build_state() -> AppState:
@@ -30,4 +32,5 @@ def build_state() -> AppState:
         ledger,
         games,
         GameParticipation(games, ledger),
+        SelectionStore(database),
     )
