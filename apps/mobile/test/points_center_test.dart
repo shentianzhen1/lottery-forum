@@ -22,12 +22,23 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      const MaterialApp(home: PointsCenterPage(landscapeReady: true, reader: _FakeReader())),
+      MaterialApp(home: PointsCenterPage(landscapeReady: true, reader: _FakeReader())),
     );
     await tester.pumpAndSettle();
     expect(find.text('账面余额 50'), findsOneWidget);
     expect(find.text('冻结 20'), findsWidgets);
     expect(find.text('可用余额 30'), findsOneWidget);
     expect(find.text('接口尚未接入此页'), findsNothing);
+  });
+
+  test('api payload maps frozen balance to available points', () {
+    final snapshot = snapshotFromApi(
+      balance: {'balance': 50, 'frozen': 20, 'available': 30},
+      entries: [
+        {'direction': 'credit', 'amount': 50, 'reason': 'opening_grant'},
+      ],
+    );
+    expect(snapshot.available, 30);
+    expect(snapshot.entries, ['credit 50 opening_grant']);
   });
 }

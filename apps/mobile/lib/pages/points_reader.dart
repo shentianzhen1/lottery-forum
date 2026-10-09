@@ -26,3 +26,17 @@ class DisconnectedPointsReader implements PointsReader {
     return const PointsSnapshot(balance: 0, frozen: 0, entries: [], connected: false);
   }
 }
+
+PointsSnapshot snapshotFromApi({
+  required Map<String, Object?> balance,
+  required List<Map<String, Object?>> entries,
+}) {
+  return PointsSnapshot(
+    balance: balance['balance'] as int,
+    frozen: balance['frozen'] as int,
+    entries: [
+      for (final entry in entries) '${entry['direction']} ${entry['amount']} ${entry['reason']}',
+    ],
+    connected: true,
+  );
+}
