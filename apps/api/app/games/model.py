@@ -15,6 +15,7 @@ class GameSpec:
     kind: str
     version: str
     enabled: bool
+    stake_enabled: bool = False
 
 
 @dataclass(frozen=True)
