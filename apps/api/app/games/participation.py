@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from app.games.model import GameError
 from app.games.registry import GameRegistry
 from app.ledger.model import Direction, Entry, PostRequest, Reason
 from app.ledger.service import LedgerService
@@ -28,6 +29,8 @@ class GameParticipation:
         idempotency_key: str,
     ) -> Participation:
         result = self.games.validate(game_id, payload)
+        if not self.games.stake_enabled(game_id):
+            raise GameError("STAKE_DISABLED", "该玩法只校验选号，尚未接入参与扣分")
         entry = self.ledger.post(
             PostRequest(
                 account_id=account_id,

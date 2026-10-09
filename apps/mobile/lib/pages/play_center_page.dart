@@ -8,6 +8,7 @@ class PlayCenterPage extends StatelessWidget {
   static const games = <(String, String)>[
     ('数字选号', '选择 3 个不重复数字。结算未接入。'),
     ('排名竞猜', '排列 3 个不重复选项。结算未接入。'),
+    ('福建31选7', '选择 7 个 1 到 31 的号码。只校验，不扣分。'),
   ];
 
   @override
