@@ -5,6 +5,9 @@ from app.auth.store import AccountStore
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
 from app.ledger.service import LedgerService
+import os
+from pathlib import Path
+
 from app.ledger.sqlite_store import SqliteLedgerStore
 
 
@@ -17,6 +20,14 @@ class AppState:
 
 
 def build_state() -> AppState:
-    ledger = LedgerService(SqliteLedgerStore())
+    database = Path(os.environ.get("LOTTERY_FORUM_DB", "data/lottery-forum.sqlite"))
+    if database.name != ":memory:":
+        database.parent.mkdir(parents=True, exist_ok=True)
+    ledger = LedgerService(SqliteLedgerStore(database))
     games = GameRegistry()
-    return AppState(AuthService(AccountStore(), ledger), ledger, games, GameParticipation(games, ledger))
+    return AppState(
+        AuthService(AccountStore(database), ledger),
+        ledger,
+        games,
+        GameParticipation(games, ledger),
+    )

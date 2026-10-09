@@ -4,7 +4,7 @@ from app.games.registry import GameRegistry
 from app.ledger.model import Direction, Entry, PostRequest, Reason
 from app.ledger.service import LedgerService
 
-STAKE = 10
+STAKE = 10  # 临时测试切片，不是玩法配置或最终结算规则。
 
 
 @dataclass(frozen=True)

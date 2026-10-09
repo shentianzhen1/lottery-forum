@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../pages/home_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/play_center_page.dart';
+import '../pages/points_center_page.dart';
 
 class AppDestination {
   const AppDestination(this.label, this.icon);
@@ -57,10 +58,7 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return PlayCenterPage(landscapeReady: landscapeReady);
       case 2:
-        return const PlaceholderPage(
-          title: '积分中心',
-          detail: '积分账本已可查询本人余额，横屏明细页尚未接入。当前不提供充值、提现或用户间转账。',
-        );
+        return PointsCenterPage(landscapeReady: landscapeReady);
       case 3:
         return const PlaceholderPage(
           title: '版主中心',
