@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../pages/home_page.dart';
-import '../pages/points_center_page.dart';
+import '../pages/placeholder_page.dart';
 import '../pages/play_center_page.dart';
+import '../pages/points_center_page.dart';
 
 class AppDestination {
   const AppDestination(this.label, this.icon);
