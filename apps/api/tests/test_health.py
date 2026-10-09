@@ -14,7 +14,8 @@ def test_health_reports_boundary() -> None:
     assert body["landscape_first"] is True
     assert "health" in body["implemented"]
     assert "auth" in body["implemented"]
-    assert "moderator" in body["not_implemented"]
+    assert "moderator_apply" in body["implemented"]
+    assert "moderator_review" in body["not_implemented"]
 
 
 def test_cash_routes_are_absent() -> None:

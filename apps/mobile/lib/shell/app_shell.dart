@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../pages/home_page.dart';
+import '../pages/moderator_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/play_center_page.dart';
 
@@ -62,10 +63,7 @@ class _AppShellState extends State<AppShell> {
           detail: '积分账本已可查询本人余额，横屏明细页尚未接入。当前不提供充值、提现或用户间转账。',
         );
       case 3:
-        return const PlaceholderPage(
-          title: '版主中心',
-          detail: '申请版主、审核状态和权限记录尚未实现。',
-        );
+        return ModeratorPage(landscapeReady: landscapeReady);
       default:
         return const PlaceholderPage(
           title: '个人中心',

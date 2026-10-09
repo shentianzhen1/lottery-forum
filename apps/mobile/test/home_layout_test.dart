@@ -32,7 +32,8 @@ void main() {
     await tester.tap(find.text('版主中心'));
     await tester.pumpAndSettle();
     expect(find.text('审核流程未实现'), findsNothing);
-    expect(find.text('申请版主、审核状态和权限记录尚未实现。'), findsOneWidget);
+    expect(find.text('待审核。不能自行通过。'), findsOneWidget);
+    expect(find.byKey(const Key('moderator-landscape-columns')), findsOneWidget);
   });
 
   testWidgets('play center uses separate input and result panels', (tester) async {
