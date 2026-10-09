@@ -76,7 +76,7 @@ class _PlayPanel extends StatelessWidget {
           child: ListTile(
             key: Key('play-result-panel'),
             title: Text('结果区'),
-            subtitle: Text('结算未接入积分账本'),
+            subtitle: Text('参与扣固定积分，不派奖'),
           ),
         ),
       ],
