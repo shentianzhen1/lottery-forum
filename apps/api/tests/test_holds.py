@@ -1,8 +1,10 @@
+from fastapi.testclient import TestClient
 import pytest
 
 from app.ledger.model import Direction, LedgerError, PostRequest, Reason
 from app.ledger.service import LedgerService
 from app.ledger.sqlite_store import SqliteLedgerStore
+from app.main import app
 
 
 def ledger() -> LedgerService:
@@ -57,3 +59,28 @@ def test_release_restores_available_and_keeps_hold_record() -> None:
     assert service.frozen("user-1") == 0
     assert service.available("user-1") == 50
     assert service.store.find_hold("user-1", "hold-1")["status"] == "released"
+
+
+def test_balance_endpoint_returns_frozen_amount() -> None:
+    client = TestClient(app)
+    registered = client.post("/api/v1/auth/register", json={"username": "hold-user", "password": "secret-pass"})
+    token = registered.json()["token"]
+    account_id = registered.json()["account_id"]
+    app.state.services.ledger.post(
+        PostRequest(
+            account_id=account_id,
+            direction=Direction.CREDIT,
+            amount=50,
+            reason=Reason.OPENING_GRANT,
+            reference_type="system",
+            reference_id="grant-hold-user",
+            idempotency_key="grant-hold-user",
+            operator_id="system",
+        )
+    )
+    app.state.services.ledger.hold(account_id, 20, "hold-user-1", "system")
+    response = client.get("/api/v1/points/balance", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json()["balance"] == 50
+    assert response.json()["frozen"] == 20
+    assert response.json()["available"] == 30

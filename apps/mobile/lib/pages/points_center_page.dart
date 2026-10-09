@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
 
-class PointsSnapshot {
-  const PointsSnapshot({
-    required this.balance,
-    required this.frozen,
-    required this.entries,
-    required this.connected,
-  });
+import 'points_reader.dart';
 
-  final int balance;
-  final int frozen;
-  final List<String> entries;
-  final bool connected;
-
-  int get available => balance - frozen;
-}
-
-class PointsCenterPage extends StatelessWidget {
+class PointsCenterPage extends StatefulWidget {
   const PointsCenterPage({
     required this.landscapeReady,
-    this.snapshot = const PointsSnapshot(
-      balance: 0,
-      frozen: 0,
-      entries: [],
-      connected: false,
-    ),
+    this.reader = const DisconnectedPointsReader(),
     super.key,
   });
 
   final bool landscapeReady;
-  final PointsSnapshot snapshot;
+  final PointsReader reader;
+
+  @override
+  State<PointsCenterPage> createState() => _PointsCenterPageState();
+}
+
+class _PointsCenterPageState extends State<PointsCenterPage> {
+  PointsSnapshot? _snapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final snapshot = await widget.reader.load();
+    if (mounted) setState(() => _snapshot = snapshot);
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!landscapeReady) {
+    if (!widget.landscapeReady) {
       return const Center(
         child: Text('请使用横屏查看积分中心', key: Key('points-landscape-required')),
       );
+    }
+    final snapshot = _snapshot;
+    if (snapshot == null) {
+      return const Center(child: Text('正在读取积分'));
     }
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -82,9 +85,7 @@ class _Entries extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = snapshot.connected
-        ? snapshot.entries
-        : const ['接口尚未接入此页'];
+    final rows = snapshot.connected ? snapshot.entries : const ['接口尚未接入此页'];
     return ListView(
       key: const Key('points-entry-list'),
       children: [
