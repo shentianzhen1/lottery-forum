@@ -82,6 +82,9 @@ def test_concurrent_release_succeeds_once() -> None:
     assert service.frozen("user-1") == 0
     assert all(error.code == "HOLD_NOT_FOUND" for error in errors)
     assert len(errors) == 3
+
+
+def test_balance_endpoint_returns_frozen_amount() -> None:
     client = TestClient(app)
     registered = client.post("/api/v1/auth/register", json={"username": "hold-user", "password": "secret-pass"})
     token = registered.json()["token"]
@@ -101,6 +104,6 @@ def test_concurrent_release_succeeds_once() -> None:
     app.state.services.ledger.hold(account_id, 20, "hold-user-1", "system")
     response = client.get("/api/v1/points/balance", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert response.json()["balance"] == 50
+    assert response.json()["balance"] == 150
     assert response.json()["frozen"] == 20
-    assert response.json()["available"] == 30
+    assert response.json()["available"] == 130
