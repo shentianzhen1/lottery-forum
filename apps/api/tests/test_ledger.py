@@ -140,7 +140,34 @@ def test_correction_is_a_new_reversing_entry() -> None:
     assert len(ledger.entries("user-1")) == 2
 
 
-def test_opening_grant_cannot_debit() -> None:
+def test_entry_can_be_corrected_only_once() -> None:
+    ledger = service()
+    original = ledger.post(request())
+    ledger.post(
+        request(
+            direction=Direction.DEBIT,
+            reason=Reason.CORRECTION,
+            reference_type="entry",
+            reference_id=original.entry_id,
+            idempotency_key="correct-1",
+            operator_id="auditor-1",
+            corrects_entry_id=original.entry_id,
+        )
+    )
+    with pytest.raises(LedgerError) as caught:
+        ledger.post(
+            request(
+                direction=Direction.DEBIT,
+                reason=Reason.CORRECTION,
+                reference_type="entry",
+                reference_id=original.entry_id,
+                idempotency_key="correct-2",
+                operator_id="auditor-1",
+                corrects_entry_id=original.entry_id,
+            )
+        )
+    assert caught.value.code == "ALREADY_CORRECTED"
+    assert ledger.balance("user-1") == 0
     ledger = service()
     with pytest.raises(LedgerError) as caught:
         ledger.post(request(direction=Direction.DEBIT, amount=1))

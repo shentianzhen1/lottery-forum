@@ -33,11 +33,15 @@ class LedgerService:
                     self._ensure_same_payload(existing, request)
                     return existing
                 self.store.ensure_account(request.account_id)
+                if request.corrects_entry_id and self.store.find_correction(request.corrects_entry_id) is not None:
+                    raise LedgerError("ALREADY_CORRECTED", "同一条分录只能纠错一次")
                 if request.direction is Direction.DEBIT and self.available(request.account_id) < request.amount:
                     raise LedgerError("INSUFFICIENT_POINTS", "可用积分不足")
                 self.store.append(entry)
                 return entry
         except sqlite3.IntegrityError:
+            if request.corrects_entry_id and self.store.find_correction(request.corrects_entry_id) is not None:
+                raise LedgerError("ALREADY_CORRECTED", "同一条分录只能纠错一次") from None
             existing = self.store.find_by_idempotency(request.account_id, request.idempotency_key)
             if existing is None:
                 raise
@@ -79,10 +83,12 @@ class LedgerService:
             return str(existing["hold_id"])
 
     def release(self, account_id: str, hold_id: str) -> None:
-        row = self.store.find_hold_by_id(hold_id)
-        if row is None or row["account_id"] != account_id or row["status"] != "active":
-            raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
-        self.store.release_hold(hold_id)
+        with self.store.locked():
+            row = self.store.find_hold_by_id(hold_id)
+            if row is None or row["account_id"] != account_id or row["status"] != "active":
+                raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
+            if self.store.release_hold(hold_id) != 1:
+                raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
 
     def entries(self, account_id: str) -> list[Entry]:
         return self.store.entries(account_id)

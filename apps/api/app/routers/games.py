@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.games.model import GameError
+from app.games.selections import SelectionConflict
 from app.ledger.model import LedgerError
 from app.routers.auth import current_account
 
@@ -55,16 +56,17 @@ def save_selection(
     except GameError as error:
         raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
     account_id = account.account_id  # type: ignore[attr-defined]
-    existing = request.app.state.services.selections.find(account_id, game_id, idempotency_key)
-    if existing is None:
-        numbers = result.normalized["numbers"]
-        existing = request.app.state.services.selections.add(
+    numbers = result.normalized["numbers"]
+    try:
+        existing = request.app.state.services.selections.save(
             account_id,
             game_id,
             numbers,  # type: ignore[arg-type]
             int(result.normalized["pair_count"]),
             idempotency_key,
         )
+    except SelectionConflict as error:
+        raise HTTPException(status_code=409, detail={"code": error.code, "message": error.message}) from error
     return {
         "selection_id": existing.selection_id,
         "numbers": existing.numbers,
@@ -75,13 +77,27 @@ def save_selection(
 
 
 @router.get("/{game_id}/selections")
-def list_selections(game_id: str, request: Request, account: object = Depends(current_account)) -> dict[str, object]:
-    rows = request.app.state.services.selections.for_account(account.account_id, game_id)  # type: ignore[attr-defined]
+def list_selections(
+    game_id: str,
+    request: Request,
+    account: object = Depends(current_account),
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, object]:
+    rows, total = request.app.state.services.selections.for_account(
+        account.account_id,  # type: ignore[attr-defined]
+        game_id,
+        limit,
+        offset,
+    )
     return {
         "selections": [
             {"selection_id": row.selection_id, "numbers": row.numbers, "pair_count": row.pair_count, "stake": 0, "payout": 0}
             for row in rows
-        ]
+        ],
+        "limit": min(max(limit, 1), 100),
+        "offset": max(offset, 0),
+        "total": total,
     }
 
 
