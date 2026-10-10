@@ -14,6 +14,9 @@
 - `GET /games`
 - `POST /games/{game_id}/validate`
 - `POST /games/{game_id}/entries`：只对临时示例扣固定 10 积分，不派奖。`fujian-31` 返回 `STAKE_DISABLED`
+- `GET /moderator/settings`：返回 `{"threshold": …}`，默认门槛 10000
+- `POST /moderator/boards`：请求体 `{"lottery_id"}`；达标则冻结门槛积分并开通版块，返回含 `approval: not_required`、`payout_formula: unset`；可用积分不足返回 `INSUFFICIENT_POINTS`；同一彩种已开通则幂等返回原版块
+- `GET /moderator/boards/me`：返回当前账号已开通的版块列表
 
 没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账。开通版主达到后台门槛后冻结积分，不需要人工批准；冻结不是转账。默认门槛是 10000 积分。
 
