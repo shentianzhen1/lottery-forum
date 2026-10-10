@@ -26,7 +26,7 @@
 - 玩法派奖
 - 版主申请审核
 - 管理后台
-- Android 测试包尚未生成。构建步骤见 `docs/ANDROID_TEST_BUILD.md`
+- Android 平台文件已生成，测试包默认横屏。本环境没有 Android SDK，APK 尚未生成。见 `docs/ANDROID_TEST_BUILD.md`
 - 真机或模拟器横屏验收
 
 ## 本地运行
