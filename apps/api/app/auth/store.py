@@ -2,6 +2,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.db import connect
+
 
 @dataclass(frozen=True)
 class Account:
@@ -12,9 +14,8 @@ class Account:
 
 
 class AccountStore:
-    def __init__(self, path: str | Path = ":memory:") -> None:
-        self.connection = sqlite3.connect(path, check_same_thread=False)
-        self.connection.row_factory = sqlite3.Row
+    def __init__(self, path: str | Path = ":memory:", connection: sqlite3.Connection | None = None) -> None:
+        self.connection = connection or connect(path)
         self.connection.executescript(
             """
             create table if not exists accounts (

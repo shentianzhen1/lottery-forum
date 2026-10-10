@@ -20,8 +20,16 @@ def balance(request: Request, account: object = Depends(current_account)) -> dic
 
 
 @router.get("/entries")
-def entries(request: Request, account: object = Depends(current_account)) -> dict[str, object]:
+def entries(
+    request: Request,
+    account: object = Depends(current_account),
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, object]:
     rows = request.app.state.services.ledger.entries(account.account_id)  # type: ignore[attr-defined]
+    limit = min(max(limit, 1), 100)
+    offset = max(offset, 0)
+    page = rows[offset : offset + limit]
     return {
         "account_id": account.account_id,  # type: ignore[attr-defined]
         "entries": [
@@ -34,6 +42,9 @@ def entries(request: Request, account: object = Depends(current_account)) -> dic
                 "reference_id": row.reference_id,
                 "created_by": row.operator_id,
             }
-            for row in rows
+            for row in page
         ],
+        "limit": limit,
+        "offset": offset,
+        "total": len(rows),
     }

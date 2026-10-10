@@ -1,29 +1,24 @@
 from fastapi import APIRouter, Header, HTTPException, Request
 
 from app.auth.service import AuthError
+from app.routers.schemas import Credentials
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register")
-def register(body: dict[str, str], request: Request) -> dict[str, str]:
+def register(body: Credentials, request: Request) -> dict[str, str]:
     try:
-        account, token = request.app.state.services.auth.register(
-            body.get("username", ""),
-            body.get("password", ""),
-        )
+        account, token = request.app.state.services.auth.register(body.username, body.password)
     except AuthError as error:
         raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
     return {"account_id": account.account_id, "username": account.username, "token": token}
 
 
 @router.post("/login")
-def login(body: dict[str, str], request: Request) -> dict[str, str]:
+def login(body: Credentials, request: Request) -> dict[str, str]:
     try:
-        account, token = request.app.state.services.auth.login(
-            body.get("username", ""),
-            body.get("password", ""),
-        )
+        account, token = request.app.state.services.auth.login(body.username, body.password)
     except AuthError as error:
         raise HTTPException(status_code=401, detail={"code": error.code, "message": error.message}) from error
     return {"account_id": account.account_id, "username": account.username, "token": token}
