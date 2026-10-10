@@ -3,13 +3,13 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
+from app.db import connect
 from app.ledger.model import Direction, Entry, Reason
 
 
 class SqliteLedgerStore:
-    def __init__(self, path: str | Path = ":memory:") -> None:
-        self.connection = sqlite3.connect(path, check_same_thread=False)
-        self.connection.row_factory = sqlite3.Row
+    def __init__(self, path: str | Path = ":memory:", connection: sqlite3.Connection | None = None) -> None:
+        self.connection = connection or connect(path)
         self.lock = threading.RLock()
         self._local = threading.local()
         self.connection.execute("pragma foreign_keys = on")

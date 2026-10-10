@@ -49,7 +49,7 @@ def save_selection(
     idempotency_key = body.get("idempotency_key")
     if not isinstance(idempotency_key, str) or not idempotency_key:
         raise HTTPException(status_code=400, detail={"code": "INVALID_ENTRY", "message": "缺少幂等键"})
-    if game_id != "fujian-31":
+    if not request.app.state.services.games.records_selections(game_id):
         raise HTTPException(status_code=404, detail={"code": "GAME_NOT_FOUND", "message": "该玩法尚未开放选号记录"})
     try:
         result = request.app.state.services.games.validate(game_id, body)

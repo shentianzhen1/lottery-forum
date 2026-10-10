@@ -25,3 +25,9 @@ class GameRegistry:
     def stake_enabled(self, game_id: str) -> bool:
         plugin = self._plugins.get(game_id)
         return plugin is not None and plugin.spec.stake_enabled
+
+    def records_selections(self, game_id: str) -> bool:
+        plugin = self._plugins.get(game_id)
+        return plugin is not None and plugin.spec.records_selections
+        plugin = self._plugins.get(game_id)
+        return plugin is not None and plugin.spec.stake_enabled

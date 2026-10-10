@@ -32,7 +32,7 @@
 ## 本地运行
 
 ```bash
-python -m pip install -r apps/api/requirements.txt
+python -m pip install -r apps/api/requirements-dev.txt
 cd apps/api && python -m pytest tests
 cd apps/mobile && flutter pub get && flutter analyze && flutter test
 uvicorn app.main:app --app-dir apps/api --reload
