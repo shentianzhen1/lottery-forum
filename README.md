@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-框架边界见 `docs/FRAMEWORK_V0.1.md`。钱包、保证金和手续费都是积分，不是现金账户。
+框架边界见 `docs/FRAMEWORK_V0.1.md`。领域模型和 API 契约见 `docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。未列出的接口尚未实现。钱包、保证金和手续费都是积分，不是现金账户。
 
 已实现：
 
