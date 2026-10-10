@@ -1,9 +1,12 @@
+from contextlib import AbstractContextManager
 from typing import Protocol
 
 from app.ledger.model import Entry
 
 
 class LedgerStore(Protocol):
+    def locked(self) -> AbstractContextManager[None]: ...
+
     def ensure_account(self, account_id: str) -> None: ...
 
     def balance(self, account_id: str) -> int: ...
