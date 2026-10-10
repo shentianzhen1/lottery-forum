@@ -50,6 +50,7 @@ class _PointsCenterPageState extends State<PointsCenterPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('积分读取失败', key: Key('points-load-error')),
+            Text(_error is PointsLoadException ? (_error! as PointsLoadException).message : '请稍后重试'),
             const SizedBox(height: 12),
             FilledButton(onPressed: _load, child: const Text('重试')),
           ],

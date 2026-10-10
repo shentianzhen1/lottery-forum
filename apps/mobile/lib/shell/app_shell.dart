@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_client.dart';
+import '../api/api_config.dart';
+import '../api/session.dart';
+import '../pages/account_page.dart';
 import '../pages/home_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/play_center_page.dart';
@@ -29,6 +33,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  final _client = ApiClient(const ApiConfig(), Session());
 
   @override
   Widget build(BuildContext context) {
@@ -58,17 +63,17 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return PlayCenterPage(landscapeReady: landscapeReady);
       case 2:
-        return PointsCenterPage(landscapeReady: landscapeReady);
+        return PointsCenterPage(
+          landscapeReady: landscapeReady,
+          reader: ApiPointsReader(_client),
+        );
       case 3:
         return const PlaceholderPage(
           title: '版主中心',
-          detail: '申请版主、审核状态和权限记录尚未实现。',
+          detail: '达标即可开通的版主流程尚未接入此页。',
         );
       default:
-        return const PlaceholderPage(
-          title: '个人中心',
-          detail: '账户资料与安全设置尚未实现。',
-        );
+        return AccountPage(client: _client, onChanged: () => setState(() {}));
     }
   }
 }
