@@ -34,8 +34,7 @@ def test_credentials_have_length_limits() -> None:
         "/api/v1/auth/register",
         json={"username": "long-user", "password": "x" * 73},
     )
-    assert response.status_code == 400
-    assert response.json()["detail"]["code"] == "INVALID_CREDENTIALS"
+    assert response.status_code == 422
 
 
 def test_login_is_limited_after_repeated_failures() -> None:

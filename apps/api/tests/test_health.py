@@ -15,6 +15,7 @@ def test_health_reports_boundary() -> None:
     assert "health" in body["implemented"]
     assert "auth" in body["implemented"]
     assert "moderator" in body["not_implemented"]
+    assert response.headers["x-request-id"]
 
 
 def test_cash_routes_are_absent() -> None:
