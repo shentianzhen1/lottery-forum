@@ -35,9 +35,9 @@ void main() {
     await tester.tap(find.text('积分中心'));
     await tester.pumpAndSettle();
     expect(find.text('审核流程未实现'), findsNothing);
-    expect(find.byKey(const Key('points-landscape-columns')), findsOneWidget);
-    expect(find.text('可用余额 0'), findsOneWidget);
-    expect(find.text('接口尚未接入此页'), findsOneWidget);
+    expect(find.byKey(const Key('points-load-error')), findsOneWidget);
+    expect(find.text('需要登录'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
   });
 
   testWidgets('play center uses separate input and result panels', (tester) async {
