@@ -25,7 +25,7 @@ void main() {
     expect(find.text('平台公告'), findsOneWidget);
     expect(find.text('暂无公告'), findsOneWidget);
     expect(find.text('开通版主'), findsOneWidget);
-    expect(find.text('达标即可开通，入口尚未接入'), findsOneWidget);
+    expect(find.text('达标即可开通（默认门槛 10000，开通时冻结），无需审核'), findsOneWidget);
     expect(find.text('审核流程未实现'), findsNothing);
     expect(find.text('账本未实现'), findsNothing);
     expect(find.byKey(const Key('open-moderator')), findsOneWidget);

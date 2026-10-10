@@ -8,6 +8,7 @@ class HomePage extends StatelessWidget {
     this.loggedIn = false,
     this.reader = const DisconnectedPointsReader(),
     this.onGoToAccount,
+    this.onGoToModerator,
     super.key,
   });
 
@@ -15,6 +16,7 @@ class HomePage extends StatelessWidget {
   final bool loggedIn;
   final PointsReader reader;
   final VoidCallback? onGoToAccount;
+  final VoidCallback? onGoToModerator;
 
   static const games = <(String, String)>[
     ('数字选号', '数字类入口，规则未接入'),
@@ -42,6 +44,7 @@ class HomePage extends StatelessWidget {
               loggedIn: loggedIn,
               reader: reader,
               onGoToAccount: onGoToAccount,
+              onGoToModerator: onGoToModerator,
             ),
           ),
         ],
@@ -138,11 +141,13 @@ class _SidePanel extends StatelessWidget {
     required this.loggedIn,
     required this.reader,
     this.onGoToAccount,
+    this.onGoToModerator,
   });
 
   final bool loggedIn;
   final PointsReader reader;
   final VoidCallback? onGoToAccount;
+  final VoidCallback? onGoToModerator;
 
   @override
   Widget build(BuildContext context) {
@@ -154,11 +159,12 @@ class _SidePanel extends StatelessWidget {
           onGoToAccount: onGoToAccount,
         ),
         const SizedBox(height: 12),
-        const Card(
+        Card(
           child: ListTile(
-            key: Key('open-moderator'),
-            title: Text('开通版主'),
-            subtitle: Text('达标即可开通，入口尚未接入'),
+            key: const Key('open-moderator'),
+            title: const Text('开通版主'),
+            subtitle: const Text('达标即可开通（默认门槛 10000，开通时冻结），无需审核'),
+            onTap: onGoToModerator,
           ),
         ),
       ],

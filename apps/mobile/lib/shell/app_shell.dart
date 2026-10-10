@@ -5,7 +5,7 @@ import '../api/api_config.dart';
 import '../api/session.dart';
 import '../pages/account_page.dart';
 import '../pages/home_page.dart';
-import '../pages/placeholder_page.dart';
+import '../pages/moderator_page.dart';
 import '../pages/play_center_page.dart';
 import '../pages/points_center_page.dart';
 
@@ -57,13 +57,15 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _pageFor(int index, bool landscapeReady) {
+    final loggedIn = _client.session.token != null;
     switch (index) {
       case 0:
         return HomePage(
           landscapeReady: landscapeReady,
-          loggedIn: _client.session.token != null,
+          loggedIn: loggedIn,
           reader: ApiPointsReader(_client, includeEntries: false),
           onGoToAccount: () => setState(() => _index = 4),
+          onGoToModerator: () => setState(() => _index = 3),
         );
       case 1:
         return PlayCenterPage(landscapeReady: landscapeReady);
@@ -73,9 +75,11 @@ class _AppShellState extends State<AppShell> {
           reader: ApiPointsReader(_client),
         );
       case 3:
-        return const PlaceholderPage(
-          title: '版主中心',
-          detail: '达标即可开通，尚未接入开通入口。',
+        return ModeratorPage(
+          landscapeReady: landscapeReady,
+          loggedIn: loggedIn,
+          gateway: ApiModeratorGateway(_client),
+          onGoToAccount: () => setState(() => _index = 4),
         );
       default:
         return AccountPage(client: _client, onChanged: () => setState(() {}));
