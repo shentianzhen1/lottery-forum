@@ -10,7 +10,10 @@ void main() {
     expect(find.byKey(const Key('announcement-board')), findsOneWidget);
     expect(find.text('平台公告'), findsOneWidget);
     expect(find.text('暂无公告'), findsOneWidget);
-    expect(find.text('申请版主'), findsOneWidget);
+    expect(find.text('开通版主'), findsOneWidget);
+    expect(find.text('达标即可开通，入口尚未接入'), findsOneWidget);
+    expect(find.text('审核流程未实现'), findsNothing);
+    expect(find.byKey(const Key('open-moderator')), findsOneWidget);
     expect(find.byKey(const Key('points-placeholder')), findsOneWidget);
     expect(find.text('请使用横屏查看首页'), findsNothing);
   });
