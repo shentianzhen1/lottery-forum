@@ -23,10 +23,42 @@ class HomePage extends StatelessWidget {
         key: Key('home-landscape-columns'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 5, child: _GameBoard()),
+          Expanded(flex: 5, child: _MainColumn()),
           SizedBox(width: 20),
           SizedBox(width: 280, child: _SidePanel()),
         ],
+      ),
+    );
+  }
+}
+
+class _MainColumn extends StatelessWidget {
+  const _MainColumn();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _AnnouncementBoard(),
+        SizedBox(height: 16),
+        Expanded(child: _GameBoard()),
+      ],
+    );
+  }
+}
+
+class _AnnouncementBoard extends StatelessWidget {
+  const _AnnouncementBoard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      key: Key('announcement-board'),
+      child: ListTile(
+        title: Text('平台公告'),
+        subtitle: Text('暂无公告'),
+        trailing: Text('更多'),
       ),
     );
   }
@@ -95,13 +127,6 @@ class _SidePanel extends StatelessWidget {
             title: Text('积分'),
             subtitle: Text('账本未实现'),
             trailing: Text('--', key: Key('points-placeholder')),
-          ),
-        ),
-        SizedBox(height: 12),
-        Card(
-          child: ListTile(
-            title: Text('公告'),
-            subtitle: Text('暂无公告'),
           ),
         ),
         SizedBox(height: 12),
