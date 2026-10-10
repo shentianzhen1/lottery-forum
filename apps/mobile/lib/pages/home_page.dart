@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 
+import 'points_reader.dart';
+
 class HomePage extends StatelessWidget {
-  const HomePage({required this.landscapeReady, super.key});
+  const HomePage({
+    required this.landscapeReady,
+    this.loggedIn = false,
+    this.reader = const DisconnectedPointsReader(),
+    this.onGoToAccount,
+    super.key,
+  });
 
   final bool landscapeReady;
+  final bool loggedIn;
+  final PointsReader reader;
+  final VoidCallback? onGoToAccount;
 
   static const games = <(String, String)>[
     ('数字选号', '数字类入口，规则未接入'),
@@ -17,15 +28,22 @@ class HomePage extends StatelessWidget {
     if (!landscapeReady) {
       return const _NarrowNotice();
     }
-    return const Padding(
-      padding: EdgeInsets.all(24),
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: Row(
-        key: Key('home-landscape-columns'),
+        key: const Key('home-landscape-columns'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 5, child: _MainColumn()),
-          SizedBox(width: 20),
-          SizedBox(width: 280, child: _SidePanel()),
+          const Expanded(flex: 5, child: _MainColumn()),
+          const SizedBox(width: 20),
+          SizedBox(
+            width: 280,
+            child: _SidePanel(
+              loggedIn: loggedIn,
+              reader: reader,
+              onGoToAccount: onGoToAccount,
+            ),
+          ),
         ],
       ),
     );
@@ -116,21 +134,27 @@ class _GameCard extends StatelessWidget {
 }
 
 class _SidePanel extends StatelessWidget {
-  const _SidePanel();
+  const _SidePanel({
+    required this.loggedIn,
+    required this.reader,
+    this.onGoToAccount,
+  });
+
+  final bool loggedIn;
+  final PointsReader reader;
+  final VoidCallback? onGoToAccount;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: const [
-        Card(
-          child: ListTile(
-            title: Text('积分'),
-            subtitle: Text('账本未实现'),
-            trailing: Text('--', key: Key('points-placeholder')),
-          ),
+      children: [
+        _HomePointsCard(
+          loggedIn: loggedIn,
+          reader: reader,
+          onGoToAccount: onGoToAccount,
         ),
-        SizedBox(height: 12),
-        Card(
+        const SizedBox(height: 12),
+        const Card(
           child: ListTile(
             key: Key('open-moderator'),
             title: Text('开通版主'),
@@ -138,6 +162,128 @@ class _SidePanel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HomePointsCard extends StatefulWidget {
+  const _HomePointsCard({
+    required this.loggedIn,
+    required this.reader,
+    this.onGoToAccount,
+  });
+
+  final bool loggedIn;
+  final PointsReader reader;
+  final VoidCallback? onGoToAccount;
+
+  @override
+  State<_HomePointsCard> createState() => _HomePointsCardState();
+}
+
+class _HomePointsCardState extends State<_HomePointsCard> {
+  PointsSnapshot? _snapshot;
+  Object? _error;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.loggedIn) {
+      _load();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HomePointsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.loggedIn != oldWidget.loggedIn || widget.reader != oldWidget.reader) {
+      if (widget.loggedIn) {
+        _load();
+      } else {
+        setState(() {
+          _snapshot = null;
+          _error = null;
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final snapshot = await widget.reader.load();
+      if (mounted) {
+        setState(() {
+          _snapshot = snapshot;
+          _loading = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error;
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.loggedIn) {
+      return Card(
+        child: ListTile(
+          key: const Key('home-points-login-hint'),
+          title: const Text('积分'),
+          subtitle: const Text('去个人中心登录'),
+          trailing: const Text('--'),
+          onTap: widget.onGoToAccount,
+        ),
+      );
+    }
+
+    if (_loading && _snapshot == null && _error == null) {
+      return const Card(
+        child: ListTile(
+          title: Text('积分'),
+          subtitle: Text('正在读取'),
+          trailing: Text('…'),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Card(
+        child: ListTile(
+          key: const Key('home-points-load-error'),
+          title: const Text('积分'),
+          subtitle: Text(
+            _error is PointsLoadException
+                ? (_error! as PointsLoadException).message
+                : '读取失败',
+          ),
+          trailing: const Text('重试'),
+          onTap: _load,
+        ),
+      );
+    }
+
+    final snapshot = _snapshot;
+    final balance = snapshot?.balance;
+    return Card(
+      child: ListTile(
+        title: const Text('积分'),
+        subtitle: const Text('账面余额'),
+        trailing: Text(
+          balance == null ? '--' : '$balance',
+          key: const Key('home-points-balance'),
+        ),
+      ),
     );
   }
 }

@@ -59,7 +59,12 @@ class _AppShellState extends State<AppShell> {
   Widget _pageFor(int index, bool landscapeReady) {
     switch (index) {
       case 0:
-        return HomePage(landscapeReady: landscapeReady);
+        return HomePage(
+          landscapeReady: landscapeReady,
+          loggedIn: _client.session.token != null,
+          reader: ApiPointsReader(_client, includeEntries: false),
+          onGoToAccount: () => setState(() => _index = 4),
+        );
       case 1:
         return PlayCenterPage(landscapeReady: landscapeReady);
       case 2:

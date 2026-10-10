@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/main.dart';
+import 'package:lottery_forum/pages/home_page.dart';
+import 'package:lottery_forum/pages/points_reader.dart';
+
+class _FakeHomePointsReader implements PointsReader {
+  @override
+  Future<PointsSnapshot> load() async {
+    return const PointsSnapshot(
+      balance: 50,
+      frozen: 20,
+      entries: ['冻结 20'],
+      connected: true,
+    );
+  }
+}
 
 void main() {
   testWidgets('16:9 landscape home keeps three regions', (tester) async {
@@ -13,8 +27,10 @@ void main() {
     expect(find.text('开通版主'), findsOneWidget);
     expect(find.text('达标即可开通，入口尚未接入'), findsOneWidget);
     expect(find.text('审核流程未实现'), findsNothing);
+    expect(find.text('账本未实现'), findsNothing);
     expect(find.byKey(const Key('open-moderator')), findsOneWidget);
-    expect(find.byKey(const Key('points-placeholder')), findsOneWidget);
+    expect(find.byKey(const Key('home-points-login-hint')), findsOneWidget);
+    expect(find.text('去个人中心登录'), findsOneWidget);
     expect(find.text('请使用横屏查看首页'), findsNothing);
   });
 
@@ -50,6 +66,49 @@ void main() {
     expect(find.byKey(const Key('play-landscape-columns')), findsOneWidget);
     expect(find.byKey(const Key('play-result-panel')), findsOneWidget);
     expect(find.text('参与扣固定积分，不派奖'), findsOneWidget);
+  });
+
+  testWidgets('logged-in home points card shows book balance', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomePage(
+          landscapeReady: true,
+          loggedIn: true,
+          reader: _FakeHomePointsReader(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('账本未实现'), findsNothing);
+    expect(find.byKey(const Key('home-points-login-hint')), findsNothing);
+    expect(find.byKey(const Key('home-points-balance')), findsOneWidget);
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('账面余额'), findsOneWidget);
+  });
+
+  testWidgets('home points login hint opens account callback', (tester) async {
+    var opened = false;
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomePage(
+          landscapeReady: true,
+          loggedIn: false,
+          onGoToAccount: () => opened = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('home-points-login-hint')));
+    await tester.pumpAndSettle();
+    expect(opened, isTrue);
   });
 }
 
