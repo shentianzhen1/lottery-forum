@@ -15,11 +15,36 @@ def register(username: str = "ada") -> str:
     return response.json()["token"]
 
 
-def test_register_creates_zero_balance_account() -> None:
-    token = register()
+def test_register_grants_opening_points() -> None:
+    token = register("opening-user")
     response = client.get("/api/v1/points/balance", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert response.json()["balance"] == 0
+    assert response.json()["balance"] == 100
+
+
+def test_logout_invalidates_token() -> None:
+    token = register("logout-user")
+    headers = {"Authorization": f"Bearer {token}"}
+    assert client.post("/api/v1/auth/logout", headers=headers).status_code == 200
+    assert client.get("/api/v1/points/balance", headers=headers).status_code == 401
+
+
+def test_credentials_have_length_limits() -> None:
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"username": "long-user", "password": "x" * 73},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "INVALID_CREDENTIALS"
+
+
+def test_login_is_limited_after_repeated_failures() -> None:
+    register("limited-user")
+    for _ in range(5):
+        client.post("/api/v1/auth/login", json={"username": "limited-user", "password": "wrong-pass"})
+    limited = client.post("/api/v1/auth/login", json={"username": "limited-user", "password": "secret-pass"})
+    assert limited.status_code == 401
+    assert limited.json()["detail"]["code"] == "LOGIN_LIMITED"
 
 
 def test_points_require_login() -> None:
@@ -47,7 +72,7 @@ def test_login_and_read_own_entries() -> None:
     )
     entries = client.get("/api/v1/points/entries", headers={"Authorization": f"Bearer {token}"})
     assert entries.status_code == 200
-    assert entries.json()["entries"][0]["amount"] == 30
+    assert any(row["amount"] == 30 for row in entries.json()["entries"])
 
 
 def test_wrong_password_rejected() -> None:

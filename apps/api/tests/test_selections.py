@@ -29,7 +29,7 @@ def test_saves_fujian_selection_without_stake_or_payout() -> None:
     assert repeated.json()["selection_id"] == body["selection_id"]
     listed = client.get("/api/v1/games/fujian-31/selections", headers=headers)
     assert len(listed.json()["selections"]) == 1
-    assert app.state.services.ledger.balance(account_id) == 0
+    assert app.state.services.ledger.balance(account_id) == 100
 
 
 def test_same_selection_key_with_different_numbers_conflicts() -> None:

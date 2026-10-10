@@ -29,6 +29,14 @@ def login(body: dict[str, str], request: Request) -> dict[str, str]:
     return {"account_id": account.account_id, "username": account.username, "token": token}
 
 
+@router.post("/logout")
+def logout(request: Request, authorization: str | None = Header(default=None)) -> dict[str, str]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "需要登录"})
+    request.app.state.services.auth.logout(authorization.removeprefix("Bearer ").strip())
+    return {"status": "logged_out"}
+
+
 def current_account(request: Request, authorization: str | None = Header(default=None)) -> object:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "需要登录"})
