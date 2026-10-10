@@ -53,5 +53,5 @@ def test_account_and_ledger_share_reopened_database(tmp_path: Path) -> None:
     stored = reopened_accounts.by_username("ada")
     assert stored is not None
     assert stored.account_id == account.account_id
-    assert reopened_ledger.balance(account.account_id) == 15
+    assert reopened_ledger.balance(account.account_id) == 115
     assert reopened_ledger.entries(account.account_id)[0].account_id == stored.account_id

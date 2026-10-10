@@ -18,6 +18,7 @@ class PointsCenterPage extends StatefulWidget {
 
 class _PointsCenterPageState extends State<PointsCenterPage> {
   PointsSnapshot? _snapshot;
+  Object? _error;
 
   @override
   void initState() {
@@ -26,8 +27,13 @@ class _PointsCenterPageState extends State<PointsCenterPage> {
   }
 
   Future<void> _load() async {
-    final snapshot = await widget.reader.load();
-    if (mounted) setState(() => _snapshot = snapshot);
+    setState(() => _error = null);
+    try {
+      final snapshot = await widget.reader.load();
+      if (mounted) setState(() => _snapshot = snapshot);
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
   }
 
   @override
@@ -38,6 +44,19 @@ class _PointsCenterPageState extends State<PointsCenterPage> {
       );
     }
     final snapshot = _snapshot;
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('积分读取失败', key: Key('points-load-error')),
+            Text(_error is PointsLoadException ? (_error! as PointsLoadException).message : '请稍后重试'),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: _load, child: const Text('重试')),
+          ],
+        ),
+      );
+    }
     if (snapshot == null) {
       return const Center(child: Text('正在读取积分'));
     }

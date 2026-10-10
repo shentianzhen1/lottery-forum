@@ -1,14 +1,14 @@
+import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.auth.service import AuthService
 from app.auth.store import AccountStore
+from app.db import connect
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
 from app.games.selections import SelectionStore
 from app.ledger.service import LedgerService
-import os
-from pathlib import Path
-
 from app.ledger.sqlite_store import SqliteLedgerStore
 
 
@@ -21,16 +21,17 @@ class AppState:
     selections: SelectionStore
 
 
-def build_state() -> AppState:
-    database = Path(os.environ.get("LOTTERY_FORUM_DB", "data/lottery-forum.sqlite"))
+def build_state(database: Path | None = None) -> AppState:
+    database = database or Path(os.environ.get("LOTTERY_FORUM_DB", "data/lottery-forum.sqlite"))
     if database.name != ":memory:":
         database.parent.mkdir(parents=True, exist_ok=True)
-    ledger = LedgerService(SqliteLedgerStore(database))
+    connection = connect(database)
+    ledger = LedgerService(SqliteLedgerStore(connection=connection))
     games = GameRegistry()
     return AppState(
-        AuthService(AccountStore(database), ledger),
+        AuthService(AccountStore(connection=connection), ledger),
         ledger,
         games,
         GameParticipation(games, ledger),
-        SelectionStore(database),
+        SelectionStore(connection=connection),
     )

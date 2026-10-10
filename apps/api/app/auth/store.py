@@ -2,6 +2,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.db import connect
+
 
 @dataclass(frozen=True)
 class Account:
@@ -12,9 +14,8 @@ class Account:
 
 
 class AccountStore:
-    def __init__(self, path: str | Path = ":memory:") -> None:
-        self.connection = sqlite3.connect(path, check_same_thread=False)
-        self.connection.row_factory = sqlite3.Row
+    def __init__(self, path: str | Path = ":memory:", connection: sqlite3.Connection | None = None) -> None:
+        self.connection = connection or connect(path)
         self.connection.executescript(
             """
             create table if not exists accounts (
@@ -25,10 +26,14 @@ class AccountStore:
             );
             create table if not exists sessions (
                 token_hash text primary key,
-                account_id text not null references accounts(account_id)
+                account_id text not null references accounts(account_id),
+                expires_at text not null default ''
             );
             """
         )
+        columns = {row[1] for row in self.connection.execute("pragma table_info(sessions)")}
+        if "expires_at" not in columns:
+            self.connection.execute("alter table sessions add column expires_at text not null default ''")
 
     def create(self, account: Account) -> None:
         self.connection.execute(
@@ -51,21 +56,25 @@ class AccountStore:
         ).fetchone()
         return self._account(row) if row else None
 
-    def save_session(self, token_hash: str, account_id: str) -> None:
+    def save_session(self, token_hash: str, account_id: str, expires_at: str) -> None:
         self.connection.execute(
-            "insert into sessions(token_hash, account_id) values (?, ?)",
-            (token_hash, account_id),
+            "insert into sessions(token_hash, account_id, expires_at) values (?, ?, ?)",
+            (token_hash, account_id, expires_at),
         )
         self.connection.commit()
 
-    def account_for_token(self, token_hash: str) -> Account | None:
+    def delete_session(self, token_hash: str) -> None:
+        self.connection.execute("delete from sessions where token_hash = ?", (token_hash,))
+        self.connection.commit()
+
+    def account_for_token(self, token_hash: str, now: str) -> Account | None:
         row = self.connection.execute(
             """
             select accounts.* from sessions
             join accounts on accounts.account_id = sessions.account_id
-            where sessions.token_hash = ?
+            where sessions.token_hash = ? and sessions.expires_at > ?
             """,
-            (token_hash,),
+            (token_hash, now),
         ).fetchone()
         return self._account(row) if row else None
 

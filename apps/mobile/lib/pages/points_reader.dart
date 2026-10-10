@@ -14,6 +14,12 @@ class PointsSnapshot {
   int get available => balance - frozen;
 }
 
+class PointsLoadException implements Exception {
+  const PointsLoadException(this.message);
+
+  final String message;
+}
+
 abstract class PointsReader {
   Future<PointsSnapshot> load();
 }
@@ -27,15 +33,23 @@ class DisconnectedPointsReader implements PointsReader {
   }
 }
 
+int readPointsField(Map<String, Object?> payload, String key) {
+  final value = payload[key];
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  throw PointsLoadException('积分字段 $key 缺失或不是整数');
+}
+
 PointsSnapshot snapshotFromApi({
   required Map<String, Object?> balance,
   required List<Map<String, Object?>> entries,
 }) {
   return PointsSnapshot(
-    balance: balance['balance'] as int,
-    frozen: balance['frozen'] as int,
+    balance: readPointsField(balance, 'balance'),
+    frozen: readPointsField(balance, 'frozen'),
     entries: [
-      for (final entry in entries) '${entry['direction']} ${entry['amount']} ${entry['reason']}',
+      for (final entry in entries)
+        '${entry['direction']} ${readPointsField(entry, 'amount')} ${entry['reason']}',
     ],
     connected: true,
   );

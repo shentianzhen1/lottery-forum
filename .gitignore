@@ -6,4 +6,7 @@ apps/api/data/
 apps/mobile/.dart_tool/
 apps/mobile/build/
 apps/mobile/.flutter-plugins
-apps/mobile/.flutter-plugins-dependencies
+local.properties
+.env
+*.jks
+key.properties

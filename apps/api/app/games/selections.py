@@ -1,8 +1,11 @@
 import json
 import sqlite3
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
+
+from app.db import connect
 
 
 @dataclass(frozen=True)
@@ -15,10 +18,16 @@ class Selection:
     idempotency_key: str
 
 
+class SelectionConflict(Exception):
+    def __init__(self, code: str, message: str) -> None:
+        self.code = code
+        self.message = message
+
+
 class SelectionStore:
-    def __init__(self, path: str | Path = ":memory:") -> None:
-        self.connection = sqlite3.connect(path, check_same_thread=False)
-        self.connection.row_factory = sqlite3.Row
+    def __init__(self, path: str | Path = ":memory:", connection: sqlite3.Connection | None = None) -> None:
+        self.connection = connection or connect(path)
+        self.lock = threading.RLock()
         self.connection.execute(
             """
             create table if not exists game_selections (
@@ -55,12 +64,55 @@ class SelectionStore:
         self.connection.commit()
         return selection
 
-    def for_account(self, account_id: str, game_id: str) -> list[Selection]:
-        rows = self.connection.execute(
-            "select * from game_selections where account_id = ? and game_id = ? order by rowid",
-            (account_id, game_id),
-        ).fetchall()
-        return [self._selection(row) for row in rows]
+    def save(
+        self,
+        account_id: str,
+        game_id: str,
+        numbers: list[int],
+        pair_count: int,
+        idempotency_key: str,
+    ) -> Selection:
+        with self.lock:
+            existing = self.find(account_id, game_id, idempotency_key)
+            if existing is not None:
+                self._ensure_same(existing, numbers)
+                return existing
+            try:
+                return self.add(account_id, game_id, numbers, pair_count, idempotency_key)
+            except sqlite3.IntegrityError:
+                existing = self.find(account_id, game_id, idempotency_key)
+                if existing is None:
+                    raise
+                self._ensure_same(existing, numbers)
+                return existing
+
+    def for_account(
+        self,
+        account_id: str,
+        game_id: str,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[Selection], int]:
+        limit = min(max(limit, 1), 100)
+        offset = max(offset, 0)
+        with self.lock:
+            total = self.connection.execute(
+                "select count(*) as total from game_selections where account_id = ? and game_id = ?",
+                (account_id, game_id),
+            ).fetchone()["total"]
+            rows = self.connection.execute(
+                """
+                select * from game_selections
+                where account_id = ? and game_id = ?
+                order by rowid limit ? offset ?
+                """,
+                (account_id, game_id, limit, offset),
+            ).fetchall()
+            return [self._selection(row) for row in rows], int(total)
+
+    def _ensure_same(self, existing: Selection, numbers: list[int]) -> None:
+        if existing.numbers != numbers:
+            raise SelectionConflict("IDEMPOTENCY_CONFLICT", "相同幂等键不能保存不同号码")
 
     def _selection(self, row: sqlite3.Row) -> Selection:
         return Selection(

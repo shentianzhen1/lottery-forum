@@ -29,7 +29,7 @@ class RankingPick:
 
 
 class Fujian31Pick:
-    spec = GameSpec("fujian-31", "福建31选7", "number", "0.1.0", True, False)
+    spec = GameSpec("fujian-31", "福建31选7", "number", "0.1.0", True, False, True)
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:
         numbers = payload.get("numbers")

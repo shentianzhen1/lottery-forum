@@ -42,7 +42,7 @@ def test_entry_debits_stake_and_pays_nothing() -> None:
     body = response.json()
     assert body["stake"] == 10
     assert body["payout"] == 0
-    assert body["balance"] == 0
+    assert body["balance"] == 100
 
 
 def test_repeat_entry_does_not_debit_twice() -> None:
@@ -53,12 +53,24 @@ def test_repeat_entry_does_not_debit_twice() -> None:
     first = client.post("/api/v1/games/number-pick/entries", headers=headers, json=payload)
     second = client.post("/api/v1/games/number-pick/entries", headers=headers, json=payload)
     assert first.json()["entry_id"] == second.json()["entry_id"]
-    assert second.json()["balance"] == 10
+    assert second.json()["balance"] == 110
 
 
 def test_entry_requires_points_and_login() -> None:
     assert client.post("/api/v1/games/number-pick/entries", json={"numbers": [1, 2, 3]}).status_code == 401
-    token, _account_id = token_and_account("player-c")
+    token, account_id = token_and_account("player-c")
+    app.state.services.ledger.post(
+        PostRequest(
+            account_id=account_id,
+            direction=Direction.DEBIT,
+            amount=100,
+            reason=Reason.GAME_SETTLEMENT,
+            reference_type="test",
+            reference_id="drain-c",
+            idempotency_key="drain-c",
+            operator_id="system",
+        )
+    )
     response = client.post(
         "/api/v1/games/number-pick/entries",
         headers={"Authorization": f"Bearer {token}"},
