@@ -132,9 +132,9 @@ class _SidePanel extends StatelessWidget {
         SizedBox(height: 12),
         Card(
           child: ListTile(
-            key: Key('apply-moderator'),
-            title: Text('申请版主'),
-            subtitle: Text('审核流程未实现'),
+            key: Key('open-moderator'),
+            title: Text('开通版主'),
+            subtitle: Text('达标即可开通，入口尚未接入'),
           ),
         ),
       ],

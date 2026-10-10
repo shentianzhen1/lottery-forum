@@ -70,7 +70,7 @@ class _AppShellState extends State<AppShell> {
       case 3:
         return const PlaceholderPage(
           title: '版主中心',
-          detail: '达标即可开通的版主流程尚未接入此页。',
+          detail: '达标即可开通，尚未接入开通入口。',
         );
       default:
         return AccountPage(client: _client, onChanged: () => setState(() {}));
