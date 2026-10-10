@@ -7,6 +7,9 @@ void main() {
     await _pumpAt(tester, const Size(1920, 1080));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
     expect(find.text('热门玩法'), findsOneWidget);
+    expect(find.byKey(const Key('announcement-board')), findsOneWidget);
+    expect(find.text('平台公告'), findsOneWidget);
+    expect(find.text('暂无公告'), findsOneWidget);
     expect(find.text('申请版主'), findsOneWidget);
     expect(find.byKey(const Key('points-placeholder')), findsOneWidget);
     expect(find.text('请使用横屏查看首页'), findsNothing);
