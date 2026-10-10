@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-架构、玩法插件、钱包、坐庄、风控和路线图见 `docs/ARCHITECTURE.md`、`docs/LOTTERY_PLUGIN_SPEC.md`、`docs/WALLET_LEDGER.md`、`docs/BANKER_ENGINE.md`、`docs/RISK_ENGINE.md`、`docs/ROADMAP.md`。
+框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`，页面尚未实现。
 
 已实现：
 
