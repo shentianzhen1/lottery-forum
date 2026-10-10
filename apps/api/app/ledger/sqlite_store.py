@@ -10,8 +10,8 @@ class SqliteLedgerStore:
     def __init__(self, path: str | Path = ":memory:") -> None:
         self.connection = sqlite3.connect(path, check_same_thread=False)
         self.connection.row_factory = sqlite3.Row
-        self.lock = threading.Lock()
-        self.in_locked = False
+        self.lock = threading.RLock()
+        self._local = threading.local()
         self.connection.execute("pragma foreign_keys = on")
         self.connection.executescript(
             """
@@ -33,6 +33,9 @@ class SqliteLedgerStore:
                 corrects_entry_id text references points_entries(entry_id),
                 unique (account_id, idempotency_key)
             );
+            create unique index if not exists points_entries_one_correction
+                on points_entries(corrects_entry_id)
+                where corrects_entry_id is not null;
             create table if not exists points_holds (
                 hold_id text primary key,
                 account_id text not null references points_accounts(account_id),
@@ -51,7 +54,7 @@ class SqliteLedgerStore:
             if self.connection.in_transaction:
                 self.connection.commit()
             self.connection.execute("begin immediate")
-            self.in_locked = True
+            self._local.in_locked = True
             try:
                 yield
                 self.connection.commit()
@@ -59,22 +62,39 @@ class SqliteLedgerStore:
                 self.connection.rollback()
                 raise
             finally:
-                self.in_locked = False
+                self._local.in_locked = False
 
     def ensure_account(self, account_id: str) -> None:
         self.connection.execute(
             "insert or ignore into points_accounts(account_id, balance) values (?, 0)",
             (account_id,),
         )
-        if not self.in_locked:
+        if not getattr(self._local, "in_locked", False):
             self.connection.commit()
 
     def balance(self, account_id: str) -> int:
-        row = self.connection.execute(
-            "select balance from points_accounts where account_id = ?",
-            (account_id,),
-        ).fetchone()
-        return int(row["balance"]) if row else 0
+        with self.lock:
+            row = self.connection.execute(
+                "select balance from points_accounts where account_id = ?",
+                (account_id,),
+            ).fetchone()
+            return int(row["balance"]) if row else 0
+
+    def frozen(self, account_id: str) -> int:
+        with self.lock:
+            row = self.connection.execute(
+                "select coalesce(sum(amount), 0) as frozen from points_holds where account_id = ? and status = 'active'",
+                (account_id,),
+            ).fetchone()
+            return int(row["frozen"])
+
+    def entries(self, account_id: str) -> list[Entry]:
+        with self.lock:
+            rows = self.connection.execute(
+                "select * from points_entries where account_id = ? order by rowid",
+                (account_id,),
+            ).fetchall()
+            return [self._entry(row) for row in rows]
 
     def append(self, entry: Entry) -> None:
         delta = entry.amount if entry.direction is Direction.CREDIT else -entry.amount
@@ -103,15 +123,8 @@ class SqliteLedgerStore:
             "update points_accounts set balance = balance + ? where account_id = ?",
             (delta, entry.account_id),
         )
-        if not self.in_locked:
+        if not getattr(self._local, "in_locked", False):
             self.connection.commit()
-
-    def frozen(self, account_id: str) -> int:
-        row = self.connection.execute(
-            "select coalesce(sum(amount), 0) as frozen from points_holds where account_id = ? and status = 'active'",
-            (account_id,),
-        ).fetchone()
-        return int(row["frozen"])
 
     def add_hold(self, hold_id: str, account_id: str, amount: int, idempotency_key: str, operator_id: str) -> None:
         self.connection.execute(
@@ -121,7 +134,7 @@ class SqliteLedgerStore:
             """,
             (hold_id, account_id, amount, idempotency_key, operator_id),
         )
-        if not self.in_locked:
+        if not getattr(self._local, "in_locked", False):
             self.connection.commit()
 
     def find_hold(self, account_id: str, idempotency_key: str) -> sqlite3.Row | None:
@@ -130,12 +143,14 @@ class SqliteLedgerStore:
             (account_id, idempotency_key),
         ).fetchone()
 
-    def release_hold(self, hold_id: str) -> None:
-        self.connection.execute(
+    def release_hold(self, hold_id: str) -> int:
+        cursor = self.connection.execute(
             "update points_holds set status = 'released' where hold_id = ? and status = 'active'",
             (hold_id,),
         )
-        self.connection.commit()
+        if not getattr(self._local, "in_locked", False):
+            self.connection.commit()
+        return cursor.rowcount
 
     def find_hold_by_id(self, hold_id: str) -> sqlite3.Row | None:
         return self.connection.execute(
@@ -143,26 +158,28 @@ class SqliteLedgerStore:
             (hold_id,),
         ).fetchone()
 
-    def entries(self, account_id: str) -> list[Entry]:
-        rows = self.connection.execute(
-            "select * from points_entries where account_id = ? order by rowid",
-            (account_id,),
-        ).fetchall()
-        return [self._entry(row) for row in rows]
-
-    def find_by_idempotency(self, account_id: str, idempotency_key: str) -> Entry | None:
+    def find_correction(self, entry_id: str) -> Entry | None:
         row = self.connection.execute(
-            "select * from points_entries where account_id = ? and idempotency_key = ?",
-            (account_id, idempotency_key),
-        ).fetchone()
-        return self._entry(row) if row else None
-
-    def get(self, entry_id: str) -> Entry | None:
-        row = self.connection.execute(
-            "select * from points_entries where entry_id = ?",
+            "select * from points_entries where corrects_entry_id = ?",
             (entry_id,),
         ).fetchone()
         return self._entry(row) if row else None
+
+    def find_by_idempotency(self, account_id: str, idempotency_key: str) -> Entry | None:
+        with self.lock:
+            row = self.connection.execute(
+                "select * from points_entries where account_id = ? and idempotency_key = ?",
+                (account_id, idempotency_key),
+            ).fetchone()
+            return self._entry(row) if row else None
+
+    def get(self, entry_id: str) -> Entry | None:
+        with self.lock:
+            row = self.connection.execute(
+                "select * from points_entries where entry_id = ?",
+                (entry_id,),
+            ).fetchone()
+            return self._entry(row) if row else None
 
     def _entry(self, row: sqlite3.Row) -> Entry:
         return Entry(

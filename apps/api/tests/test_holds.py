@@ -1,3 +1,5 @@
+import threading
+
 from fastapi.testclient import TestClient
 import pytest
 
@@ -61,7 +63,25 @@ def test_release_restores_available_and_keeps_hold_record() -> None:
     assert service.store.find_hold("user-1", "hold-1")["status"] == "released"
 
 
-def test_balance_endpoint_returns_frozen_amount() -> None:
+def test_concurrent_release_succeeds_once() -> None:
+    service = ledger()
+    hold_id = service.hold("user-1", 20, "hold-1", "system")
+    errors: list[LedgerError] = []
+
+    def release() -> None:
+        try:
+            service.release("user-1", hold_id)
+        except LedgerError as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=release) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert service.frozen("user-1") == 0
+    assert all(error.code == "HOLD_NOT_FOUND" for error in errors)
+    assert len(errors) == 3
     client = TestClient(app)
     registered = client.post("/api/v1/auth/register", json={"username": "hold-user", "password": "secret-pass"})
     token = registered.json()["token"]

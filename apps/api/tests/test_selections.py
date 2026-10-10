@@ -30,3 +30,20 @@ def test_saves_fujian_selection_without_stake_or_payout() -> None:
     listed = client.get("/api/v1/games/fujian-31/selections", headers=headers)
     assert len(listed.json()["selections"]) == 1
     assert app.state.services.ledger.balance(account_id) == 0
+
+
+def test_same_selection_key_with_different_numbers_conflicts() -> None:
+    registered = client.post("/api/v1/auth/register", json={"username": "sel-conflict", "password": "secret-pass"})
+    headers = {"Authorization": f"Bearer {registered.json()['token']}"}
+    client.post(
+        "/api/v1/games/fujian-31/selections",
+        headers=headers,
+        json={"numbers": [1, 2, 3, 4, 5, 6, 7], "idempotency_key": "sel-conflict"},
+    )
+    conflict = client.post(
+        "/api/v1/games/fujian-31/selections",
+        headers=headers,
+        json={"numbers": [8, 9, 10, 11, 12, 13, 14], "idempotency_key": "sel-conflict"},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["code"] == "IDEMPOTENCY_CONFLICT"
