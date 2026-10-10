@@ -47,6 +47,11 @@ class SqliteLedgerStore:
             );
             """
         )
+        columns = {row[1] for row in self.connection.execute("pragma table_info(points_entries)")}
+        if "created_at" not in columns:
+            self.connection.execute(
+                "alter table points_entries add column created_at text not null default ''"
+            )
 
     @contextmanager
     def locked(self):
@@ -102,8 +107,8 @@ class SqliteLedgerStore:
             """
             insert into points_entries (
                 entry_id, account_id, direction, amount, reason, reference_type,
-                reference_id, idempotency_key, operator_id, note, corrects_entry_id
-            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                reference_id, idempotency_key, operator_id, note, corrects_entry_id, created_at
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 entry.entry_id,

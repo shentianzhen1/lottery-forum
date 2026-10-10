@@ -1,9 +1,10 @@
 import logging
 import os
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.routers import auth, games, health, moderator, points, users
 from app.state import build_state
@@ -32,6 +33,16 @@ def create_app() -> FastAPI:
     app.include_router(points.router, prefix="/api/v1")
     app.include_router(games.router, prefix="/api/v1")
     app.include_router(moderator.router, prefix="/api/v1")
+
+    @app.middleware("http")
+    async def request_id(request: Request, call_next):
+        incoming = request.headers.get("x-request-id")
+        request_id_value = incoming or str(uuid.uuid4())
+        request.state.request_id = request_id_value
+        response = await call_next(request)
+        response.headers["x-request-id"] = request_id_value
+        return response
+
     app.state.services = build_state()
     return app
 
