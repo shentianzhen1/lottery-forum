@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`，页面尚未实现。
+积分不能提现或转账，但可以用于玩法赔付和申请版主。边界见 `docs/decisions/2026-10-10-points-boundary.md`。
 
 已实现：
 
