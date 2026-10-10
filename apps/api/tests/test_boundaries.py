@@ -5,10 +5,10 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_moderator_is_explicitly_unimplemented() -> None:
-    response = client.get("/api/v1/moderator/applications")
-    assert response.status_code == 501
-    assert response.json()["detail"]["code"] == "NOT_IMPLEMENTED"
+def test_moderator_open_requires_authentication() -> None:
+    response = client.post("/api/v1/moderator/boards", json={"lottery_id": "fujian-31"})
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "UNAUTHENTICATED"
 
 
 def test_points_and_profile_require_authentication() -> None:
