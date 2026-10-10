@@ -51,9 +51,10 @@ class ApiClient {
 }
 
 class ApiPointsReader implements PointsReader {
-  ApiPointsReader(this.client);
+  ApiPointsReader(this.client, {this.includeEntries = true});
 
   final ApiClient client;
+  final bool includeEntries;
 
   @override
   Future<PointsSnapshot> load() async {
@@ -61,6 +62,9 @@ class ApiPointsReader implements PointsReader {
       throw const PointsLoadException('需要登录');
     }
     final balance = await client.getJson('/api/v1/points/balance');
+    if (!includeEntries) {
+      return snapshotFromApi(balance: balance, entries: const []);
+    }
     final entriesBody = await client.getJson('/api/v1/points/entries');
     final rows = entriesBody['entries'];
     return snapshotFromApi(
