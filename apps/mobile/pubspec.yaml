@@ -1,5 +1,5 @@
 name: lottery_forum
-description: 彩票论坛横屏客户端骨架。版主为达标自助开通，客户端开通入口尚未接入。
+description: 彩票论坛横屏客户端骨架。版主为达标自助开通，客户端已接开通入口。
 publish_to: none
 version: 0.1.0+1
 
