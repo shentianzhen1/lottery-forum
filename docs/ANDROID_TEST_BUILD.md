@@ -1,26 +1,12 @@
 # Android 横屏测试包
 
-状态：构建步骤。本环境没有 Flutter，仓库里也还没有生成 APK。
+状态：Android 平台文件已生成。本环境没有 Android SDK，所以还没有 APK。
 
 ## 准备
 
-```bash
-cd apps/mobile
-flutter pub get
-flutter create --platforms=android .
-```
+Android 平台文件已在 `apps/mobile/android`。测试包默认横屏：`android:screenOrientation="sensorLandscape"`。
 
-`flutter create` 只补 Android 平台文件，不覆盖 `lib/`。
-
-## 横屏
-
-在 `android/app/src/main/AndroidManifest.xml` 的 `activity` 上设置：
-
-```xml
-android:screenOrientation="sensorLandscape"
-```
-
-这只锁定测试包方向。主要页面仍以横屏布局验收，不能靠旋转代替。
+需要本机安装 Flutter 和 Android SDK。
 
 ## 构建
 
