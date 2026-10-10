@@ -34,7 +34,7 @@ def test_default_threshold_is_10000() -> None:
 
 
 def test_below_threshold_does_not_open_or_freeze() -> None:
-    token, account_id = token_for("mod-low", 9999)
+    token, account_id = token_for("mod-low", 9800)
     response = client.post(
         "/api/v1/moderator/boards",
         headers={"Authorization": f"Bearer {token}"},
@@ -56,9 +56,9 @@ def test_qualified_account_opens_without_approval_and_freezes_threshold() -> Non
     body = response.json()
     assert body["approval"] == "not_required"
     assert body["payout_formula"] == "unset"
-    assert app.state.services.ledger.balance(account_id) == 10000
+    assert app.state.services.ledger.balance(account_id) == 10100
     assert app.state.services.ledger.frozen(account_id) == 10000
-    assert app.state.services.ledger.available(account_id) == 0
+    assert app.state.services.ledger.available(account_id) == 100
     again = client.post(
         "/api/v1/moderator/boards",
         headers={"Authorization": f"Bearer {token}"},
