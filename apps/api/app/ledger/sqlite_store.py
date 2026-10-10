@@ -1,4 +1,6 @@
 import sqlite3
+import threading
+from contextlib import contextmanager
 from pathlib import Path
 
 from app.ledger.model import Direction, Entry, Reason
@@ -8,6 +10,8 @@ class SqliteLedgerStore:
     def __init__(self, path: str | Path = ":memory:") -> None:
         self.connection = sqlite3.connect(path, check_same_thread=False)
         self.connection.row_factory = sqlite3.Row
+        self.lock = threading.Lock()
+        self.in_locked = False
         self.connection.execute("pragma foreign_keys = on")
         self.connection.executescript(
             """
@@ -41,12 +45,29 @@ class SqliteLedgerStore:
             """
         )
 
+    @contextmanager
+    def locked(self):
+        with self.lock:
+            if self.connection.in_transaction:
+                self.connection.commit()
+            self.connection.execute("begin immediate")
+            self.in_locked = True
+            try:
+                yield
+                self.connection.commit()
+            except Exception:
+                self.connection.rollback()
+                raise
+            finally:
+                self.in_locked = False
+
     def ensure_account(self, account_id: str) -> None:
         self.connection.execute(
             "insert or ignore into points_accounts(account_id, balance) values (?, 0)",
             (account_id,),
         )
-        self.connection.commit()
+        if not self.in_locked:
+            self.connection.commit()
 
     def balance(self, account_id: str) -> int:
         row = self.connection.execute(
@@ -57,32 +78,33 @@ class SqliteLedgerStore:
 
     def append(self, entry: Entry) -> None:
         delta = entry.amount if entry.direction is Direction.CREDIT else -entry.amount
-        with self.connection:
-            self.connection.execute(
-                """
-                insert into points_entries (
-                    entry_id, account_id, direction, amount, reason, reference_type,
-                    reference_id, idempotency_key, operator_id, note, corrects_entry_id
-                ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    entry.entry_id,
-                    entry.account_id,
-                    entry.direction.value,
-                    entry.amount,
-                    entry.reason.value,
-                    entry.reference_type,
-                    entry.reference_id,
-                    entry.idempotency_key,
-                    entry.operator_id,
-                    entry.note,
-                    entry.corrects_entry_id,
-                ),
-            )
-            self.connection.execute(
-                "update points_accounts set balance = balance + ? where account_id = ?",
-                (delta, entry.account_id),
-            )
+        self.connection.execute(
+            """
+            insert into points_entries (
+                entry_id, account_id, direction, amount, reason, reference_type,
+                reference_id, idempotency_key, operator_id, note, corrects_entry_id
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                entry.entry_id,
+                entry.account_id,
+                entry.direction.value,
+                entry.amount,
+                entry.reason.value,
+                entry.reference_type,
+                entry.reference_id,
+                entry.idempotency_key,
+                entry.operator_id,
+                entry.note,
+                entry.corrects_entry_id,
+            ),
+        )
+        self.connection.execute(
+            "update points_accounts set balance = balance + ? where account_id = ?",
+            (delta, entry.account_id),
+        )
+        if not self.in_locked:
+            self.connection.commit()
 
     def frozen(self, account_id: str) -> int:
         row = self.connection.execute(
@@ -99,7 +121,8 @@ class SqliteLedgerStore:
             """,
             (hold_id, account_id, amount, idempotency_key, operator_id),
         )
-        self.connection.commit()
+        if not self.in_locked:
+            self.connection.commit()
 
     def find_hold(self, account_id: str, idempotency_key: str) -> sqlite3.Row | None:
         return self.connection.execute(
