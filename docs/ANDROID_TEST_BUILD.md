@@ -1,12 +1,32 @@
 # Android 横屏测试包
 
-状态：Android 平台文件已生成。本环境没有 Android SDK，所以还没有 APK。
+状态：Android 平台文件已在 `main`。仓库里没有 APK。本环境安装了命令行 SDK，但 Gradle 进程中途退出，仍未生成包。
 
-## 准备
+## 配置 Android SDK
 
-Android 平台文件已在 `apps/mobile/android`。测试包默认横屏：`android:screenOrientation="sensorLandscape"`。
+安装 Android Studio 后，在 Android SDK 设置里勾选：
 
-需要本机安装 Flutter 和 Android SDK。
+- Android SDK Platform，近期版本即可，例如 API 35。
+- Android SDK Platform-Tools。
+- Android SDK Build-Tools。
+- Android SDK Command-line Tools。
+
+然后：
+
+```bash
+flutter config --android-sdk "$HOME/Library/Android/sdk"
+flutter doctor --android-licenses
+flutter doctor
+```
+
+Linux 常见路径是 `~/Android/Sdk`，Windows 是 `%LOCALAPPDATA%\Android\Sdk`。`flutter doctor` 的 Android toolchain 通过后再构建。
+
+也可以设置：
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$ANDROID_HOME/platform-tools:$PATH"
+```
 
 ## 构建
 
