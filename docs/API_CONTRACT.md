@@ -15,7 +15,7 @@
 - `POST /games/{game_id}/validate`
 - `POST /games/{game_id}/entries`：只对临时示例扣固定 10 积分，不派奖。`fujian-31` 返回 `STAKE_DISABLED`
 
-没有 `POST /points/transfer`、充值或提现路径。
+没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账。申请版主只冻结积分，不转给其他用户。
 
 ## 预定但未实现
 
