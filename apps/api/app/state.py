@@ -10,6 +10,8 @@ from app.games.registry import GameRegistry
 from app.games.selections import SelectionStore
 from app.ledger.service import LedgerService
 from app.ledger.sqlite_store import SqliteLedgerStore
+from app.moderator.service import ModeratorService
+from app.moderator.store import ModeratorStore
 
 
 @dataclass
@@ -19,6 +21,7 @@ class AppState:
     games: GameRegistry
     participation: GameParticipation
     selections: SelectionStore
+    moderator: ModeratorService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -34,4 +37,5 @@ def build_state(database: Path | None = None) -> AppState:
         games,
         GameParticipation(games, ledger),
         SelectionStore(connection=connection),
+        ModeratorService(ModeratorStore(connection=connection), ledger),
     )
