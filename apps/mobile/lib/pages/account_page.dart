@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
-import '../api/session.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({required this.client, required this.onChanged, super.key});
