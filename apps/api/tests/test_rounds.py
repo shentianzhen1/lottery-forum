@@ -106,7 +106,7 @@ def test_reject_skip_backwards_and_illegal_from_settling() -> None:
 
     client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(admin_token()))
     client.post(f"/api/v1/rounds/{round_id}/settling", headers=auth(admin_token()))
-    # no path to SETTLED / cannot draw again from SETTLING
+    # cannot draw / settling again from SETTLING; SETTLED is a separate admin finalize path
     redraw = client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(admin_token()))
     assert redraw.status_code == 400
     assert redraw.json()["detail"]["code"] == "INVALID_TRANSITION"
@@ -122,6 +122,7 @@ def test_unauthorized_without_token() -> None:
     assert client.post("/api/v1/rounds/missing/close").status_code == 401
     assert client.post("/api/v1/rounds/missing/draw").status_code == 401
     assert client.post("/api/v1/rounds/missing/settling").status_code == 401
+    assert client.post("/api/v1/rounds/missing/settled").status_code == 401
 
 
 def test_missing_round_returns_not_found() -> None:

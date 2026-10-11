@@ -8,12 +8,14 @@ Permissions (版主归属期号与权限):
 - The permission check runs before any existence check, so a non-admin who does not own the
   target gets 403 even when the round/board does not exist (no existence leak).
 - Settlements stay admin-only (see routers/settlements.py).
+- POST /rounds/{id}/settled: admin only. Applies VOID/LOSS ledger effects then SETTLING→SETTLED.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.service import ADMIN_ROLE
-from app.routers.auth import current_account
+from app.routers.auth import current_account, require_admin
 from app.rounds.service import RoundError
+from app.settlements.service import SettlementError
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
@@ -112,3 +114,23 @@ def settling_round(
     round_id: str, request: Request, account: object = Depends(current_account)
 ) -> dict[str, object]:
     return _advance(request, round_id, account, "settling")
+
+
+@router.post("/{round_id}/settled")
+def settled_round(
+    round_id: str,
+    request: Request,
+    account: object = Depends(require_admin),
+) -> dict[str, object]:
+    """Admin-only: finalize VOID/LOSS and advance SETTLING → SETTLED."""
+    try:
+        return request.app.state.services.settlements.finalize(
+            round_id, operator_id=account.account_id  # type: ignore[attr-defined]
+        )
+    except SettlementError as error:
+        status = 404 if error.code in {"ROUND_NOT_FOUND", "BOARD_NOT_FOUND", "BET_NOT_FOUND"} else 400
+        raise HTTPException(
+            status_code=status, detail={"code": error.code, "message": error.message}
+        ) from error
+    except RoundError as error:
+        _raise_round(error)

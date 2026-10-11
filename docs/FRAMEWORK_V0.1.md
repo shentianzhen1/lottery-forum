@@ -19,9 +19,9 @@
 - Wallet / Ledger：追加式积分账本、幂等和冻结已有。默认存储是 SQLite。
 - Lottery：福建 31 选 7 等示例玩法已登记选号校验；没有独立彩种配置对象。
 - Play：数字选号、排名竞猜和福建 31 选 7 是示例插件；`stake_enabled` 玩法可走投注冻结占位。
-- Round：骨架已实现到 `SETTLING`。可创建/查询，单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING`；可挂 `board_id`（彩种须与版块一致）。推进权限：管理员，或该版块版主；无 `board_id` 的旧期号仅管理员。尚无 `SETTLED`、无开奖号码落库。
-- Bet：骨架已实现到 `ACCEPTED`。挂 `OPEN` 期号，校验→记录→冻结占位（固定 10 积分）；`odds_snapshot` 为 `unset` 占位。数字选号与福建 31 选 7 客户端已接投注；不取消、不派奖。
-- Settlement：骨架已实现。`SETTLING` 期可落 `WIN`/`LOSS`/`VOID` 记录；**不写派奖分录、不扣版主冻结池、不改余额**。写结算仅管理员。
+- Round：骨架已实现到 `SETTLED`。可创建/查询，单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`；可挂 `board_id`（彩种须与版块一致）。推进到结算中：管理员或该版块版主；进已结算仅管理员。无开奖号码落库。
+- Bet：骨架已实现到 `ACCEPTED`，finalize 后 VOID/LOSS 进 `SETTLED`。挂 `OPEN` 期号，校验→记录→冻结占位（固定 10 积分）；`odds_snapshot` 为 `unset` 占位。数字选号与福建 31 选 7 客户端已接投注；不取消；`WIN` 不派奖。
+- Settlement：已实现。`SETTLING` 期可落 `WIN`/`LOSS`/`VOID` 记录；`POST /rounds/{id}/settled` 对 VOID/LOSS 入账并进 `SETTLED`；有 `WIN` 则挡。`WIN` 派奖与冻结池扣付未做。写结算与 finalize 仅管理员。
 - ModeratorBoard：达标自助开通已实现（API + 客户端入口，无需人工审核）；门槛冻结已有。坐庄会话 / 赔付公式未实现。
 - Risk：未实现。
 
@@ -31,15 +31,15 @@
 
 ## 4. 通用钱包框架
 
-已有余额投影、分录、冻结、解除冻结和幂等键。没有独立事务对象。版主开通门槛冻结已接入；真实派奖分录与版主赔付扣付尚未开放。
+已有余额投影、分录、冻结、解除冻结和幂等键。没有独立事务对象。版主开通门槛冻结已接入；LOSS 划入版主钱包已开放；`WIN` 派奖与冻结池扣付尚未开放。
 
 ## 5. 投注框架
 
-已有校验、投注单记录、冻结占位与幂等。赔率快照与冻结分存（本片 `unset`）。生命周期做到 `ACCEPTED`；取消与推进到 `LOCKED`/`SETTLED` 未开放。
+已有校验、投注单记录、冻结占位与幂等。赔率快照与冻结分存（本片 `unset`）。生命周期做到 `ACCEPTED`，finalize 后 VOID/LOSS 进 `SETTLED`；取消与 `LOCKED` 未开放。
 
 ## 6. 期号框架
 
-已实现到 `SETTLING`。状态机：`UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`（末态仅预留）。关闭后不能新增投注。开奖结果写入与真实派奖未做。
+已实现到 `SETTLED`。状态机：`UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`。关闭后不能新增投注。开奖结果写入与 `WIN` 真派奖未做。
 
 ## 7. 坐庄框架
 
@@ -51,4 +51,4 @@
 
 ## 当前顺序
 
-对照 `docs/ROADMAP.md` / `docs/BACKLOG.md`：期号、投注冻结占位、Settlement 骨架、结算权限与版主归属已进 main。下一步是真实派奖/版主赔付链（进入 `SETTLED`）等，不跳到现金投注或 Redis。PostgreSQL 有实际库服务后再接。
+对照 `docs/ROADMAP.md` / `docs/BACKLOG.md`：期号到 `SETTLED`（VOID/LOSS）、投注冻结占位、Settlement、结算权限与版主归属已进 main。下一步是 `WIN` 真派奖/版主冻结池扣付等，不跳到现金投注或 Redis。PostgreSQL 有实际库服务后再接。

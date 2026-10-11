@@ -94,3 +94,18 @@ class BetStore:
             ),
         )
         self.connection.commit()
+
+    def list_for_round(self, round_id: str) -> list[sqlite3.Row]:
+        return self.connection.execute(
+            "select * from bets where round_id = ? order by rowid",
+            (round_id,),
+        ).fetchall()
+
+    def set_status(self, bet_id: str, status: str) -> None:
+        if status not in ALLOWED_STATUSES:
+            raise ValueError(f"invalid bet status: {status}")
+        self.connection.execute(
+            "update bets set status = ? where bet_id = ?",
+            (status, bet_id),
+        )
+        self.connection.commit()

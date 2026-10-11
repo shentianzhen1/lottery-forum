@@ -90,6 +90,17 @@ class LedgerService:
             if self.store.release_hold(hold_id) != 1:
                 raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
 
+    def release_if_active(self, account_id: str, hold_id: str) -> None:
+        """Release an active hold; no-op if already released (idempotent settle retry)."""
+        with self.store.locked():
+            row = self.store.find_hold_by_id(hold_id)
+            if row is None or row["account_id"] != account_id:
+                raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
+            if row["status"] != "active":
+                return
+            if self.store.release_hold(hold_id) != 1:
+                raise LedgerError("HOLD_NOT_FOUND", "没有可解除的冻结")
+
     def entries(self, account_id: str) -> list[Entry]:
         return self.store.entries(account_id)
 

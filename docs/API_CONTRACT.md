@@ -11,6 +11,7 @@
 | `POST /rounds`（不带 `board_id`） | ✓（旧期号，无归属） | 403 | 403 |
 | `POST /rounds`（带 `board_id`） | ✓ 任意版块 | ✓ 仅自己的版块 | 403 |
 | `POST /rounds/{id}/open` / `close` / `draw` / `settling` | ✓ | ✓ 仅自己版块的期号 | 403 |
+| `POST /rounds/{id}/settled`（finalize VOID/LOSS） | ✓ | 403 | 403 |
 | 上述推进，期号 `board_id` 为空（旧期号） | ✓ | 403 | 403 |
 | `POST /settlements/{round_id}` | ✓ | **403** | 403 |
 | `GET /rounds`、`GET /rounds/{id}`、`GET /settlements/{id}`、`POST /bets` | ✓ | ✓ | ✓ |
@@ -42,7 +43,7 @@
 
 ## 产品口径：版主赔付
 
-该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付 / 非平台现金出账）。`payout_formula` 仍为 `unset`；本片只推进期号到 `SETTLING` 并可落 `WIN`/`LOSS`/`VOID` 结算记录，**不写派奖分录、不扣版主冻结池**。真实扣付与赔率公式见 `docs/BACKLOG.md`。
+该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付 / 非平台现金出账）。`payout_formula` 仍为 `unset`。本片可推进到 `SETTLED`：`VOID` 解冻退回玩家，`LOSS` 核销冻结并把注额划入期号 `board_id` 所属版主钱包；**`WIN` 仍不派奖**（有 `WIN` 时拒绝进 `SETTLED`）。见下方 `POST /rounds/{id}/settled`。
 
 ## 已实现
 
@@ -63,19 +64,27 @@
 - `POST /rounds/{round_id}/open`：管理员或该期所属版块版主（旧期号仅管理员）。仅 `UPCOMING` → `OPEN`；非法跳转返回 `INVALID_TRANSITION`
 - `POST /rounds/{round_id}/close`：管理员或该期所属版块版主（旧期号仅管理员）。仅 `OPEN` → `CLOSED`；非法跳转返回 `INVALID_TRANSITION`
 - `POST /rounds/{round_id}/draw`：管理员或该期所属版块版主（旧期号仅管理员）。仅 `CLOSED` → `DRAWN`（已开奖）；非法跳转返回 `INVALID_TRANSITION`
-- `POST /rounds/{round_id}/settling`：管理员或该期所属版块版主（旧期号仅管理员）。仅 `DRAWN` → `SETTLING`（结算中）；非法跳转返回 `INVALID_TRANSITION`；本片不停在 `SETTLED`
+- `POST /rounds/{round_id}/settling`：管理员或该期所属版块版主（旧期号仅管理员）。仅 `DRAWN` → `SETTLING`（结算中）；非法跳转返回 `INVALID_TRANSITION`
+- `POST /rounds/{round_id}/settled`：**仅管理员**。`SETTLING` → `SETTLED`，并按结算结果入账：
+  - 期号下每笔投注都必须已有结算记录，否则 400 `SETTLEMENT_INCOMPLETE`
+  - 存在任意 `WIN` → 400 `PAYOUT_FORMULA_UNSET`（赔付公式未定，本片不派奖），期号保持 `SETTLING`
+  - 存在任意 `LOSS` 且期号 `board_id` 为空 → 400 `BOARD_REQUIRED`
+  - `VOID`：解除玩家冻结（积分退回可用），投注标 `SETTLED`
+  - `LOSS`：解除玩家冻结，借记玩家注额、贷记版主钱包（`game_settlement` 分录，幂等键 `loss-debit:{bet_id}` / `loss-credit:{bet_id}`），投注标 `SETTLED`
+  - 已是 `SETTLED` 时幂等返回原状态；不重复解冻/记账
+  - 非管理员（含该版块版主）403 `FORBIDDEN`
 - `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"unset"}`，不派奖。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；未开放投注冻结的玩法返回 `STAKE_DISABLED`（当前示例玩法均已开放：`number-pick` / `ranking-pick` / `fujian-31`）
 - `GET /bets/{bet_id}`：仅本人投注；不存在返回 `BET_NOT_FOUND`
-- `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**不写派奖分录、不改余额/冻结、不推进投注到 `SETTLED`**。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。**仅管理员**（非管理员 403 `FORBIDDEN`，**包括该版块版主**——版主是赔付方，不能自己判结果）
+- `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**本接口仍不改余额/冻结、不推进投注状态**（入账在 `POST /rounds/{id}/settled`）。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。**仅管理员**（非管理员 403 `FORBIDDEN`，**包括该版块版主**——版主是赔付方，不能自己判结果）
 - `GET /settlements/{round_id}`：返回该期已落结算记录列表
 - `GET /home/banners`：只读；无需登录。返回 `{"banners":[…]}`，字段 `id`/`title`/`subtitle`/`image_key`/`sort_order`/`enabled`；仅 `enabled`，按 `sort_order` 升序，最多 5 条；空列表时客户端不占位
 - `GET /home/announcements`：只读；无需登录。返回 `{"announcements":[…]}`，字段 `id`/`title`/`body`/`published_at`/`pinned`；置顶优先、再按 `published_at` 倒序，最多 4 条；空列表时客户端显示「暂无公告」
 
 没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账（真实派奖尚未实现）。开通版主达到后台门槛后冻结积分，不需要人工批准；冻结不是转账。默认门槛是 10000 积分。
 
-本片期号状态机可演示到 `SETTLING`。不提供进入 `SETTLED` 的推进，也不做真实派奖。
+本片期号状态机可演示到 `SETTLED`（仅管理员 finalize）。`WIN` 真派奖仍未开放。
 
-本片投注生命周期仍只做到 `ACCEPTED` + 冻结占位。不提供 `cancel`；结算记录不推进投注状态。
+本片投注生命周期在 finalize 后可到 `SETTLED`（VOID/LOSS）。不提供 `cancel`；`WIN` 投注在挡 `SETTLED` 前仍为 `ACCEPTED`。
 
 ### 期号状态（API 枚举 / 中文展示）
 
@@ -88,7 +97,7 @@
 | `SETTLING` | 结算中 |
 | `SETTLED` | 已结算 |
 
-客户端展示用中文，不直接显示英文码。本片可演示：`UPCOMING`（未开售）→ `OPEN`（销售中）→ `CLOSED`（已截止）→ `DRAWN`（已开奖）→ `SETTLING`（结算中）。`SETTLED`（已结算）仅预留枚举，尚无推进接口。
+客户端展示用中文，不直接显示英文码。本片可演示：`UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`（最后一步仅管理员，且受 VOID/LOSS/WIN 规则约束）。
 
 ### 投注状态（API 枚举 / 中文展示）
 
@@ -102,7 +111,7 @@
 | `CANCELLED` | 已取消 |
 | `REFUNDED` | 已退回 |
 
-客户端展示用中文，不直接显示英文码。本片成功投注落在 `ACCEPTED`（已受理）并冻结占位；`LOCKED` / `SETTLED` 及取消、退回尚未开放。
+客户端展示用中文，不直接显示英文码。本片成功投注落在 `ACCEPTED`（已受理）并冻结占位；`POST /rounds/{id}/settled` 后 VOID/LOSS 投注进 `SETTLED`。`LOCKED`、取消、退回及 `WIN` 派奖尚未开放。
 
 ### 结算结果（API 枚举 / 中文展示）
 
@@ -112,7 +121,7 @@
 | `LOSS` | 未中 |
 | `VOID` | 作废 |
 
-本片只落记录，不触发派奖分录。
+落记录本身不入账；进入 `SETTLED` 时才对 `VOID`/`LOSS` 解冻与记账。`WIN` 仍不派奖。
 
 ### 投注提示文案
 
@@ -133,7 +142,7 @@
 ## 预定但未实现
 
 - `GET /lotteries`、`GET /lotteries/{lottery_id}`
-- 进入 `SETTLED` 的期号推进、真实派奖分录、版主冻结池扣付
+- `WIN` 真实派奖分录、版主冻结池扣付（`payout_formula` 仍 unset；`SETTLED` 的 VOID/LOSS 路径已开放）
 - `POST /bets/{bet_id}/cancel`：只允许 `OPEN` 期号内、未锁定的投注
 - `POST /banker/sessions`、`GET /banker/sessions/me`
 - `POST /banker/offers`：保存积分赔率快照，不接收现金金额
@@ -142,4 +151,4 @@
 
 ## 状态约束
 
-期号关闭后，`POST /bets` 必须返回 `ROUND_CLOSED`。重复幂等键返回原记录，不能重复冻结或扣分。结算只追加分录（真实派奖尚未开放）。版主开通不需要审批；不能设置后台门槛或改其他版主的配置。
+期号关闭后，`POST /bets` 必须返回 `ROUND_CLOSED`。重复幂等键返回原记录，不能重复冻结或扣分。结算记录只追加；finalize 时 VOID/LOSS 写账本分录且须幂等。`WIN` 真派奖尚未开放。版主开通不需要审批；不能设置后台门槛或改其他版主的配置。
