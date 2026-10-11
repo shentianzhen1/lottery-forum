@@ -65,3 +65,11 @@ class ModeratorStore:
             "select * from moderator_boards where account_id = ? order by rowid",
             (account_id,),
         ).fetchall()
+
+    def board_id_for_lottery(self, lottery_id: str) -> str | None:
+        """First open board for this lottery, if any (used by local OPEN-round seed)."""
+        row = self.connection.execute(
+            "select board_id from moderator_boards where lottery_id = ? order by rowid limit 1",
+            (lottery_id,),
+        ).fetchone()
+        return str(row["board_id"]) if row is not None else None

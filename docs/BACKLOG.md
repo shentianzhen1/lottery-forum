@@ -15,7 +15,7 @@
 - **取消投注**：`POST /bets/{bet_id}/cancel`（仅 `OPEN` 期内、未锁定）未开放。
 - ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；本片不派奖。
 - ~~**结算权限收口（管理员）**~~：期号创建/推进与写结算已限 `role=admin`，越权 403 `FORBIDDEN`；管理员来自 `LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子，注册不能自封。
-- ~~**版主归属期号与权限**~~：期号挂 `board_id`（归属开设该版块的版主，彩种须一致）；该版块版主可建号并推进自己版块的期号，旧期号（无 `board_id`）仅管理员；写结算仍只限管理员（版主是赔付方）；管理员保留全部权限。本地造版主用 `LOTTERY_FORUM_DEV_SEED_MODERATORS` 启动种子（默认关闭）。
+- ~~**版主归属期号与权限**~~：期号挂 `board_id`（归属开设该版块的版主，彩种须一致）；该版块版主可建号并推进自己版块的期号，旧期号（无 `board_id`）仅管理员；写结算仍只限管理员（版主是赔付方）；管理员保留全部权限。本地造版主用 `LOTTERY_FORUM_DEV_SEED_MODERATORS` 启动种子（默认关闭）；本地造 OPEN 期用 `LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS`（默认关闭）。
 - **版主写结算 / 结算复核**：如需让版主参与结算，须有独立复核（版主是赔付方，不能自判）；当前不做。
 - ~~**派奖第一刀（VOID/LOSS → SETTLED）**~~：已开放管理员 `POST /rounds/{id}/settled`；`VOID` 解冻退回、`LOSS` 划入版主钱包。
 - ~~**WIN 派奖最小可跑版（固定 2 倍）**~~：`odds_snapshot` 写 `{"status":"fixed","multiplier":2}`；finalize 时 `WIN` 解冻后从版主可用付盈利 `stake×(倍率−1)`（连本带利共倍率倍）；不足整期挡 `INSUFFICIENT_MODERATOR_POINTS`；判断可用不算同批 LOSS；门槛冻结池不动。

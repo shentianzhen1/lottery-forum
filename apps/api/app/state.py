@@ -17,6 +17,7 @@ from app.ledger.sqlite_store import SqliteLedgerStore
 from app.moderator.dev_seed import seed_moderators_from_env
 from app.moderator.service import ModeratorService
 from app.moderator.store import ModeratorStore
+from app.rounds.dev_seed import seed_open_rounds_from_env
 from app.rounds.service import RoundService
 from app.rounds.store import RoundStore
 from app.settlements.service import SettlementService
@@ -55,6 +56,9 @@ def build_state(database: Path | None = None) -> AppState:
     auth = AuthService(AccountStore(connection=connection), ledger)
     # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_MODERATORS is set.
     seed_moderators_from_env(auth, ledger, moderator)
+    # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS is set.
+    # Runs after moderator seed so existing boards can be attached.
+    seed_open_rounds_from_env(rounds, moderator_store)
     return AppState(
         auth,
         ledger,

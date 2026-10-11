@@ -95,4 +95,17 @@ curl -s -X POST localhost:8000/api/v1/rounds/<round_id>/close -H "Authorization:
 
 版主能建号、开售、截止、开奖、进结算中，但**写结算（`POST /settlements/{round_id}`）仍只限管理员**。可与 `LOTTERY_FORUM_ADMIN_USERNAMES` 同时设置。种子密码可用 `LOTTERY_FORUM_DEV_SEED_PASSWORD` 改。
 
+### 本地演示：启动时直接造 OPEN 期
+
+不想手搓 curl 开期时，可用启动种子（**仅限本地/测试，线上不要设**；不设就什么都不发生）：
+
+```bash
+# 给 demo-digit、fujian-31 各造一期 OPEN；可与版主种子一起开
+LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS=1 \
+LOTTERY_FORUM_DEV_SEED_MODERATORS=alice:fujian-31,bob:demo-digit \
+  uvicorn app.main:app --app-dir apps/api --reload
+```
+
+同彩种已有 `OPEN` 则跳过（重启幂等）。有版主版块时会挂上 `board_id`；没有则 `board_id` 为空（仍可下单，派奖需带版块）。详见 `docs/API_CONTRACT.md`。
+
 不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。
