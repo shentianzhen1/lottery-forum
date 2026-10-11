@@ -1,13 +1,13 @@
 # 架构
 
-状态：Framework V0.1 规划。未实现的组件不能当成已部署。
+状态：与 main 对齐的 Framework V0.1 边界。未实现的组件不能当成已部署。
 
 ## 分层
 
 - Flutter Android 优先，iOS 只预留目录和响应式布局，不依赖 Android 专有接口。
 - FastAPI 模块化单体提供 `/api/v1`。
 - 领域模块按用户、钱包、彩种、玩法、期号、投注、结算、版主、风控和管理拆分。
-- PostgreSQL 是目标数据库。当前默认存储是 SQLite 文件，连接代码尚未进入 `main`。
+- PostgreSQL 是目标数据库。当前默认存储是 SQLite 文件，连接代码尚未进入 `main`（见 PR #10）。
 - Redis 和 WebSocket 未引入。只在缓存、限流或实时推送需求明确后加入。
 - Docker Compose 和 GitHub Actions 用于本地依赖和 CI。本环境没有跑过 Docker。
 
@@ -17,4 +17,8 @@
 
 ## 当前实现边界
 
-已有健康检查、注册登录、积分账本、冻结、玩法校验和横屏骨架。没有期号状态机、投注生命周期、结算、版主市场、管理后台或 APK。
+已有：健康检查、注册登录、积分账本与冻结、玩法校验、横屏骨架、首页横幅/公告只读、版主达标自助开通（含客户端入口）、期号状态机到 `SETTLING`（可挂 `board_id`）、投注骨架到 `ACCEPTED`（冻结占位）、Settlement 骨架（`WIN`/`LOSS`/`VOID`，不写派奖分录）。
+
+权限：管理员可创建/推进任意期号并写结算；该版块版主可对本版块期号建号并推进到 `SETTLING`；写结算仅管理员（版主是赔付方）。产品口径：下注由开设该版块的版主赔付；`payout_formula` 仍 `unset`，真实扣付未做。
+
+没有：进入 `SETTLED`、真实派奖/版主冻结池扣付、坐庄引擎与赔付公式、管理后台、PostgreSQL 连接、真机横屏验收。细节以 `docs/API_CONTRACT.md`、`docs/DOMAIN_MODEL.md`、`docs/BACKLOG.md` 为准。
