@@ -4,6 +4,7 @@ import '../api/api_client.dart';
 import '../api/api_config.dart';
 import '../api/session.dart';
 import '../pages/account_page.dart';
+import '../api/home_feed_api.dart';
 import '../pages/home_page.dart';
 import '../pages/moderator_page.dart';
 import '../pages/play_center_page.dart';
@@ -64,6 +65,7 @@ class _AppShellState extends State<AppShell> {
           landscapeReady: landscapeReady,
           loggedIn: loggedIn,
           reader: ApiPointsReader(_client, includeEntries: false),
+          feed: ApiHomeFeed(_client),
           onGoToAccount: () => setState(() => _index = 4),
           onGoToModerator: () => setState(() => _index = 3),
         );

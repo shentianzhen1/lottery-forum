@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'home_feed.dart';
 import 'points_reader.dart';
 
 class HomePage extends StatelessWidget {
@@ -7,6 +8,7 @@ class HomePage extends StatelessWidget {
     required this.landscapeReady,
     this.loggedIn = false,
     this.reader = const DisconnectedPointsReader(),
+    this.feed = const EmptyHomeFeed(),
     this.onGoToAccount,
     this.onGoToModerator,
     super.key,
@@ -15,6 +17,7 @@ class HomePage extends StatelessWidget {
   final bool landscapeReady;
   final bool loggedIn;
   final PointsReader reader;
+  final HomeFeed feed;
   final VoidCallback? onGoToAccount;
   final VoidCallback? onGoToModerator;
 
@@ -36,7 +39,7 @@ class HomePage extends StatelessWidget {
         key: const Key('home-landscape-columns'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Expanded(flex: 5, child: _MainColumn()),
+          Expanded(flex: 5, child: _MainColumn(feed: feed)),
           const SizedBox(width: 20),
           SizedBox(
             width: 280,
@@ -53,33 +56,143 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _MainColumn extends StatelessWidget {
-  const _MainColumn();
+class _MainColumn extends StatefulWidget {
+  const _MainColumn({required this.feed});
+
+  final HomeFeed feed;
+
+  @override
+  State<_MainColumn> createState() => _MainColumnState();
+}
+
+class _MainColumnState extends State<_MainColumn> {
+  HomeFeedData? _data;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MainColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.feed != oldWidget.feed) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() => _error = null);
+    try {
+      final data = await widget.feed.load();
+      if (mounted) setState(() => _data = data);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error;
+          _data = const HomeFeedData(banners: [], announcements: []);
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final data = _data;
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _AnnouncementBoard(),
-        SizedBox(height: 16),
-        Expanded(child: _GameBoard()),
+        if (data != null && data.banners.isNotEmpty) ...[
+          _BannerStrip(banners: data.banners),
+          const SizedBox(height: 16),
+        ],
+        _AnnouncementBoard(
+          announcements: data?.announcements ?? const [],
+          loading: data == null && _error == null,
+        ),
+        const SizedBox(height: 16),
+        const Expanded(child: _GameBoard()),
       ],
     );
   }
 }
 
-class _AnnouncementBoard extends StatelessWidget {
-  const _AnnouncementBoard();
+class _BannerStrip extends StatelessWidget {
+  const _BannerStrip({required this.banners});
+
+  final List<HomeBanner> banners;
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
-      key: Key('announcement-board'),
-      child: ListTile(
-        title: Text('平台公告'),
-        subtitle: Text('暂无公告'),
-        trailing: Text('更多'),
+    return SizedBox(
+      key: const Key('home-banner-strip'),
+      height: 96,
+      child: PageView.builder(
+        itemCount: banners.length,
+        itemBuilder: (context, index) {
+          final banner = banners[index];
+          return Card(
+            key: Key('home-banner-${banner.id}'),
+            child: ListTile(
+              title: Text(banner.title),
+              subtitle: Text(banner.subtitle),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AnnouncementBoard extends StatelessWidget {
+  const _AnnouncementBoard({
+    required this.announcements,
+    required this.loading,
+  });
+
+  final List<HomeAnnouncement> announcements;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Card(
+        key: Key('announcement-board'),
+        child: ListTile(
+          title: Text('平台公告'),
+          subtitle: Text('正在读取'),
+        ),
+      );
+    }
+    if (announcements.isEmpty) {
+      return const Card(
+        key: Key('announcement-board'),
+        child: ListTile(
+          title: Text('平台公告'),
+          subtitle: Text('暂无公告', key: Key('announcement-empty')),
+        ),
+      );
+    }
+    return Card(
+      key: const Key('announcement-board'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ListTile(title: Text('平台公告')),
+          for (final item in announcements)
+            ListTile(
+              key: Key('announcement-${item.id}'),
+              title: Text(
+                item.pinned ? '置顶 · ${item.title}' : item.title,
+              ),
+              subtitle: Text(item.summary),
+              trailing: item.pinned
+                  ? const Text('置顶', key: Key('announcement-pinned-badge'))
+                  : null,
+            ),
+        ],
       ),
     );
   }
