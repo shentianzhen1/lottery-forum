@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.routers.auth import current_account
+from app.routers.auth import current_account, require_admin
 from app.settlements.service import SettlementError
 
 router = APIRouter(prefix="/settlements", tags=["settlements"])
@@ -16,9 +16,9 @@ def record_settlements(
     round_id: str,
     payload: dict[str, object],
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
-    del account  # logged-in gate; admin role not enforced this slice
+    del account  # admin only
     results = payload.get("results", [])
     if not isinstance(results, list):
         raise HTTPException(

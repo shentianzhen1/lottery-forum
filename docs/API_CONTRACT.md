@@ -2,6 +2,23 @@
 
 前缀：`/api/v1`。除健康检查、注册、登录、玩法列表/校验、以及首页横幅与公告只读外，接口都需要登录用户自己的令牌。错误体为 `{"code","message"}`。
 
+## 权限：管理员
+
+期号写操作与结算写操作仅限 `role=admin`：`POST /rounds`、`POST /rounds/{round_id}/open` / `close` / `draw` / `settling`、`POST /settlements/{round_id}`。
+
+- 已登录但非管理员：HTTP 403，`{"code":"FORBIDDEN","message":"无权限执行此操作"}`（先判权限，期号不存在也返回 403）。
+- 未带令牌或令牌失效：仍为 401 `UNAUTHENTICATED`。
+- 只读接口（`GET /rounds`、`GET /rounds/{round_id}`、`GET /settlements/{round_id}`）与 `POST /bets` 不变，普通登录用户可用。
+
+管理员来源（注册不能自封）：
+
+- `POST /auth/register` 请求体只认 `username`、`password`，多余字段（如 `role`）忽略；新账号一律存 `role=user`。
+- 环境变量 `LOTTERY_FORUM_ADMIN_USERNAMES`：逗号分隔的用户名列表（首尾空格忽略）。每次鉴权实时读取，名单内账号的有效角色为 `admin`；移出名单即恢复 `user`。
+- 本地种子：库里 `accounts.role` 直接写为 `admin` 的账号也视为管理员（仅限运维/本地种子，无接口可改）。
+- `GET /users/me` 返回的 `role` 为有效角色。
+
+本片只做管理员；「开设该版块的版主推进自己期号」需期号挂 `board_id`，见 `docs/BACKLOG.md`。
+
 未列出的路径表示尚未实现，不能当成可用接口。
 
 ## 产品口径：版主赔付
@@ -21,16 +38,16 @@
 - `GET /moderator/settings`：返回 `{"threshold": …}`，默认门槛 10000
 - `POST /moderator/boards`：请求体 `{"lottery_id"}`；达标则冻结门槛积分并开通版块，返回含 `approval: not_required`、`payout_formula: unset`；可用积分不足返回 `INSUFFICIENT_POINTS`；同一彩种已开通则幂等返回原版块
 - `GET /moderator/boards/me`：返回当前账号已开通的版块列表
-- `POST /rounds`：请求体 `{"lottery_id", "code?"}`；创建期号，初始状态 `UPCOMING`
+- `POST /rounds`：**仅管理员**。请求体 `{"lottery_id", "code?"}`；创建期号，初始状态 `UPCOMING`
 - `GET /rounds`：可选 `lottery_id` 过滤；返回 `{"rounds":[…]}`
 - `GET /rounds/{round_id}`：期号不存在返回 `ROUND_NOT_FOUND`
-- `POST /rounds/{round_id}/open`：仅 `UPCOMING` → `OPEN`；非法跳转返回 `INVALID_TRANSITION`
-- `POST /rounds/{round_id}/close`：仅 `OPEN` → `CLOSED`；非法跳转返回 `INVALID_TRANSITION`
-- `POST /rounds/{round_id}/draw`：仅 `CLOSED` → `DRAWN`（已开奖）；非法跳转返回 `INVALID_TRANSITION`
-- `POST /rounds/{round_id}/settling`：仅 `DRAWN` → `SETTLING`（结算中）；非法跳转返回 `INVALID_TRANSITION`；本片不停在 `SETTLED`
+- `POST /rounds/{round_id}/open`：**仅管理员**。仅 `UPCOMING` → `OPEN`；非法跳转返回 `INVALID_TRANSITION`
+- `POST /rounds/{round_id}/close`：**仅管理员**。仅 `OPEN` → `CLOSED`；非法跳转返回 `INVALID_TRANSITION`
+- `POST /rounds/{round_id}/draw`：**仅管理员**。仅 `CLOSED` → `DRAWN`（已开奖）；非法跳转返回 `INVALID_TRANSITION`
+- `POST /rounds/{round_id}/settling`：**仅管理员**。仅 `DRAWN` → `SETTLING`（结算中）；非法跳转返回 `INVALID_TRANSITION`；本片不停在 `SETTLED`
 - `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"unset"}`，不派奖。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；未开放投注冻结的玩法返回 `STAKE_DISABLED`（当前示例玩法均已开放：`number-pick` / `ranking-pick` / `fujian-31`）
 - `GET /bets/{bet_id}`：仅本人投注；不存在返回 `BET_NOT_FOUND`
-- `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**不写派奖分录、不改余额/冻结、不推进投注到 `SETTLED`**。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。需登录（本片不做管理员角色校验）
+- `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**不写派奖分录、不改余额/冻结、不推进投注到 `SETTLED`**。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。**仅管理员**（非管理员 403 `FORBIDDEN`）
 - `GET /settlements/{round_id}`：返回该期已落结算记录列表
 - `GET /home/banners`：只读；无需登录。返回 `{"banners":[…]}`，字段 `id`/`title`/`subtitle`/`image_key`/`sort_order`/`enabled`；仅 `enabled`，按 `sort_order` 升序，最多 5 条；空列表时客户端不占位
 - `GET /home/announcements`：只读；无需登录。返回 `{"announcements":[…]}`，字段 `id`/`title`/`body`/`published_at`/`pinned`；置顶优先、再按 `published_at` 倒序，最多 4 条；空列表时客户端显示「暂无公告」

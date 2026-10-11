@@ -6,6 +6,19 @@ from app.main import app
 client = TestClient(app)
 
 
+ADMIN_USERNAME = "pytest-admin"
+
+
+def admin_token() -> str:
+    """Register-or-login the env-granted admin (LOTTERY_FORUM_ADMIN_USERNAMES in conftest)."""
+    creds = {"username": ADMIN_USERNAME, "password": "admin-secret-pass"}
+    response = client.post("/api/v1/auth/login", json=creds)
+    if response.status_code != 200:
+        response = client.post("/api/v1/auth/register", json=creds)
+    assert response.status_code == 200
+    return response.json()["token"]
+
+
 def token_and_account(username: str) -> tuple[str, str]:
     response = client.post(
         "/api/v1/auth/register",
@@ -23,12 +36,12 @@ def auth(token: str) -> dict[str, str]:
 def open_round(token: str, lottery_id: str = "demo-digit") -> str:
     created = client.post(
         "/api/v1/rounds",
-        headers=auth(token),
+        headers=auth(admin_token()),
         json={"lottery_id": lottery_id, "code": "bet-demo"},
     )
     assert created.status_code == 200
     round_id = created.json()["round_id"]
-    opened = client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(token))
+    opened = client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(admin_token()))
     assert opened.status_code == 200
     assert opened.json()["status"] == "OPEN"
     return round_id
@@ -87,7 +100,7 @@ def test_round_closed_on_closed_and_upcoming() -> None:
     token, _ = token_and_account("bet-closed")
     created = client.post(
         "/api/v1/rounds",
-        headers=auth(token),
+        headers=auth(admin_token()),
         json={"lottery_id": "demo-digit"},
     ).json()
     round_id = created["round_id"]
@@ -97,8 +110,8 @@ def test_round_closed_on_closed_and_upcoming() -> None:
     assert upcoming.json()["detail"]["code"] == "ROUND_CLOSED"
     assert upcoming.json()["detail"]["message"] == "当期已截止，无法投注"
 
-    client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(token))
-    client.post(f"/api/v1/rounds/{round_id}/close", headers=auth(token))
+    client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(admin_token()))
+    client.post(f"/api/v1/rounds/{round_id}/close", headers=auth(admin_token()))
     closed = client.post("/api/v1/bets", headers=auth(token), json=bet_payload(round_id, key="cl"))
     assert closed.status_code == 400
     assert closed.json()["detail"]["code"] == "ROUND_CLOSED"

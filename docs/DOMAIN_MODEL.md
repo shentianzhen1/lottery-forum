@@ -8,7 +8,7 @@
 
 ## User
 
-已有注册和登录。字段：`account_id`、`username`、`password_hash`、`role`。角色尚未用于授权。
+已有注册和登录。字段：`account_id`、`username`、`password_hash`、`role`。角色已用于授权：`admin` 可创建/推进期号与写结算（来源：`LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子；注册一律 `user`）。
 
 ## Wallet
 
