@@ -18,7 +18,7 @@ def auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_get_and_happy_path_to_closed() -> None:
+def test_create_get_and_happy_path_to_settling() -> None:
     token = token_for("round-happy")
     created = client.post(
         "/api/v1/rounds",
@@ -44,8 +44,16 @@ def test_create_get_and_happy_path_to_closed() -> None:
     assert closed.status_code == 200
     assert closed.json()["status"] == "CLOSED"
 
+    drawn = client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(token))
+    assert drawn.status_code == 200
+    assert drawn.json()["status"] == "DRAWN"
 
-def test_reject_skip_backwards_and_from_closed() -> None:
+    settling = client.post(f"/api/v1/rounds/{round_id}/settling", headers=auth(token))
+    assert settling.status_code == 200
+    assert settling.json()["status"] == "SETTLING"
+
+
+def test_reject_skip_backwards_and_illegal_from_settling() -> None:
     token = token_for("round-bad")
     round_id = client.post(
         "/api/v1/rounds",
@@ -57,6 +65,11 @@ def test_reject_skip_backwards_and_from_closed() -> None:
     skip = client.post(f"/api/v1/rounds/{round_id}/close", headers=auth(token))
     assert skip.status_code == 400
     assert skip.json()["detail"]["code"] == "INVALID_TRANSITION"
+
+    # cannot draw from UPCOMING
+    skip_draw = client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(token))
+    assert skip_draw.status_code == 400
+    assert skip_draw.json()["detail"]["code"] == "INVALID_TRANSITION"
 
     client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(token))
     # cannot open again from OPEN (backwards / illegal)
@@ -73,12 +86,29 @@ def test_reject_skip_backwards_and_from_closed() -> None:
     assert from_closed_close.status_code == 400
     assert from_closed_close.json()["detail"]["code"] == "INVALID_TRANSITION"
 
+    # cannot settling from CLOSED (must draw first)
+    skip_settling = client.post(f"/api/v1/rounds/{round_id}/settling", headers=auth(token))
+    assert skip_settling.status_code == 400
+    assert skip_settling.json()["detail"]["code"] == "INVALID_TRANSITION"
+
+    client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(token))
+    client.post(f"/api/v1/rounds/{round_id}/settling", headers=auth(token))
+    # no path to SETTLED / cannot draw again from SETTLING
+    redraw = client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(token))
+    assert redraw.status_code == 400
+    assert redraw.json()["detail"]["code"] == "INVALID_TRANSITION"
+    resettling = client.post(f"/api/v1/rounds/{round_id}/settling", headers=auth(token))
+    assert resettling.status_code == 400
+    assert resettling.json()["detail"]["code"] == "INVALID_TRANSITION"
+
 
 def test_unauthorized_without_token() -> None:
     assert client.post("/api/v1/rounds", json={"lottery_id": "x"}).status_code == 401
     assert client.get("/api/v1/rounds/missing").status_code == 401
     assert client.post("/api/v1/rounds/missing/open").status_code == 401
     assert client.post("/api/v1/rounds/missing/close").status_code == 401
+    assert client.post("/api/v1/rounds/missing/draw").status_code == 401
+    assert client.post("/api/v1/rounds/missing/settling").status_code == 401
 
 
 def test_missing_round_returns_not_found() -> None:
@@ -113,16 +143,3 @@ def test_create_requires_lottery_id() -> None:
     response = client.post("/api/v1/rounds", headers=auth(token), json={})
     assert response.status_code == 400
     assert response.json()["detail"]["code"] == "INVALID_LOTTERY"
-
-
-def test_no_draw_endpoint() -> None:
-    token = token_for("round-nodraw")
-    round_id = client.post(
-        "/api/v1/rounds",
-        headers=auth(token),
-        json={"lottery_id": "fujian-31"},
-    ).json()["round_id"]
-    client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(token))
-    client.post(f"/api/v1/rounds/{round_id}/close", headers=auth(token))
-    draw = client.post(f"/api/v1/rounds/{round_id}/draw", headers=auth(token))
-    assert draw.status_code == 404

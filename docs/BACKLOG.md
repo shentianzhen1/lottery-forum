@@ -12,7 +12,8 @@
 
 - ~~**福建 31 选 7 接投注骨架**~~：已放开 `stake_enabled`，与数字选号同款 `POST /bets` 冻结占位（本片不派奖）。客户端横屏选号接投注另片。
 - **取消投注**：`POST /bets/{bet_id}/cancel`（仅 `OPEN` 期内、未锁定）未开放。
-- **派奖 / 结算**：期号 `DRAWN` 及之后推进、`Settlement`、玩法派奖均未做。
+- ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；本片不派奖。
+- **真实派奖 / 版主赔付链**：进入 `SETTLED`、写派奖分录、从开设版块的版主冻结池扣付；`payout_formula` 仍 `unset`。
 
 ## 基础设施
 

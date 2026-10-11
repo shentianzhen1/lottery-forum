@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 
-from app.routers import auth, bets, games, health, home, moderator, points, rounds, users
+from app.routers import auth, bets, games, health, home, moderator, points, rounds, settlements, users
 from app.state import build_state
 
 logger = logging.getLogger("lottery_forum")
@@ -35,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(moderator.router, prefix="/api/v1")
     app.include_router(rounds.router, prefix="/api/v1")
     app.include_router(bets.router, prefix="/api/v1")
+    app.include_router(settlements.router, prefix="/api/v1")
     app.include_router(home.router, prefix="/api/v1")
 
     @app.middleware("http")

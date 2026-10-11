@@ -18,6 +18,8 @@ from app.moderator.service import ModeratorService
 from app.moderator.store import ModeratorStore
 from app.rounds.service import RoundService
 from app.rounds.store import RoundStore
+from app.settlements.service import SettlementService
+from app.settlements.store import SettlementStore
 
 
 @dataclass
@@ -31,6 +33,7 @@ class AppState:
     rounds: RoundService
     bets: BetService
     home: HomeService
+    settlements: SettlementService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -40,7 +43,9 @@ def build_state(database: Path | None = None) -> AppState:
     connection = connect(database)
     ledger = LedgerService(SqliteLedgerStore(connection=connection))
     games = GameRegistry()
-    rounds = RoundService(RoundStore(connection=connection))
+    round_store = RoundStore(connection=connection)
+    rounds = RoundService(round_store)
+    bet_store = BetStore(connection=connection)
     home = HomeService(HomeStore(connection=connection))
     if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
         home.seed_demo()
@@ -52,6 +57,7 @@ def build_state(database: Path | None = None) -> AppState:
         SelectionStore(connection=connection),
         ModeratorService(ModeratorStore(connection=connection), ledger),
         rounds,
-        BetService(BetStore(connection=connection), rounds, games, ledger),
+        BetService(bet_store, rounds, games, ledger),
         home,
+        SettlementService(SettlementStore(connection=connection), rounds, bet_store),
     )
