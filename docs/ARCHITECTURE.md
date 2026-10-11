@@ -17,8 +17,8 @@
 
 ## 当前实现边界
 
-已有：健康检查、注册登录、积分账本与冻结、玩法校验、横屏骨架、首页横幅/公告只读、版主达标自助开通（含客户端入口）、期号状态机到 `SETTLED`（可挂 `board_id`；VOID/LOSS 入账）、投注骨架到 `ACCEPTED`（冻结占位；finalize 后 VOID/LOSS 进 `SETTLED`）、Settlement（落 `WIN`/`LOSS`/`VOID`，finalize 处理 VOID/LOSS）。
+已有：健康检查、注册登录、积分账本与冻结、玩法校验、横屏骨架、首页横幅/公告只读、版主达标自助开通（含客户端入口）、期号状态机到 `SETTLED`（可挂 `board_id`；VOID/LOSS/WIN 入账）、投注骨架到 `ACCEPTED`（冻结占位、固定 2 倍快照；finalize 后 VOID/LOSS/WIN 进 `SETTLED`）、Settlement（落 `WIN`/`LOSS`/`VOID`，finalize 处理 VOID/LOSS/WIN）。
 
-权限：管理员可创建/推进任意期号、写结算并 finalize 到 `SETTLED`；该版块版主可对本版块期号建号并推进到 `SETTLING`；写结算与进已结算仅管理员（版主是赔付方）。产品口径：下注由开设该版块的版主赔付；`LOSS` 注额划入版主；`WIN` 派奖公式仍 `unset`。
+权限：管理员可创建/推进任意期号、写结算并 finalize 到 `SETTLED`；该版块版主可对本版块期号建号并推进到 `SETTLING`；写结算与进已结算仅管理员（版主是赔付方）。产品口径：下注由开设该版块的版主赔付；`LOSS` 注额划入版主可用；`WIN` 按固定 2 倍从版主可用派奖。
 
-没有：`WIN` 真实派奖/版主冻结池扣付、坐庄引擎与赔付公式、管理后台、PostgreSQL 连接、真机横屏验收。细节以 `docs/API_CONTRACT.md`、`docs/DOMAIN_MODEL.md`、`docs/BACKLOG.md` 为准。
+没有：阶梯赔率/冻结池扣付、坐庄引擎、管理后台、PostgreSQL 连接、真机横屏验收。细节以 `docs/API_CONTRACT.md`、`docs/DOMAIN_MODEL.md`、`docs/BACKLOG.md` 为准。

@@ -12,8 +12,8 @@ from app.rounds.service import RoundError, RoundService
 # Fixed demo stake for stake_enabled plays this slice. Not a final pricing rule.
 STAKE = 10
 
-# Placeholder odds only — no cash amounts, no formal payout.
-ODDS_SNAPSHOT: dict[str, object] = {"status": "unset"}
+# Fixed 2x multiplier this slice (minimal WIN payout). Snapshot is authoritative at settle.
+ODDS_SNAPSHOT: dict[str, object] = {"status": "fixed", "multiplier": 2}
 
 
 class BetError(Exception):

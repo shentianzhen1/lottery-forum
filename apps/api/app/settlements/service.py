@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 
 from app.bets.store import BetStore
@@ -5,6 +6,8 @@ from app.ledger.model import Direction, LedgerError, PostRequest, Reason
 from app.ledger.service import LedgerService
 from app.rounds.service import RoundError, RoundService
 from app.settlements.store import ALLOWED_RESULTS, SettlementStore
+
+DEFAULT_WIN_MULTIPLIER = 2
 
 
 class SettlementError(Exception):
@@ -17,8 +20,8 @@ class SettlementService:
     """Record WIN/LOSS/VOID for bets in a SETTLING round, and finalize to SETTLED.
 
     Recording settlements does NOT write prize ledger posts.
-    Finalizing (SETTLING → SETTLED) applies VOID/LOSS hold+ledger effects.
-    WIN payout is still blocked (payout_formula unset).
+    Finalizing (SETTLING → SETTLED) applies VOID/LOSS/WIN hold+ledger effects.
+    WIN payout this slice: stake × snapshot multiplier (default 2).
     """
 
     def __init__(
@@ -87,7 +90,7 @@ class SettlementService:
         return {
             "round_id": round_id,
             "settlements": recorded,
-            "message": "结算结果已记录（进 SETTLED 前不派奖；VOID/LOSS 在 finalize 时入账）",
+            "message": "结算结果已记录（进 SETTLED 前不派奖；VOID/LOSS/WIN 在 finalize 时入账）",
         }
 
     def list_for_round(self, round_id: str) -> dict[str, object]:
@@ -103,13 +106,15 @@ class SettlementService:
         }
 
     def finalize(self, round_id: str, operator_id: str) -> dict[str, object]:
-        """Apply VOID/LOSS effects and advance SETTLING → SETTLED. Admin-only at the router.
+        """Apply VOID/LOSS/WIN effects and advance SETTLING → SETTLED. Admin-only at the router.
 
         - Every bet on the round must have a settlement, else SETTLEMENT_INCOMPLETE.
-        - Any WIN blocks with PAYOUT_FORMULA_UNSET (no payout this slice).
-        - Any LOSS requires round.board_id, else BOARD_REQUIRED.
+        - Any WIN or LOSS requires round.board_id, else BOARD_REQUIRED.
+        - WIN payouts (stake × multiplier) must fit moderator available before any writes;
+          else INSUFFICIENT_MODERATOR_POINTS (no partial / no state change).
         - VOID: release player hold; mark bet SETTLED.
         - LOSS: debit player stake, credit board moderator, release hold; mark bet SETTLED.
+        - WIN: release player hold; debit moderator payout, credit player payout; mark SETTLED.
         - Idempotent: already-SETTLED round returns as-is; already-SETTLED bets are skipped;
           ledger posts use per-bet idempotency keys; hold release is soft.
         """
@@ -127,7 +132,7 @@ class SettlementService:
             return {
                 **round_row,
                 "message": "期号已结算，返回原状态",
-                "applied": {"void": 0, "loss": 0, "skipped": 0},
+                "applied": {"void": 0, "loss": 0, "win": 0, "skipped": 0},
             }
         if round_row["status"] != "SETTLING":
             raise SettlementError(
@@ -145,28 +150,42 @@ class SettlementService:
                 f"期号下还有 {len(missing)} 笔投注未落结算记录",
             )
 
-        results = [settlements[bet["bet_id"]]["result"] for bet in bets]
-        if any(result == "WIN" for result in results):
-            raise SettlementError(
-                "PAYOUT_FORMULA_UNSET",
-                "存在中奖投注，赔付公式未定，不能进入已结算",
-            )
+        pending = [bet for bet in bets if bet["status"] != "SETTLED"]
+        results_pending = [settlements[bet["bet_id"]]["result"] for bet in pending]
+        has_loss = any(result == "LOSS" for result in results_pending)
+        has_win = any(result == "WIN" for result in results_pending)
 
         board_id = round_row.get("board_id")
-        has_loss = any(result == "LOSS" for result in results)
-        if has_loss and not board_id:
+        if (has_loss or has_win) and not board_id:
             raise SettlementError(
                 "BOARD_REQUIRED",
-                "期号未挂版块，无法将未中注额划入版主钱包",
+                "期号未挂版块，无法将未中注额划入版主钱包"
+                if has_loss and not has_win
+                else "期号未挂版块，无法从版主钱包派奖"
+                if has_win and not has_loss
+                else "期号未挂版块，无法完成版主相关结算入账",
             )
 
         moderator_id: str | None = None
-        if has_loss:
+        if has_loss or has_win:
             moderator_id = self.rounds.board_owner(board_id)
             if moderator_id is None:
                 raise SettlementError("BOARD_NOT_FOUND", "期号所属版块不存在")
 
-        applied = {"void": 0, "loss": 0, "skipped": 0}
+        if has_win:
+            assert moderator_id is not None
+            total_payout = sum(
+                self._win_payout(bet)
+                for bet in pending
+                if settlements[bet["bet_id"]]["result"] == "WIN"
+            )
+            if total_payout > self.ledger.available(moderator_id):
+                raise SettlementError(
+                    "INSUFFICIENT_MODERATOR_POINTS",
+                    "版主可用积分不足，无法派奖",
+                )
+
+        applied = {"void": 0, "loss": 0, "win": 0, "skipped": 0}
         for bet in bets:
             if bet["status"] == "SETTLED":
                 applied["skipped"] += 1
@@ -179,16 +198,36 @@ class SettlementService:
                 assert moderator_id is not None
                 self._apply_loss(bet, moderator_id, operator_id)
                 applied["loss"] += 1
+            elif result == "WIN":
+                assert moderator_id is not None
+                self._apply_win(bet, moderator_id, operator_id)
+                applied["win"] += 1
             else:
-                # WIN already rejected above; defensive.
-                raise SettlementError("PAYOUT_FORMULA_UNSET", "存在中奖投注，赔付公式未定，不能进入已结算")
+                raise SettlementError("INVALID_RESULT", f"未知结算结果 {result}")
 
         finalized = self.rounds.settled(round_id)
         return {
             **finalized,
-            "message": "期号已结算（VOID 解冻退回；LOSS 划入版主；WIN 未派奖）",
+            "message": "期号已结算（VOID 解冻退回；LOSS 划入版主；WIN 按倍率派奖）",
             "applied": applied,
         }
+
+    def _win_payout(self, bet: object) -> int:
+        stake = int(bet["stake"])  # type: ignore[index]
+        raw = bet["odds_snapshot_json"]  # type: ignore[index]
+        multiplier = DEFAULT_WIN_MULTIPLIER
+        try:
+            snapshot = json.loads(raw) if isinstance(raw, str) else raw
+        except (TypeError, json.JSONDecodeError):
+            snapshot = None
+        if isinstance(snapshot, dict) and "multiplier" in snapshot:
+            try:
+                value = int(snapshot["multiplier"])
+                if value > 0:
+                    multiplier = value
+            except (TypeError, ValueError):
+                pass
+        return stake * multiplier
 
     def _apply_void(self, bet: object) -> None:
         hold_id = bet["hold_id"]  # type: ignore[index]
@@ -237,6 +276,54 @@ class SettlementService:
                 )
             )
         except LedgerError as error:
+            raise SettlementError(error.code, error.message) from error
+
+        self.bets.set_status(bet_id, "SETTLED")
+
+    def _apply_win(self, bet: object, moderator_id: str, operator_id: str) -> None:
+        assert self.ledger is not None
+        account_id = bet["account_id"]  # type: ignore[index]
+        bet_id = bet["bet_id"]  # type: ignore[index]
+        hold_id = bet["hold_id"]  # type: ignore[index]
+        payout = self._win_payout(bet)
+
+        # Release freeze first (stake returns to available), then pay out.
+        if hold_id:
+            self.ledger.release_if_active(account_id, hold_id)
+
+        try:
+            self.ledger.post(
+                PostRequest(
+                    account_id=moderator_id,
+                    direction=Direction.DEBIT,
+                    amount=payout,
+                    reason=Reason.GAME_SETTLEMENT,
+                    reference_type="bet",
+                    reference_id=bet_id,
+                    idempotency_key=f"win-debit:{bet_id}",
+                    operator_id=operator_id,
+                    note="中奖：从版主可用余额扣派奖额",
+                )
+            )
+            self.ledger.post(
+                PostRequest(
+                    account_id=account_id,
+                    direction=Direction.CREDIT,
+                    amount=payout,
+                    reason=Reason.GAME_SETTLEMENT,
+                    reference_type="bet",
+                    reference_id=bet_id,
+                    idempotency_key=f"win-credit:{bet_id}",
+                    operator_id=operator_id,
+                    note="中奖：派奖入玩家可用余额",
+                )
+            )
+        except LedgerError as error:
+            if error.code == "INSUFFICIENT_POINTS":
+                raise SettlementError(
+                    "INSUFFICIENT_MODERATOR_POINTS",
+                    "版主可用积分不足，无法派奖",
+                ) from error
             raise SettlementError(error.code, error.message) from error
 
         self.bets.set_status(bet_id, "SETTLED")

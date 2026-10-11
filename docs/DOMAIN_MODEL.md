@@ -4,7 +4,7 @@
 
 积分是平台内部记账单位。不能提现、转账或兑付。可以用于玩法赔付，也可以在开通版主时冻结。本模型不包含充值、提现、兑付或用户间转账。
 
-**产品口径**：该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付）。`payout_formula` 仍 `unset`；真实扣付尚未实现。
+**产品口径**：该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付）。本片 `WIN` 固定 2 倍从版主可用余额派奖；版主版块字段 `payout_formula` 仍可显示 `unset`（配置位），实际结算以投注 `odds_snapshot` 为准。
 
 ## User
 
@@ -45,7 +45,7 @@
 
 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`
 
-中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`SETTLED` 已开放（管理员 finalize：VOID 解冻、LOSS 划入版主）；`WIN` 真派奖未做。本片无开奖号码落库。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
+中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`SETTLED` 已开放（管理员 finalize：VOID 解冻、LOSS 划入版主可用、WIN 固定 2 倍派奖）。本片无开奖号码落库。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
 
 ## Bet / BetItem
 
@@ -55,7 +55,7 @@
 
 异常终态：`REJECTED`、`CANCELLED`、`REFUNDED`。
 
-中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消；`POST /rounds/{id}/settled` 后 VOID/LOSS 投注进 `SETTLED`。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
+中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `{"status":"fixed","multiplier":2}`）；不接取消；`POST /rounds/{id}/settled` 后 VOID/LOSS/WIN 投注进 `SETTLED`。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
 
 BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
 
@@ -65,7 +65,7 @@ BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`
 
 ## Settlement
 
-骨架已实现：`POST /settlements/{round_id}` 可在 `SETTLING` 期为投注落 `WIN` / `LOSS` / `VOID` 记录；`GET /settlements/{round_id}` 可查。`POST /rounds/{round_id}/settled`（仅管理员）在全部投注已落记录后进入 `SETTLED`：`VOID` 解冻退回、`LOSS` 借记玩家并贷记版主钱包；有 `WIN` 则 `PAYOUT_FORMULA_UNSET` 拒绝。`WIN` 真派奖与版主冻结池扣付未做。余额变动只能走账本分录。
+骨架已实现：`POST /settlements/{round_id}` 可在 `SETTLING` 期为投注落 `WIN` / `LOSS` / `VOID` 记录；`GET /settlements/{round_id}` 可查。`POST /rounds/{round_id}/settled`（仅管理员）在全部投注已落记录后进入 `SETTLED`：`VOID` 解冻退回、`LOSS` 借记玩家并贷记版主可用余额、`WIN` 按快照倍率（缺省 2）从版主可用余额派奖；版主可用不足则整期挡。门槛冻结池不动。余额变动只能走账本分录。
 
 ## BankerSession / BankerOffer
 
