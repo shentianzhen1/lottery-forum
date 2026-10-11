@@ -61,13 +61,12 @@ void main() {
     expect(find.text('重试'), findsOneWidget);
   });
 
-  testWidgets('play center uses separate input and result panels', (tester) async {
+  testWidgets('play center asks login before betting', (tester) async {
     await _pumpAt(tester, const Size(1920, 1080));
     await tester.tap(find.text('玩法中心'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('play-landscape-columns')), findsOneWidget);
-    expect(find.byKey(const Key('play-result-panel')), findsOneWidget);
-    expect(find.text('参与扣固定积分，不派奖'), findsOneWidget);
+    expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
+    expect(find.text('参与扣固定积分，不派奖'), findsNothing);
   });
 
   testWidgets('logged-in home points card shows book balance', (tester) async {
