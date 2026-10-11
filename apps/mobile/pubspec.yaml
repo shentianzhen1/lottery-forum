@@ -1,5 +1,5 @@
 name: lottery_forum
-description: 彩票论坛横屏客户端骨架。版主为达标自助开通，客户端已接开通入口。
+description: 彩票论坛横屏客户端。已接首页公告/横幅、版主开通、数字选号投注冻结；排名/福建31选7本片未接投注。
 publish_to: none
 version: 0.1.0+1
 
