@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
-from app.auth.service import AuthError
+from app.auth.service import ADMIN_ROLE, AuthError
 from app.routers.schemas import Credentials
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -39,3 +39,10 @@ def current_account(request: Request, authorization: str | None = Header(default
         return request.app.state.services.auth.account_from_token(authorization.removeprefix("Bearer ").strip())
     except AuthError as error:
         raise HTTPException(status_code=401, detail={"code": error.code, "message": error.message}) from error
+
+
+def require_admin(account: object = Depends(current_account)) -> object:
+    """Logged-in gate plus role=admin; missing/invalid token still 401 via current_account."""
+    if getattr(account, "role", None) != ADMIN_ROLE:
+        raise HTTPException(status_code=403, detail={"code": "FORBIDDEN", "message": "无权限执行此操作"})
+    return account

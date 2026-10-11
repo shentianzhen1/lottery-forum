@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.routers.auth import current_account
+from app.routers.auth import current_account, require_admin
 from app.rounds.service import RoundError
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
@@ -15,9 +15,9 @@ def _raise_round(error: RoundError) -> None:
 def create_round(
     payload: dict[str, str],
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
-    del account  # auth gate only for this skeleton
+    del account  # admin only
     try:
         return request.app.state.services.rounds.create(
             payload.get("lottery_id", ""),
@@ -54,7 +54,7 @@ def get_round(
 def open_round(
     round_id: str,
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
     del account
     try:
@@ -67,7 +67,7 @@ def open_round(
 def close_round(
     round_id: str,
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
     del account
     try:
@@ -80,7 +80,7 @@ def close_round(
 def draw_round(
     round_id: str,
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
     del account
     try:
@@ -93,7 +93,7 @@ def draw_round(
 def settling_round(
     round_id: str,
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
     del account
     try:

@@ -1,5 +1,7 @@
 import hashlib
+import os
 import secrets
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -11,6 +13,24 @@ from app.ledger.service import LedgerService
 OPENING_POINTS = 100
 SESSION_HOURS = 24
 MAX_LOGIN_FAILURES = 5
+ADMIN_ROLE = "admin"
+USER_ROLE = "user"
+ADMIN_USERNAMES_ENV = "LOTTERY_FORUM_ADMIN_USERNAMES"
+
+
+def admin_usernames() -> frozenset[str]:
+    """Usernames granted admin via env (comma-separated). Read on every call."""
+    raw = os.environ.get(ADMIN_USERNAMES_ENV, "")
+    return frozenset(name.strip() for name in raw.split(",") if name.strip())
+
+
+def resolve_role(account: Account) -> Account:
+    """Effective role: stored admin (local seed) or username listed in env; otherwise user.
+
+    Registration always stores ``user``; the request body cannot choose a role.
+    """
+    role = ADMIN_ROLE if account.role == ADMIN_ROLE or account.username in admin_usernames() else USER_ROLE
+    return account if account.role == role else replace(account, role=role)
 
 
 class AuthError(Exception):
@@ -31,7 +51,7 @@ class AuthService:
         self._check_lengths(cleaned, password)
         if self.accounts.by_username(cleaned) is not None:
             raise AuthError("USERNAME_TAKEN", "用户名已存在")
-        account = Account(str(uuid4()), cleaned, hash_password(password), "user")
+        account = Account(str(uuid4()), cleaned, hash_password(password), USER_ROLE)
         self.accounts.create(account)
         self.ledger.post(
             PostRequest(
@@ -45,7 +65,7 @@ class AuthService:
                 operator_id="system",
             )
         )
-        return account, self._session(account.account_id)
+        return resolve_role(account), self._session(account.account_id)
 
     def login(self, username: str, password: str) -> tuple[Account, str]:
         cleaned = username.strip()
@@ -57,7 +77,7 @@ class AuthService:
             self.failures[cleaned] = self.failures.get(cleaned, 0) + 1
             raise AuthError("INVALID_LOGIN", "用户名或密码不正确")
         self.failures.pop(cleaned, None)
-        return account, self._session(account.account_id)
+        return resolve_role(account), self._session(account.account_id)
 
     def logout(self, token: str) -> None:
         self.accounts.delete_session(_token_hash(token))
@@ -66,7 +86,7 @@ class AuthService:
         account = self.accounts.account_for_token(_token_hash(token), _now())
         if account is None:
             raise AuthError("UNAUTHENTICATED", "登录已失效")
-        return account
+        return resolve_role(account)
 
     def _session(self, account_id: str) -> str:
         token = secrets.token_urlsafe(32)

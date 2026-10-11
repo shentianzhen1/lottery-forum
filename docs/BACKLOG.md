@@ -13,6 +13,8 @@
 - ~~**福建 31 选 7 接投注骨架**~~：已放开 `stake_enabled`，与数字选号同款 `POST /bets` 冻结占位（本片不派奖）。客户端横屏选号接投注另片。
 - **取消投注**：`POST /bets/{bet_id}/cancel`（仅 `OPEN` 期内、未锁定）未开放。
 - ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；本片不派奖。
+- ~~**结算权限收口（管理员）**~~：期号创建/推进与写结算已限 `role=admin`，越权 403 `FORBIDDEN`；管理员来自 `LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子，注册不能自封。
+- **版主归属期号与权限**：期号挂 `board_id`（归属开设该版块的版主）；该版块版主可推进/结算自己版块的期号，管理员仍可全量操作。须在真实扣付前完成。
 - **真实派奖 / 版主赔付链**：进入 `SETTLED`、写派奖分录、从开设版块的版主冻结池扣付；`payout_formula` 仍 `unset`。
 
 ## 基础设施

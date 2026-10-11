@@ -44,4 +44,6 @@ cd apps/mobile && flutter pub get && flutter analyze && flutter test
 uvicorn app.main:app --app-dir apps/api --reload
 ```
 
+期号创建/推进与写结算仅限管理员：本地用 `LOTTERY_FORUM_ADMIN_USERNAMES=alice,bob uvicorn …` 指定（逗号分隔用户名），注册不能自封管理员，详见 `docs/API_CONTRACT.md`。
+
 不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。
