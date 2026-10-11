@@ -29,7 +29,7 @@
 
 ## PlayDefinition
 
-未实现为独立配置。当前示例是 `number-pick`、`ranking-pick`、`fujian-31`。玩法必须声明 `rule_version` 和 `stake_enabled`。Demo 不能绕过钱包、期号和投注对象。
+未实现为独立配置。当前示例是 `number-pick`、`ranking-pick`、`fujian-31`（选7）以及 `fujian-31-any-2`…`any-5`（任选；期号彩种仍 `fujian-31`）。玩法必须声明 `rule_version` 和 `stake_enabled`。Demo 不能绕过钱包、期号和投注对象。
 
 ## ModeratorBoard
 
@@ -55,7 +55,7 @@
 
 异常终态：`REJECTED`、`CANCELLED`、`REFUNDED`。
 
-中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `{"status":"fixed","multiplier":2}`）；不接取消；`POST /rounds/{id}/settled` 后 VOID/LOSS/WIN 投注进 `SETTLED`。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
+中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `{"status":"fixed","multiplier":2}`）；不接取消；`POST /rounds/{id}/settled` 后 VOID/LOSS/WIN 投注进 `SETTLED`。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31` / `fujian-31-any-2`…`any-5`）可投。
 
 BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
 

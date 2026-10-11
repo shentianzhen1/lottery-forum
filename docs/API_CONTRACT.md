@@ -54,7 +54,7 @@
 - `GET /points/entries`
 - `GET /games`
 - `POST /games/{game_id}/validate`
-- `POST /games/{game_id}/entries`：只对临时示例扣固定 10 积分，不派奖（`stake_enabled` 玩法，含 `number-pick` / `fujian-31`）
+- `POST /games/{game_id}/entries`：只对临时示例扣固定 10 积分，不派奖（`stake_enabled` 玩法，含 `number-pick` / `fujian-31` / `fujian-31-any-2`…`any-5`）
 - `GET /moderator/settings`：返回 `{"threshold": …}`，默认门槛 10000
 - `POST /moderator/boards`：请求体 `{"lottery_id"}`；达标则冻结门槛积分并开通版块，返回含 `approval: not_required`、`payout_formula: unset`；可用积分不足返回 `INSUFFICIENT_POINTS`；同一彩种已开通则幂等返回原版块
 - `GET /moderator/boards/me`：返回当前账号已开通的版块列表
@@ -74,7 +74,7 @@
   - `WIN`：解除玩家冻结（注额退回可用），再从版主可用余额借记盈利额、贷记中奖玩家（幂等键 `win-debit:{bet_id}` / `win-credit:{bet_id}`）；门槛冻结池不动。玩家到手 = 解冻注额 + 盈利 = 注额 × 倍率
   - 已是 `SETTLED` 时幂等返回原状态；不重复解冻/记账
   - 非管理员（含该版块版主）403 `FORBIDDEN`
-- `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"fixed","multiplier":2}`；finalize 时按快照倍率连本带利派 `WIN`（版主付 `stake × (倍率 − 1)`）。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；未开放投注冻结的玩法返回 `STAKE_DISABLED`（当前示例玩法均已开放：`number-pick` / `ranking-pick` / `fujian-31`）
+- `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"fixed","multiplier":2}`；finalize 时按快照倍率连本带利派 `WIN`（版主付 `stake × (倍率 − 1)`）。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；未开放投注冻结的玩法返回 `STAKE_DISABLED`（当前示例玩法均已开放：`number-pick` / `ranking-pick` / `fujian-31` / `fujian-31-any-2`…`fujian-31-any-5`）。福建31 彩种期号 `lottery_id=fujian-31` 共用；投注 `play_id` 可为选7 `fujian-31` 或任选 `fujian-31-any-2`…`any-5`（从 1–31 选对应个数、不重复；失败码仍 `INVALID_SELECTION`「选号未通过校验」）
 - `GET /bets/{bet_id}`：仅本人投注；不存在返回 `BET_NOT_FOUND`
 - `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**本接口仍不改余额/冻结、不推进投注状态**（入账在 `POST /rounds/{id}/settled`）。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。**仅管理员**（非管理员 403 `FORBIDDEN`，**包括该版块版主**——版主是赔付方，不能自己判结果）
 - `GET /settlements/{round_id}`：返回该期已落结算记录列表

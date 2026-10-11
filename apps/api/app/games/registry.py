@@ -1,14 +1,19 @@
 from app.games.model import GameError, GameSpec, ValidationResult
-from app.games.samples import Fujian31Pick, NumberPick, RankingPick
+from app.games.samples import Fujian31AnyPick, Fujian31Pick, NumberPick, RankingPick
 
 
 class GameRegistry:
     def __init__(self) -> None:
-        self._plugins = {
-            NumberPick.spec.game_id: NumberPick(),
-            RankingPick.spec.game_id: RankingPick(),
-            Fujian31Pick.spec.game_id: Fujian31Pick(),
-        }
+        plugins: list[object] = [
+            NumberPick(),
+            RankingPick(),
+            Fujian31Pick(),
+            Fujian31AnyPick(2),
+            Fujian31AnyPick(3),
+            Fujian31AnyPick(4),
+            Fujian31AnyPick(5),
+        ]
+        self._plugins = {plugin.spec.game_id: plugin for plugin in plugins}  # type: ignore[attr-defined]
 
     def list_enabled(self) -> list[GameSpec]:
         return [plugin.spec for plugin in self._plugins.values() if plugin.spec.enabled]
