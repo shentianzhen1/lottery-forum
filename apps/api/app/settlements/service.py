@@ -21,7 +21,8 @@ class SettlementService:
 
     Recording settlements does NOT write prize ledger posts.
     Finalizing (SETTLING → SETTLED) applies VOID/LOSS/WIN hold+ledger effects.
-    WIN payout this slice: stake × snapshot multiplier (default 2).
+    WIN payout this slice: stake × (snapshot multiplier − 1) (default 2 → net stake).
+    Stake is released back to the player; moderator pays only the profit.
     """
 
     def __init__(
@@ -110,11 +111,12 @@ class SettlementService:
 
         - Every bet on the round must have a settlement, else SETTLEMENT_INCOMPLETE.
         - Any WIN or LOSS requires round.board_id, else BOARD_REQUIRED.
-        - WIN payouts (stake × multiplier) must fit moderator available before any writes;
+        - WIN payouts (stake × (multiplier − 1)) must fit moderator available before any writes
+          (same-batch LOSS credits are NOT counted into available — conservative);
           else INSUFFICIENT_MODERATOR_POINTS (no partial / no state change).
         - VOID: release player hold; mark bet SETTLED.
         - LOSS: debit player stake, credit board moderator, release hold; mark bet SETTLED.
-        - WIN: release player hold; debit moderator payout, credit player payout; mark SETTLED.
+        - WIN: release player hold; debit moderator profit, credit player profit; mark SETTLED.
         - Idempotent: already-SETTLED round returns as-is; already-SETTLED bets are skipped;
           ledger posts use per-bet idempotency keys; hold release is soft.
         """
@@ -208,11 +210,12 @@ class SettlementService:
         finalized = self.rounds.settled(round_id)
         return {
             **finalized,
-            "message": "期号已结算（VOID 解冻退回；LOSS 划入版主；WIN 按倍率派奖）",
+            "message": "期号已结算（VOID 解冻退回；LOSS 划入版主；WIN 连本带利按倍率派奖）",
             "applied": applied,
         }
 
     def _win_payout(self, bet: object) -> int:
+        """Profit paid by moderator: stake × (multiplier − 1). Stake itself is released."""
         stake = int(bet["stake"])  # type: ignore[index]
         raw = bet["odds_snapshot_json"]  # type: ignore[index]
         multiplier = DEFAULT_WIN_MULTIPLIER
@@ -227,7 +230,7 @@ class SettlementService:
                     multiplier = value
             except (TypeError, ValueError):
                 pass
-        return stake * multiplier
+        return stake * (multiplier - 1)
 
     def _apply_void(self, bet: object) -> None:
         hold_id = bet["hold_id"]  # type: ignore[index]
@@ -287,7 +290,7 @@ class SettlementService:
         hold_id = bet["hold_id"]  # type: ignore[index]
         payout = self._win_payout(bet)
 
-        # Release freeze first (stake returns to available), then pay out.
+        # Release freeze first (stake returns to available), then pay profit only.
         if hold_id:
             self.ledger.release_if_active(account_id, hold_id)
 
@@ -302,7 +305,7 @@ class SettlementService:
                     reference_id=bet_id,
                     idempotency_key=f"win-debit:{bet_id}",
                     operator_id=operator_id,
-                    note="中奖：从版主可用余额扣派奖额",
+                    note="中奖：从版主可用余额扣派奖盈利额",
                 )
             )
             self.ledger.post(
@@ -315,7 +318,7 @@ class SettlementService:
                     reference_id=bet_id,
                     idempotency_key=f"win-credit:{bet_id}",
                     operator_id=operator_id,
-                    note="中奖：派奖入玩家可用余额",
+                    note="中奖：派奖盈利入玩家可用余额",
                 )
             )
         except LedgerError as error:

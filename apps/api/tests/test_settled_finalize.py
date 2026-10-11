@@ -1,4 +1,4 @@
-"""派奖：SETTLING → SETTLED；VOID 解冻、LOSS 划入版主、WIN 固定 2 倍派奖。"""
+"""派奖：SETTLING → SETTLED；VOID 解冻、LOSS 划入版主、WIN 连本带利共 2 倍（盈利 stake×(倍率−1)）。"""
 from fastapi.testclient import TestClient
 
 from app.ledger.model import Direction, PostRequest, Reason
@@ -174,7 +174,7 @@ def test_loss_debits_player_credits_moderator() -> None:
 
 
 def test_win_pays_from_moderator_available() -> None:
-    """WIN: release hold, debit mod payout (stake×2), credit player; threshold freeze untouched."""
+    """WIN: release hold, debit mod profit stake×(2−1), credit player; threshold freeze untouched."""
     _, mod_account_id, board_id = moderator("fin-win-mod")
     player = register("fin-win-player")
     round_id = open_round_with_board(board_id)
@@ -201,22 +201,22 @@ def test_win_pays_from_moderator_available() -> None:
     assert finalized.json()["status"] == "SETTLED"
     assert finalized.json()["applied"]["win"] == 1
 
-    # stake 10 released + payout 20 credited → balance 120, frozen 0, available 120
+    # stake 10 released + profit 10 credited → balance 110, frozen 0, available 110
     player_after = balance(player["token"])
-    assert player_after["balance"] == 120
+    assert player_after["balance"] == 110
     assert player_after["frozen"] == 0
-    assert player_after["available"] == 120
+    assert player_after["available"] == 110
     assert client.get(f"/api/v1/bets/{bet_id}", headers=auth(player["token"])).json()["status"] == "SETTLED"
 
     mod_after = app.state.services.ledger.balance(mod_account_id)
-    assert mod_after == mod_before - 20
+    assert mod_after == mod_before - 10
     assert app.state.services.ledger.frozen(mod_account_id) == threshold
-    assert app.state.services.ledger.available(mod_account_id) == mod_avail_before - 20
+    assert app.state.services.ledger.available(mod_account_id) == mod_avail_before - 10
 
     # idempotent retry
     again = client.post(f"/api/v1/rounds/{round_id}/settled", headers=auth(admin_token()))
     assert again.status_code == 200
-    assert balance(player["token"])["balance"] == 120
+    assert balance(player["token"])["balance"] == 110
     assert app.state.services.ledger.balance(mod_account_id) == mod_after
 
 
@@ -230,7 +230,7 @@ def test_win_insufficient_moderator_blocks_no_state_change() -> None:
         client.post(f"/api/v1/rounds/{round_id}/{step}", headers=auth(admin_token()))
     record(round_id, [{"bet_id": bet_id, "result": "WIN"}])
 
-    drain_available(mod_account_id, leave=19, key="drain-fin-win-poor")  # need 20
+    drain_available(mod_account_id, leave=9, key="drain-fin-win-poor")  # need 10 profit
     mod_bal = app.state.services.ledger.balance(mod_account_id)
     mod_frozen = app.state.services.ledger.frozen(mod_account_id)
 
@@ -242,6 +242,27 @@ def test_win_insufficient_moderator_blocks_no_state_change() -> None:
     assert balance(player["token"])["frozen"] == 10
     assert app.state.services.ledger.balance(mod_account_id) == mod_bal
     assert app.state.services.ledger.frozen(mod_account_id) == mod_frozen
+
+
+def test_win_exact_available_passes() -> None:
+    """When moderator available exactly equals WIN profit total, settle proceeds."""
+    _, mod_account_id, board_id = moderator("fin-win-exact")
+    player = register("fin-win-exact-p")
+    round_id = open_round_with_board(board_id)
+    client.post(f"/api/v1/rounds/{round_id}/open", headers=auth(admin_token()))
+    bet_id = place(player["token"], round_id, "fin-win-exact-1")
+    for step in ("close", "draw", "settling"):
+        client.post(f"/api/v1/rounds/{round_id}/{step}", headers=auth(admin_token()))
+    record(round_id, [{"bet_id": bet_id, "result": "WIN"}])
+
+    drain_available(mod_account_id, leave=10, key="drain-fin-win-exact")  # need exactly 10
+    assert app.state.services.ledger.available(mod_account_id) == 10
+
+    ok = client.post(f"/api/v1/rounds/{round_id}/settled", headers=auth(admin_token()))
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["status"] == "SETTLED"
+    assert balance(player["token"])["balance"] == 110
+    assert app.state.services.ledger.available(mod_account_id) == 0
 
 
 def test_null_board_with_win_blocked() -> None:
@@ -387,17 +408,17 @@ def test_mixed_void_loss_and_win() -> None:
             {"bet_id": win_bet, "result": "WIN"},
         ],
     )
-    # preflight uses available BEFORE LOSS credit; need ≥20 for WIN
-    assert app.state.services.ledger.available(mod_account_id) >= 20
+    # preflight uses available BEFORE LOSS credit; need ≥10 profit for WIN
+    assert app.state.services.ledger.available(mod_account_id) >= 10
     mod_before = app.state.services.ledger.balance(mod_account_id)
     ok = client.post(f"/api/v1/rounds/{round_id}/settled", headers=auth(admin_token()))
     assert ok.status_code == 200, ok.text
     assert ok.json()["applied"] == {"void": 1, "loss": 1, "win": 1, "skipped": 0}
     assert balance(p1["token"])["available"] == 100
     assert balance(p2["token"])["balance"] == 90
-    assert balance(p3["token"])["balance"] == 120 and balance(p3["token"])["frozen"] == 0
-    # LOSS +10, WIN -20 → net -10
-    assert app.state.services.ledger.balance(mod_account_id) == mod_before - 10
+    assert balance(p3["token"])["balance"] == 110 and balance(p3["token"])["frozen"] == 0
+    # LOSS +10, WIN profit -10 → net 0
+    assert app.state.services.ledger.balance(mod_account_id) == mod_before
 
 
 def test_empty_round_can_settle() -> None:

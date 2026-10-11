@@ -113,7 +113,7 @@ class BetService:
 
         return self._bet(
             self.store.get(bet_id),
-            message="投注已受理（积分已冻结占位，暂不派奖）",
+            message="投注已受理，积分已冻结，结算后按结果派奖",
         )
 
     def get(self, account_id: str, bet_id: str) -> dict[str, object]:

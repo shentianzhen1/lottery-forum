@@ -4,7 +4,7 @@
 
 积分是平台内部记账单位。不能提现、转账或兑付。可以用于玩法赔付，也可以在开通版主时冻结。本模型不包含充值、提现、兑付或用户间转账。
 
-**产品口径**：该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付）。本片 `WIN` 固定 2 倍从版主可用余额派奖；版主版块字段 `payout_formula` 仍可显示 `unset`（配置位），实际结算以投注 `odds_snapshot` 为准。
+**产品口径**：该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付）。本片 `WIN` 连本带利共 2 倍：解冻退回注额后，版主从可用余额付盈利 `stake × (倍率 − 1)`；版主版块字段 `payout_formula` 仍可显示 `unset`（配置位），实际结算以投注 `odds_snapshot` 为准。
 
 ## User
 
@@ -45,7 +45,7 @@
 
 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`
 
-中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`SETTLED` 已开放（管理员 finalize：VOID 解冻、LOSS 划入版主可用、WIN 固定 2 倍派奖）。本片无开奖号码落库。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
+中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`SETTLED` 已开放（管理员 finalize：VOID 解冻、LOSS 划入版主可用、WIN 连本带利共 2 倍派奖）。本片无开奖号码落库。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
 
 ## Bet / BetItem
 
@@ -65,7 +65,7 @@ BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`
 
 ## Settlement
 
-骨架已实现：`POST /settlements/{round_id}` 可在 `SETTLING` 期为投注落 `WIN` / `LOSS` / `VOID` 记录；`GET /settlements/{round_id}` 可查。`POST /rounds/{round_id}/settled`（仅管理员）在全部投注已落记录后进入 `SETTLED`：`VOID` 解冻退回、`LOSS` 借记玩家并贷记版主可用余额、`WIN` 按快照倍率（缺省 2）从版主可用余额派奖；版主可用不足则整期挡。门槛冻结池不动。余额变动只能走账本分录。
+骨架已实现：`POST /settlements/{round_id}` 可在 `SETTLING` 期为投注落 `WIN` / `LOSS` / `VOID` 记录；`GET /settlements/{round_id}` 可查。`POST /rounds/{round_id}/settled`（仅管理员）在全部投注已落记录后进入 `SETTLED`：`VOID` 解冻退回、`LOSS` 借记玩家并贷记版主可用余额、`WIN` 解冻后退回注额并由版主付盈利 `stake × (倍率 − 1)`（缺省倍率 2）；判断可用时不算同批 LOSS 入账；版主可用不足则整期挡。门槛冻结池不动。余额变动只能走账本分录。
 
 ## BankerSession / BankerOffer
 
