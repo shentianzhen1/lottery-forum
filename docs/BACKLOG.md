@@ -17,8 +17,10 @@
 - ~~**版主归属期号与权限**~~：期号挂 `board_id`（归属开设该版块的版主，彩种须一致）；该版块版主可建号并推进自己版块的期号，旧期号（无 `board_id`）仅管理员；写结算仍只限管理员（版主是赔付方）；管理员保留全部权限。本地造版主用 `LOTTERY_FORUM_DEV_SEED_MODERATORS` 启动种子（默认关闭）。
 - **版主写结算 / 结算复核**：如需让版主参与结算，须有独立复核（版主是赔付方，不能自判）；当前不做。
 - ~~**派奖第一刀（VOID/LOSS → SETTLED）**~~：已开放管理员 `POST /rounds/{id}/settled`；`VOID` 解冻退回、`LOSS` 划入版主钱包。
-- ~~**WIN 派奖最小可跑版（固定 2 倍）**~~：`odds_snapshot` 写 `{"status":"fixed","multiplier":2}`；finalize 时 `WIN` 解冻后从版主可用余额派 `stake×倍率`；不足整期挡 `INSUFFICIENT_MODERATOR_POINTS`；门槛冻结池不动。
-- **阶梯/复杂赔率与冻结池扣付**：本片仅固定 2 倍；从开通门槛冻结池扣付未做。
+- ~~**WIN 派奖最小可跑版（固定 2 倍）**~~：`odds_snapshot` 写 `{"status":"fixed","multiplier":2}`；finalize 时 `WIN` 解冻后从版主可用付盈利 `stake×(倍率−1)`（连本带利共倍率倍）；不足整期挡 `INSUFFICIENT_MODERATOR_POINTS`；判断可用不算同批 LOSS；门槛冻结池不动。
+- **`payout_formula` 配置位与快照对齐**：版块字段仍可显示 `unset`，实结算看投注 `odds_snapshot`；若要对齐配置位另开。
+- **阶梯/复杂赔率与冻结池扣付**：本片仅固定倍率 2（连本带利）；从开通门槛冻结池扣付未做。
+- **福建 31 任选 2/3/4/5**：与现有选 7 并列；玩法 id / 选号校验 / 客户端入口待开。
 
 ## 基础设施
 

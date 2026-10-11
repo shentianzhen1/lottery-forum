@@ -87,7 +87,7 @@ def test_happy_path_on_open_round() -> None:
     assert body["hold_id"]
     assert body["odds_snapshot"] == {"status": "fixed", "multiplier": 2}
     assert body["selection"] == {"numbers": [1, 2, 3]}
-    assert body["message"] == "投注已受理（积分已冻结占位，暂不派奖）"
+    assert body["message"] == "投注已受理，积分已冻结，结算后按结果派奖"
     balance = client.get("/api/v1/points/balance", headers=auth(token))
     assert balance.status_code == 200
     assert balance.json()["balance"] == 100
@@ -208,7 +208,7 @@ def test_fujian_31_happy_path_on_open_round() -> None:
     assert body["hold_id"]
     assert body["odds_snapshot"] == {"status": "fixed", "multiplier": 2}
     assert body["selection"] == {"numbers": [1, 2, 3, 7, 8, 9, 31], "pair_count": 21}
-    assert body["message"] == "投注已受理（积分已冻结占位，暂不派奖）"
+    assert body["message"] == "投注已受理，积分已冻结，结算后按结果派奖"
     balance = client.get("/api/v1/points/balance", headers=auth(token)).json()
     assert balance["balance"] == 100
     assert balance["frozen"] == 10
