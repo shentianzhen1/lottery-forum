@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'home_feed.dart';
+import 'play_betting.dart';
 import 'points_reader.dart';
 
 class HomePage extends StatelessWidget {
@@ -11,6 +12,7 @@ class HomePage extends StatelessWidget {
     this.feed = const EmptyHomeFeed(),
     this.onGoToAccount,
     this.onGoToModerator,
+    this.onOpenPlay,
     super.key,
   });
 
@@ -20,12 +22,11 @@ class HomePage extends StatelessWidget {
   final HomeFeed feed;
   final VoidCallback? onGoToAccount;
   final VoidCallback? onGoToModerator;
+  final ValueChanged<PlayKind>? onOpenPlay;
 
-  static const games = <(String, String)>[
-    ('数字选号', '数字类入口，规则未接入'),
-    ('排名竞猜', '排名类入口，规则未接入'),
-    ('自选组合', '组合类入口，规则未接入'),
-    ('本期推荐', '推荐位，数据未接入'),
+  static const games = <(PlayKind, String, String, String)>[
+    (PlayKind.numberPick, '数字选号', '选择 3 个不重复数字', 'home-game-number-pick'),
+    (PlayKind.fujian31, '福建31', '任选2–5与选7', 'home-game-fujian-31'),
   ];
 
   @override
@@ -39,7 +40,10 @@ class HomePage extends StatelessWidget {
         key: const Key('home-landscape-columns'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 5, child: _MainColumn(feed: feed)),
+          Expanded(
+            flex: 5,
+            child: _MainColumn(feed: feed, onOpenPlay: onOpenPlay),
+          ),
           const SizedBox(width: 20),
           SizedBox(
             width: 280,
@@ -57,9 +61,10 @@ class HomePage extends StatelessWidget {
 }
 
 class _MainColumn extends StatefulWidget {
-  const _MainColumn({required this.feed});
+  const _MainColumn({required this.feed, this.onOpenPlay});
 
   final HomeFeed feed;
+  final ValueChanged<PlayKind>? onOpenPlay;
 
   @override
   State<_MainColumn> createState() => _MainColumnState();
@@ -113,7 +118,7 @@ class _MainColumnState extends State<_MainColumn> {
           loading: data == null && _error == null,
         ),
         const SizedBox(height: 16),
-        const Expanded(child: _GameBoard()),
+        Expanded(child: _GameBoard(onOpenPlay: widget.onOpenPlay)),
       ],
     );
   }
@@ -199,7 +204,9 @@ class _AnnouncementBoard extends StatelessWidget {
 }
 
 class _GameBoard extends StatelessWidget {
-  const _GameBoard();
+  const _GameBoard({this.onOpenPlay});
+
+  final ValueChanged<PlayKind>? onOpenPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +223,12 @@ class _GameBoard extends StatelessWidget {
             childAspectRatio: 2.2,
             children: [
               for (final game in HomePage.games)
-                _GameCard(title: game.$1, subtitle: game.$2),
+                _GameCard(
+                  cardKey: Key(game.$4),
+                  title: game.$2,
+                  subtitle: game.$3,
+                  onTap: onOpenPlay == null ? null : () => onOpenPlay!(game.$1),
+                ),
             ],
           ),
         ),
@@ -226,23 +238,35 @@ class _GameBoard extends StatelessWidget {
 }
 
 class _GameCard extends StatelessWidget {
-  const _GameCard({required this.title, required this.subtitle});
+  const _GameCard({
+    required this.cardKey,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
 
+  final Key cardKey;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(subtitle),
-          ],
+      key: cardKey,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(subtitle),
+            ],
+          ),
         ),
       ),
     );
@@ -401,6 +425,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
         trailing: Text(
           balance == null ? '--' : '$balance',
           key: const Key('home-points-balance'),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
         ),
       ),
     );
