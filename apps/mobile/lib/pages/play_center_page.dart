@@ -34,6 +34,14 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   final _n3 = TextEditingController(text: '3');
   final Set<int> _fujianPicks = <int>{};
 
+  static const _fujianKinds = <PlayKind>[
+    PlayKind.fujian31Any2,
+    PlayKind.fujian31Any3,
+    PlayKind.fujian31Any4,
+    PlayKind.fujian31Any5,
+    PlayKind.fujian31,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +80,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       _kind = kind;
       _resultMessage = null;
       _openRound = null;
+      _fujianPicks.clear();
     });
     if (widget.loggedIn) {
       await _refreshRound();
@@ -104,10 +113,11 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   }
 
   void _toggleFujian(int n) {
+    final limit = fujianPickCount(_kind);
     setState(() {
       if (_fujianPicks.contains(n)) {
         _fujianPicks.remove(n);
-      } else if (_fujianPicks.length < 7) {
+      } else if (_fujianPicks.length < limit) {
         _fujianPicks.add(n);
       }
     });
@@ -138,7 +148,8 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         numbers.add(value);
       }
     } else {
-      if (_fujianPicks.length != 7) {
+      final need = fujianPickCount(_kind);
+      if (_fujianPicks.length != need) {
         setState(() {
           _resultOk = false;
           _resultMessage = '选号未通过校验';
@@ -166,6 +177,23 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       _resultOk = result.ok;
       _resultMessage = result.message;
     });
+  }
+
+  Key _gameKey(PlayKind kind) {
+    switch (kind) {
+      case PlayKind.numberPick:
+        return const Key('play-game-number-pick');
+      case PlayKind.fujian31Any2:
+        return const Key('play-game-fujian-31-any-2');
+      case PlayKind.fujian31Any3:
+        return const Key('play-game-fujian-31-any-3');
+      case PlayKind.fujian31Any4:
+        return const Key('play-game-fujian-31-any-4');
+      case PlayKind.fujian31Any5:
+        return const Key('play-game-fujian-31-any-5');
+      case PlayKind.fujian31:
+        return const Key('play-game-fujian-31');
+    }
   }
 
   @override
@@ -204,10 +232,10 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                 const SizedBox(height: 12),
                 Card(
                   child: ListTile(
-                    key: const Key('play-game-number-pick'),
+                    key: _gameKey(PlayKind.numberPick),
                     selected: _kind == PlayKind.numberPick,
-                    title: const Text('数字选号'),
-                    subtitle: const Text('选择 3 个不重复数字，投注冻结占位'),
+                    title: Text(titleFor(PlayKind.numberPick)),
+                    subtitle: Text(subtitleFor(PlayKind.numberPick)),
                     onTap: () => _selectKind(PlayKind.numberPick),
                   ),
                 ),
@@ -217,15 +245,16 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                     subtitle: Text('本片不接投注'),
                   ),
                 ),
-                Card(
-                  child: ListTile(
-                    key: const Key('play-game-fujian-31'),
-                    selected: _kind == PlayKind.fujian31,
-                    title: const Text('福建31选7'),
-                    subtitle: const Text('选择 7 个 1 到 31 的号码，投注冻结占位'),
-                    onTap: () => _selectKind(PlayKind.fujian31),
+                for (final kind in _fujianKinds)
+                  Card(
+                    child: ListTile(
+                      key: _gameKey(kind),
+                      selected: _kind == kind,
+                      title: Text(titleFor(kind)),
+                      subtitle: Text(subtitleFor(kind)),
+                      onTap: () => _selectKind(kind),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -238,12 +267,13 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
 
   Widget _buildPanel(BuildContext context) {
     final open = _openRound;
-    final title = _kind == PlayKind.fujian31 ? '福建31选7' : '数字选号';
+    final title = titleFor(_kind);
     final roundLine = _loadingRound
         ? '正在读取期号…'
         : open == null
             ? (_roundHint ?? '当期已截止，无法投注')
             : '销售中 · ${open.code.isEmpty ? open.roundId : open.code}';
+    final pickNeed = isFujianKind(_kind) ? fujianPickCount(_kind) : 3;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,8 +292,8 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                   const Text('输入区'),
                   const SizedBox(height: 8),
                   Text(
-                    _kind == PlayKind.fujian31
-                        ? '选择 7 个不重复号码（1-31），已选 ${_fujianPicks.length}/7'
+                    isFujianKind(_kind)
+                        ? '选择 $pickNeed 个不重复号码（1-31），已选 ${_fujianPicks.length}/$pickNeed'
                         : '选择 3 个不重复数字（0-9）',
                   ),
                   const SizedBox(height: 12),
