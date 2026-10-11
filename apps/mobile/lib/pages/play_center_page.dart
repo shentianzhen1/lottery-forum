@@ -313,7 +313,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
             key: const Key('play-result-panel'),
             title: const Text('结果区'),
             subtitle: Text(
-              _resultMessage ?? '确认后走真实投注冻结占位，暂不派奖',
+              _resultMessage ?? '确认后冻结注额，结算后由本版块版主按结果派奖',
               key: const Key('play-result-message'),
             ),
             trailing: _resultMessage == null

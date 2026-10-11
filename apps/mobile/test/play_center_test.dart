@@ -33,7 +33,7 @@ class _FakeGateway implements PlayBettingGateway {
     return result ??
         const BetResult(
           ok: true,
-          message: '投注已受理（积分已冻结占位，暂不派奖）',
+          message: '投注已受理，积分已冻结，结算后按结果派奖',
           status: 'ACCEPTED',
           betId: 'bet-1',
         );
@@ -83,7 +83,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('play-submit-bet')));
     await tester.pumpAndSettle();
-    expect(find.text('投注已受理（积分已冻结占位，暂不派奖）'), findsOneWidget);
+    expect(find.text('投注已受理，积分已冻结，结算后按结果派奖'), findsOneWidget);
     expect(gateway.lastPayload?['play_id'], 'number-pick');
     expect(gateway.lastPayload?['round_id'], 'r1');
     expect(gateway.lastPayload?['numbers'], [1, 2, 3]);
@@ -140,7 +140,7 @@ void main() {
     }
     await tester.tap(find.byKey(const Key('play-submit-bet')));
     await tester.pumpAndSettle();
-    expect(find.text('投注已受理（积分已冻结占位，暂不派奖）'), findsOneWidget);
+    expect(find.text('投注已受理，积分已冻结，结算后按结果派奖'), findsOneWidget);
     expect(gateway.lastPayload?['play_id'], 'fujian-31');
     expect(gateway.lastPayload?['round_id'], 'fj-open');
     expect(gateway.lastPayload?['numbers'], [1, 2, 3, 4, 5, 6, 7]);

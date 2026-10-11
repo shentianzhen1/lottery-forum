@@ -30,7 +30,7 @@ class ApiPlayBettingGateway implements PlayBettingGateway {
       final body = await client.postJson('/api/v1/bets', payload);
       return BetResult(
         ok: true,
-        message: body['message']?.toString() ?? '投注已受理（积分已冻结占位，暂不派奖）',
+        message: body['message']?.toString() ?? '投注已受理，积分已冻结，结算后按结果派奖',
         betId: body['bet_id']?.toString(),
         status: body['status']?.toString(),
       );
