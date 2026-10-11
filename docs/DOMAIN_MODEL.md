@@ -45,7 +45,7 @@
 
 异常终态：`REJECTED`、`CANCELLED`、`REFUNDED`。
 
-中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消、开奖或派奖。须挂在 `OPEN` 期号；`stake_enabled` 玩法（如 `number-pick`）可投，`fujian-31` 仍 `STAKE_DISABLED`。
+中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消、开奖或派奖。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
 
 BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
 

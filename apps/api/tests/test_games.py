@@ -32,7 +32,7 @@ def test_fujian_31_normalizes_and_counts_pairs() -> None:
     assert response.json()["normalized"] == {"numbers": [1, 2, 3, 7, 8, 9, 31], "pair_count": 21}
 
 
-def test_fujian_31_does_not_take_the_temporary_stake() -> None:
+def test_fujian_31_takes_the_temporary_stake() -> None:
     registered = client.post("/api/v1/auth/register", json={"username": "fj-user", "password": "secret-pass"})
     token = registered.json()["token"]
     response = client.post(
@@ -40,8 +40,12 @@ def test_fujian_31_does_not_take_the_temporary_stake() -> None:
         headers={"Authorization": f"Bearer {token}"},
         json={"numbers": [1, 2, 3, 4, 5, 6, 7], "idempotency_key": "fj-1"},
     )
-    assert response.status_code == 400
-    assert response.json()["detail"]["code"] == "STAKE_DISABLED"
+    assert response.status_code == 200
+    body = response.json()
+    assert body["stake"] == 10
+    assert body["payout"] == 0
+    assert body["normalized"] == {"numbers": [1, 2, 3, 4, 5, 6, 7], "pair_count": 21}
+    assert body["balance"] == 90
 
 
 def test_unknown_game_is_not_found() -> None:
