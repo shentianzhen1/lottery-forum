@@ -4,6 +4,8 @@ from pathlib import Path
 
 from app.auth.service import AuthService
 from app.auth.store import AccountStore
+from app.bets.service import BetService
+from app.bets.store import BetStore
 from app.db import connect
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
@@ -25,6 +27,7 @@ class AppState:
     selections: SelectionStore
     moderator: ModeratorService
     rounds: RoundService
+    bets: BetService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -34,6 +37,7 @@ def build_state(database: Path | None = None) -> AppState:
     connection = connect(database)
     ledger = LedgerService(SqliteLedgerStore(connection=connection))
     games = GameRegistry()
+    rounds = RoundService(RoundStore(connection=connection))
     return AppState(
         AuthService(AccountStore(connection=connection), ledger),
         ledger,
@@ -41,5 +45,6 @@ def build_state(database: Path | None = None) -> AppState:
         GameParticipation(games, ledger),
         SelectionStore(connection=connection),
         ModeratorService(ModeratorStore(connection=connection), ledger),
-        RoundService(RoundStore(connection=connection)),
+        rounds,
+        BetService(BetStore(connection=connection), rounds, games, ledger),
     )
