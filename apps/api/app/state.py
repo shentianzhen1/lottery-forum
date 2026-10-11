@@ -65,5 +65,5 @@ def build_state(database: Path | None = None) -> AppState:
         rounds,
         BetService(bet_store, rounds, games, ledger),
         home,
-        SettlementService(SettlementStore(connection=connection), rounds, bet_store),
+        SettlementService(SettlementStore(connection=connection), rounds, bet_store, ledger),
     )

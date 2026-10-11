@@ -16,7 +16,8 @@
 - ~~**结算权限收口（管理员）**~~：期号创建/推进与写结算已限 `role=admin`，越权 403 `FORBIDDEN`；管理员来自 `LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子，注册不能自封。
 - ~~**版主归属期号与权限**~~：期号挂 `board_id`（归属开设该版块的版主，彩种须一致）；该版块版主可建号并推进自己版块的期号，旧期号（无 `board_id`）仅管理员；写结算仍只限管理员（版主是赔付方）；管理员保留全部权限。本地造版主用 `LOTTERY_FORUM_DEV_SEED_MODERATORS` 启动种子（默认关闭）。
 - **版主写结算 / 结算复核**：如需让版主参与结算，须有独立复核（版主是赔付方，不能自判）；当前不做。
-- **真实派奖 / 版主赔付链**：进入 `SETTLED`、写派奖分录、从期号 `board_id` 对应版主的冻结池扣付；`payout_formula` 仍 `unset`。
+- ~~**派奖第一刀（VOID/LOSS → SETTLED）**~~：已开放管理员 `POST /rounds/{id}/settled`；`VOID` 解冻退回、`LOSS` 划入版主钱包；有 `WIN` 或结算不完整则挡。
+- **真实 WIN 派奖 / 版主冻结池扣付**：`payout_formula` 仍 `unset`；中奖分录与从版主冻结池扣付未做。
 
 ## 基础设施
 

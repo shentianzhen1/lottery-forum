@@ -23,14 +23,14 @@
 - 宽度低于 960 时提示使用横屏，不把窄屏页伪装成横屏首页
 - CI 工作流已添加；是否通过以 GitHub Actions 实际结果为准
 - 个人中心可注册、登录和退出。注册发放 100 开户积分
-- 期号状态机骨架：可创建/查询，单向推进 `UPCOMING → OPEN → CLOSED → DRAWN → SETTLING`；管理员或该期所属版块的版主可创建和推进（期号挂 `board_id`），写结算仅管理员。尚无 `SETTLED`、无派奖
-- 结算骨架：管理员可在 `SETTLING` 期写 `WIN`/`LOSS`/`VOID` 记录；不写派奖分录、不动版主冻结池。产品口径：下注由开设该版块的版主赔付，赔付公式未定
-- 投注生命周期骨架：挂 `OPEN` 期号，校验→记录→冻结占位（`ACCEPTED`）。不取消、不开奖、不派奖
+- 期号状态机骨架：可创建/查询，单向推进 `UPCOMING → OPEN → CLOSED → DRAWN → SETTLING → SETTLED`；管理员或该期所属版块的版主可创建和推进到结算中（期号挂 `board_id`）；写结算与进已结算仅管理员
+- 结算：管理员可在 `SETTLING` 期写 `WIN`/`LOSS`/`VOID` 记录，再 `POST /rounds/{id}/settled` 入账——`VOID` 解冻退回、`LOSS` 划入版主钱包；有 `WIN` 则拒绝（赔付公式未定）。产品口径：下注由开设该版块的版主赔付
+- 投注生命周期骨架：挂 `OPEN` 期号，校验→记录→冻结占位（`ACCEPTED`）；finalize 后 VOID/LOSS 进 `SETTLED`。不取消；`WIN` 不派奖
 
 未实现：
 
 - PostgreSQL 尚未连接。当前持久化是 SQLite 文件
-- 玩法派奖
+- `WIN` 玩法派奖（赔付公式未定）
 - 坐庄引擎与版主赔付公式（门槛开通已落地，见上；坐庄/赔付未做）
 - 管理后台
 - Android 平台文件已生成，测试包默认横屏。可在本机或 GitHub Release/CI 打 debug APK（见 `docs/ANDROID_TEST_BUILD.md`）；仓库不提交 APK 二进制；部分受限环境曾因内存不足导致构建失败，属环境备注

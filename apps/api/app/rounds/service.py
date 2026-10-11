@@ -4,12 +4,13 @@ from uuid import uuid4
 
 from app.rounds.store import RoundStore
 
-# Closed → Drawn → Settling are opened. SETTLED stays closed (no payout).
+# Closed → Drawn → Settling → Settled. WIN payout still unset; see SettlementService.finalize.
 TRANSITIONS: dict[str, str] = {
     "UPCOMING": "OPEN",
     "OPEN": "CLOSED",
     "CLOSED": "DRAWN",
     "DRAWN": "SETTLING",
+    "SETTLING": "SETTLED",
 }
 
 # board_id -> moderator board row (board_id, account_id, lottery_id, ...) or None.
@@ -81,6 +82,10 @@ class RoundService:
 
     def settling(self, round_id: str) -> dict[str, object]:
         return self._advance(round_id, expected_from="DRAWN", to="SETTLING")
+
+    def settled(self, round_id: str) -> dict[str, object]:
+        """SETTLING → SETTLED. Callers must apply VOID/LOSS ledger effects first."""
+        return self._advance(round_id, expected_from="SETTLING", to="SETTLED")
 
     def _advance(self, round_id: str, expected_from: str, to: str) -> dict[str, object]:
         row = self.store.get(round_id)
