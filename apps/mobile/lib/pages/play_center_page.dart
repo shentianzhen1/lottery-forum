@@ -22,6 +22,7 @@ class PlayCenterPage extends StatefulWidget {
 }
 
 class _PlayCenterPageState extends State<PlayCenterPage> {
+  PlayKind _kind = PlayKind.numberPick;
   OpenRound? _openRound;
   String? _roundHint;
   bool _loadingRound = false;
@@ -31,6 +32,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   final _n1 = TextEditingController(text: '1');
   final _n2 = TextEditingController(text: '2');
   final _n3 = TextEditingController(text: '3');
+  final Set<int> _fujianPicks = <int>{};
 
   @override
   void initState() {
@@ -64,13 +66,25 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     super.dispose();
   }
 
+  Future<void> _selectKind(PlayKind kind) async {
+    if (_kind == kind) return;
+    setState(() {
+      _kind = kind;
+      _resultMessage = null;
+      _openRound = null;
+    });
+    if (widget.loggedIn) {
+      await _refreshRound();
+    }
+  }
+
   Future<void> _refreshRound() async {
     setState(() {
       _loadingRound = true;
       _roundHint = null;
     });
     try {
-      final open = await widget.gateway.findOpenRound(numberPickLotteryId);
+      final open = await widget.gateway.findOpenRound(lotteryIdFor(_kind));
       if (!mounted) return;
       setState(() {
         _openRound = open;
@@ -89,6 +103,16 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     }
   }
 
+  void _toggleFujian(int n) {
+    setState(() {
+      if (_fujianPicks.contains(n)) {
+        _fujianPicks.remove(n);
+      } else if (_fujianPicks.length < 7) {
+        _fujianPicks.add(n);
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final open = _openRound;
     if (open == null) {
@@ -98,18 +122,32 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       });
       return;
     }
-    final numbers = <int>[];
-    for (final controller in [_n1, _n2, _n3]) {
-      final value = int.tryParse(controller.text.trim());
-      if (value == null) {
+
+    late final List<int> numbers;
+    if (_kind == PlayKind.numberPick) {
+      numbers = <int>[];
+      for (final controller in [_n1, _n2, _n3]) {
+        final value = int.tryParse(controller.text.trim());
+        if (value == null) {
+          setState(() {
+            _resultOk = false;
+            _resultMessage = '选号未通过校验';
+          });
+          return;
+        }
+        numbers.add(value);
+      }
+    } else {
+      if (_fujianPicks.length != 7) {
         setState(() {
           _resultOk = false;
           _resultMessage = '选号未通过校验';
         });
         return;
       }
-      numbers.add(value);
+      numbers = _fujianPicks.toList()..sort();
     }
+
     setState(() {
       _submitting = true;
       _resultMessage = null;
@@ -118,8 +156,8 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     final result = await widget.gateway.placeBet({
       'idempotency_key': key,
       'round_id': open.roundId,
-      'play_id': numberPickPlayId,
-      'rule_version': numberPickRuleVersion,
+      'play_id': playIdFor(_kind),
+      'rule_version': ruleVersionFor(_kind),
       'numbers': numbers,
     });
     if (!mounted) return;
@@ -164,24 +202,28 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
               children: [
                 Text('玩法', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
-                const Card(
+                Card(
                   child: ListTile(
-                    key: Key('play-game-number-pick'),
-                    title: Text('数字选号'),
-                    subtitle: Text('选择 3 个不重复数字，投注冻结占位'),
-                    selected: true,
+                    key: const Key('play-game-number-pick'),
+                    selected: _kind == PlayKind.numberPick,
+                    title: const Text('数字选号'),
+                    subtitle: const Text('选择 3 个不重复数字，投注冻结占位'),
+                    onTap: () => _selectKind(PlayKind.numberPick),
                   ),
                 ),
                 const Card(
                   child: ListTile(
                     title: Text('排名竞猜'),
-                    subtitle: Text('本片先接数字选号'),
+                    subtitle: Text('本片不接投注'),
                   ),
                 ),
-                const Card(
+                Card(
                   child: ListTile(
-                    title: Text('福建31选7'),
-                    subtitle: Text('尚未开放投注冻结'),
+                    key: const Key('play-game-fujian-31'),
+                    selected: _kind == PlayKind.fujian31,
+                    title: const Text('福建31选7'),
+                    subtitle: const Text('选择 7 个 1 到 31 的号码，投注冻结占位'),
+                    onTap: () => _selectKind(PlayKind.fujian31),
                   ),
                 ),
               ],
@@ -196,6 +238,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
 
   Widget _buildPanel(BuildContext context) {
     final open = _openRound;
+    final title = _kind == PlayKind.fujian31 ? '福建31选7' : '数字选号';
     final roundLine = _loadingRound
         ? '正在读取期号…'
         : open == null
@@ -205,36 +248,62 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('数字选号', style: Theme.of(context).textTheme.headlineSmall),
+        Text(title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         Text(roundLine, key: const Key('play-round-status')),
         const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('输入区'),
-                const SizedBox(height: 8),
-                const Text('选择 3 个不重复数字（0-9）'),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _DigitField(controller: _n1, label: '号1'),
-                    const SizedBox(width: 8),
-                    _DigitField(controller: _n2, label: '号2'),
-                    const SizedBox(width: 8),
-                    _DigitField(controller: _n3, label: '号3'),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  key: const Key('play-submit-bet'),
-                  onPressed: _submitting || open == null ? null : _submit,
-                  child: Text(_submitting ? '提交中' : '确认投注'),
-                ),
-              ],
+        Expanded(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('输入区'),
+                  const SizedBox(height: 8),
+                  Text(
+                    _kind == PlayKind.fujian31
+                        ? '选择 7 个不重复号码（1-31），已选 ${_fujianPicks.length}/7'
+                        : '选择 3 个不重复数字（0-9）',
+                  ),
+                  const SizedBox(height: 12),
+                  if (_kind == PlayKind.numberPick)
+                    Row(
+                      children: [
+                        _DigitField(controller: _n1, label: '号1'),
+                        const SizedBox(width: 8),
+                        _DigitField(controller: _n2, label: '号2'),
+                        const SizedBox(width: 8),
+                        _DigitField(controller: _n3, label: '号3'),
+                      ],
+                    )
+                  else
+                    Expanded(
+                      child: SingleChildScrollView(
+                        key: const Key('fujian-number-grid'),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (var n = 1; n <= 31; n++)
+                              FilterChip(
+                                key: Key('fujian-n-$n'),
+                                label: Text('$n'),
+                                selected: _fujianPicks.contains(n),
+                                onSelected: (_) => _toggleFujian(n),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    key: const Key('play-submit-bet'),
+                    onPressed: _submitting || open == null ? null : _submit,
+                    child: Text(_submitting ? '提交中' : '确认投注'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

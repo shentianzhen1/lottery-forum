@@ -27,9 +27,24 @@ abstract class PlayBettingGateway {
   Future<BetResult> placeBet(Map<String, Object?> payload);
 }
 
+enum PlayKind { numberPick, fujian31 }
+
 const numberPickPlayId = 'number-pick';
 const numberPickRuleVersion = '0.1.0';
 const numberPickLotteryId = 'demo-digit';
+
+const fujian31PlayId = 'fujian-31';
+const fujian31RuleVersion = '0.1.0';
+const fujian31LotteryId = 'fujian-31';
+
+String lotteryIdFor(PlayKind kind) =>
+    kind == PlayKind.fujian31 ? fujian31LotteryId : numberPickLotteryId;
+
+String playIdFor(PlayKind kind) =>
+    kind == PlayKind.fujian31 ? fujian31PlayId : numberPickPlayId;
+
+String ruleVersionFor(PlayKind kind) =>
+    kind == PlayKind.fujian31 ? fujian31RuleVersion : numberPickRuleVersion;
 
 String messageForBetCode(String? code, String fallback) {
   switch (code) {
