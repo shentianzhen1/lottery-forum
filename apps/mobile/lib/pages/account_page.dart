@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
 class AccountPage extends StatefulWidget {
-  const AccountPage({required this.client, required this.onChanged, super.key});
+  const AccountPage({
+    required this.landscapeReady,
+    required this.client,
+    required this.onChanged,
+    super.key,
+  });
 
+  final bool landscapeReady;
   final ApiClient client;
   final VoidCallback onChanged;
 
@@ -47,6 +53,15 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.landscapeReady) {
+      return const Center(
+        child: Text(
+          '请使用横屏查看个人中心',
+          key: Key('account-landscape-required'),
+        ),
+      );
+    }
+
     final session = widget.client.session;
     if (session.token != null) {
       return Center(
