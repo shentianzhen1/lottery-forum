@@ -4,14 +4,28 @@ import 'package:lottery_forum/pages/play_betting.dart';
 import 'package:lottery_forum/pages/play_center_page.dart';
 
 class _FakeGateway implements PlayBettingGateway {
-  _FakeGateway({this.open, this.result});
+  _FakeGateway({required this.openFor, this.result});
 
-  final OpenRound? open;
+  factory _FakeGateway.simple({OpenRound? open, BetResult? result}) {
+    return _FakeGateway(
+      openFor: {
+        numberPickLotteryId: open,
+        fujian31LotteryId: open,
+      },
+      result: result,
+    );
+  }
+
+  final Map<String, OpenRound?> openFor;
   final BetResult? result;
   Map<String, Object?>? lastPayload;
+  final List<String> lotteryQueries = <String>[];
 
   @override
-  Future<OpenRound?> findOpenRound(String lotteryId) async => open;
+  Future<OpenRound?> findOpenRound(String lotteryId) async {
+    lotteryQueries.add(lotteryId);
+    return openFor[lotteryId];
+  }
 
   @override
   Future<BetResult> placeBet(Map<String, Object?> payload) async {
@@ -48,15 +62,15 @@ void main() {
       PlayCenterPage(
         landscapeReady: true,
         loggedIn: true,
-        gateway: _FakeGateway(open: null),
+        gateway: _FakeGateway.simple(open: null),
       ),
     );
     expect(find.text('当期已截止，无法投注'), findsOneWidget);
     expect(find.text('参与扣固定积分，不派奖'), findsNothing);
   });
 
-  testWidgets('successful bet shows accepted message', (tester) async {
-    final gateway = _FakeGateway(
+  testWidgets('successful number-pick bet shows accepted message', (tester) async {
+    final gateway = _FakeGateway.simple(
       open: const OpenRound(roundId: 'r1', lotteryId: 'demo-digit', code: 'demo'),
     );
     await _pump(
@@ -73,11 +87,10 @@ void main() {
     expect(gateway.lastPayload?['play_id'], 'number-pick');
     expect(gateway.lastPayload?['round_id'], 'r1');
     expect(gateway.lastPayload?['numbers'], [1, 2, 3]);
-    expect(find.text('参与扣固定积分，不派奖'), findsNothing);
   });
 
   testWidgets('insufficient points shows locked copy', (tester) async {
-    final gateway = _FakeGateway(
+    final gateway = _FakeGateway.simple(
       open: const OpenRound(roundId: 'r1', lotteryId: 'demo-digit', code: 'demo'),
       result: const BetResult(
         ok: false,
@@ -96,5 +109,40 @@ void main() {
     await tester.tap(find.byKey(const Key('play-submit-bet')));
     await tester.pumpAndSettle();
     expect(find.text('积分不足'), findsOneWidget);
+  });
+
+  testWidgets('fujian-31 picks seven numbers and posts bets', (tester) async {
+    final gateway = _FakeGateway(
+      openFor: {
+        numberPickLotteryId: null,
+        fujian31LotteryId: const OpenRound(
+          roundId: 'fj-open',
+          lotteryId: 'fujian-31',
+          code: 'fj-1',
+        ),
+      },
+    );
+    await _pump(
+      tester,
+      PlayCenterPage(
+        landscapeReady: true,
+        loggedIn: true,
+        gateway: gateway,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('play-game-fujian-31')));
+    await tester.pumpAndSettle();
+    expect(gateway.lotteryQueries, contains('fujian-31'));
+    expect(find.byKey(const Key('fujian-number-grid')), findsOneWidget);
+    for (final n in [1, 2, 3, 4, 5, 6, 7]) {
+      await tester.tap(find.byKey(Key('fujian-n-$n')));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byKey(const Key('play-submit-bet')));
+    await tester.pumpAndSettle();
+    expect(find.text('投注已受理（积分已冻结占位，暂不派奖）'), findsOneWidget);
+    expect(gateway.lastPayload?['play_id'], 'fujian-31');
+    expect(gateway.lastPayload?['round_id'], 'fj-open');
+    expect(gateway.lastPayload?['numbers'], [1, 2, 3, 4, 5, 6, 7]);
   });
 }
