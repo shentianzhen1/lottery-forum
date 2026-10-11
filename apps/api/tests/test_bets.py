@@ -213,3 +213,96 @@ def test_fujian_31_happy_path_on_open_round() -> None:
     assert balance["balance"] == 100
     assert balance["frozen"] == 10
     assert balance["available"] == 90
+
+
+def test_fujian_31_any_n_happy_path_on_shared_lottery_round() -> None:
+    """任选 2–5 与选7共用 lottery_id=fujian-31 的 OPEN 期号。"""
+    token, _ = token_and_account("bet-fj-any")
+    round_id = open_round(token, lottery_id="fujian-31")
+    cases = (
+        ("fujian-31-any-2", [10, 20], 1),
+        ("fujian-31-any-3", [1, 2, 3], 3),
+        ("fujian-31-any-4", [4, 5, 6, 7], 6),
+        ("fujian-31-any-5", [8, 9, 10, 11, 12], 10),
+    )
+    for idx, (play_id, numbers, pair_count) in enumerate(cases):
+        response = client.post(
+            "/api/v1/bets",
+            headers=auth(token),
+            json={
+                "idempotency_key": f"fj-any-{idx}",
+                "round_id": round_id,
+                "play_id": play_id,
+                "rule_version": "0.1.0",
+                "numbers": numbers,
+            },
+        )
+        assert response.status_code == 200, play_id
+        body = response.json()
+        assert body["status"] == "ACCEPTED"
+        assert body["play_id"] == play_id
+        assert body["round_id"] == round_id
+        assert body["stake"] == 10
+        assert body["hold_id"]
+        assert body["odds_snapshot"] == {"status": "fixed", "multiplier": 2}
+        assert body["selection"] == {"numbers": sorted(numbers), "pair_count": pair_count}
+        assert body["message"] == "投注已受理，积分已冻结，结算后按结果派奖"
+
+    balance = client.get("/api/v1/points/balance", headers=auth(token)).json()
+    assert balance["balance"] == 100
+    assert balance["frozen"] == 40  # 4 × 10
+    assert balance["available"] == 60
+
+
+def test_fujian_31_any_n_invalid_selection_message() -> None:
+    token, _ = token_and_account("bet-fj-any-bad")
+    round_id = open_round(token, lottery_id="fujian-31")
+    response = client.post(
+        "/api/v1/bets",
+        headers=auth(token),
+        json={
+            "idempotency_key": "fj-any-bad",
+            "round_id": round_id,
+            "play_id": "fujian-31-any-3",
+            "rule_version": "0.1.0",
+            "numbers": [1, 1, 2],
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "INVALID_SELECTION"
+    assert response.json()["detail"]["message"] == "选号未通过校验"
+    balance = client.get("/api/v1/points/balance", headers=auth(token)).json()
+    assert balance["frozen"] == 0
+
+
+def test_fujian_31_select7_still_works_alongside_any() -> None:
+    """选7 id 不动，与任选可同挂一期满注。"""
+    token, _ = token_and_account("bet-fj-both")
+    round_id = open_round(token, lottery_id="fujian-31")
+    any2 = client.post(
+        "/api/v1/bets",
+        headers=auth(token),
+        json={
+            "idempotency_key": "both-any2",
+            "round_id": round_id,
+            "play_id": "fujian-31-any-2",
+            "rule_version": "0.1.0",
+            "numbers": [1, 31],
+        },
+    )
+    select7 = client.post(
+        "/api/v1/bets",
+        headers=auth(token),
+        json={
+            "idempotency_key": "both-select7",
+            "round_id": round_id,
+            "play_id": "fujian-31",
+            "rule_version": "0.1.0",
+            "numbers": [1, 2, 3, 4, 5, 6, 7],
+        },
+    )
+    assert any2.status_code == 200
+    assert select7.status_code == 200
+    assert any2.json()["play_id"] == "fujian-31-any-2"
+    assert select7.json()["play_id"] == "fujian-31"
+    assert select7.json()["selection"]["pair_count"] == 21

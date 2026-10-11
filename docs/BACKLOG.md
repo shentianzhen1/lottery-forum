@@ -11,6 +11,7 @@
 ## 玩法与投注
 
 - ~~**福建 31 选 7 接投注骨架**~~：已放开 `stake_enabled`，与数字选号同款 `POST /bets` 冻结占位（本片不派奖）。客户端横屏选号已接投注（#47）。
+- ~~**福建 31 任选 2/3/4/5（后端）**~~：已注册 `fujian-31-any-2`…`any-5`，与选7共用期号彩种 `fujian-31`；同款冻结 + 连本带利共 2 倍。客户端入口另片。
 - **取消投注**：`POST /bets/{bet_id}/cancel`（仅 `OPEN` 期内、未锁定）未开放。
 - ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；本片不派奖。
 - ~~**结算权限收口（管理员）**~~：期号创建/推进与写结算已限 `role=admin`，越权 403 `FORBIDDEN`；管理员来自 `LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子，注册不能自封。
@@ -20,7 +21,6 @@
 - ~~**WIN 派奖最小可跑版（固定 2 倍）**~~：`odds_snapshot` 写 `{"status":"fixed","multiplier":2}`；finalize 时 `WIN` 解冻后从版主可用付盈利 `stake×(倍率−1)`（连本带利共倍率倍）；不足整期挡 `INSUFFICIENT_MODERATOR_POINTS`；判断可用不算同批 LOSS；门槛冻结池不动。
 - **`payout_formula` 配置位与快照对齐**：版块字段仍可显示 `unset`，实结算看投注 `odds_snapshot`；若要对齐配置位另开。
 - **阶梯/复杂赔率与冻结池扣付**：本片仅固定倍率 2（连本带利）；从开通门槛冻结池扣付未做。
-- **福建 31 任选 2/3/4/5**：与现有选 7 并列；玩法 id / 选号校验 / 客户端入口待开。
 
 ## 基础设施
 

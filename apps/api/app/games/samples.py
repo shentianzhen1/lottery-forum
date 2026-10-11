@@ -29,6 +29,8 @@ class RankingPick:
 
 
 class Fujian31Pick:
+    """福建31选7（play_id 仍为 fujian-31，与彩种/期号 id 相同）。"""
+
     spec = GameSpec("fujian-31", "福建31选7", "number", "0.1.0", True, True, True)
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:
@@ -41,3 +43,34 @@ class Fujian31Pick:
             raise GameError("INVALID_SELECTION", "号码不能重复")
         ordered = sorted(numbers)
         return ValidationResult(self.spec.game_id, {"numbers": ordered, "pair_count": 21})
+
+
+class Fujian31AnyPick:
+    """福建31任选 N（play_id = fujian-31-any-N）；期号彩种仍挂 fujian-31。"""
+
+    def __init__(self, pick_count: int) -> None:
+        if pick_count < 2 or pick_count > 5:
+            raise ValueError(f"任选个数须为 2–5，收到 {pick_count}")
+        self.pick_count = pick_count
+        self.spec = GameSpec(
+            f"fujian-31-any-{pick_count}",
+            f"福建31任选{pick_count}",
+            "number",
+            "0.1.0",
+            True,
+            True,
+            True,
+        )
+
+    def validate(self, payload: dict[str, object]) -> ValidationResult:
+        numbers = payload.get("numbers")
+        n = self.pick_count
+        if not isinstance(numbers, list) or len(numbers) != n:
+            raise GameError("INVALID_SELECTION", f"福建31任选{n}需要 {n} 个不重复号码")
+        if any(not isinstance(item, int) or isinstance(item, bool) or item < 1 or item > 31 for item in numbers):
+            raise GameError("INVALID_SELECTION", "号码必须是 1 到 31 的整数")
+        if len(set(numbers)) != n:
+            raise GameError("INVALID_SELECTION", "号码不能重复")
+        ordered = sorted(numbers)
+        pair_count = n * (n - 1) // 2
+        return ValidationResult(self.spec.game_id, {"numbers": ordered, "pair_count": pair_count})
