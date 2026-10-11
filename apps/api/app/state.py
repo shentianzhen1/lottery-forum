@@ -14,6 +14,7 @@ from app.home.service import HomeService
 from app.home.store import HomeStore
 from app.ledger.service import LedgerService
 from app.ledger.sqlite_store import SqliteLedgerStore
+from app.moderator.dev_seed import seed_moderators_from_env
 from app.moderator.service import ModeratorService
 from app.moderator.store import ModeratorStore
 from app.rounds.service import RoundService
@@ -43,19 +44,24 @@ def build_state(database: Path | None = None) -> AppState:
     connection = connect(database)
     ledger = LedgerService(SqliteLedgerStore(connection=connection))
     games = GameRegistry()
+    moderator_store = ModeratorStore(connection=connection)
+    moderator = ModeratorService(moderator_store, ledger)
     round_store = RoundStore(connection=connection)
-    rounds = RoundService(round_store)
+    rounds = RoundService(round_store, moderator_store.get)
     bet_store = BetStore(connection=connection)
     home = HomeService(HomeStore(connection=connection))
     if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
         home.seed_demo()
+    auth = AuthService(AccountStore(connection=connection), ledger)
+    # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_MODERATORS is set.
+    seed_moderators_from_env(auth, ledger, moderator)
     return AppState(
-        AuthService(AccountStore(connection=connection), ledger),
+        auth,
         ledger,
         games,
         GameParticipation(games, ledger),
         SelectionStore(connection=connection),
-        ModeratorService(ModeratorStore(connection=connection), ledger),
+        moderator,
         rounds,
         BetService(bet_store, rounds, games, ledger),
         home,

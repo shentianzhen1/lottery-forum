@@ -47,6 +47,11 @@ class AuthService:
         self.failures: dict[str, int] = {}
 
     def register(self, username: str, password: str) -> tuple[Account, str]:
+        account = self.create_account(username, password)
+        return account, self._session(account.account_id)
+
+    def create_account(self, username: str, password: str) -> Account:
+        """Create a ``user`` account with the opening grant, without issuing a session."""
         cleaned = username.strip()
         self._check_lengths(cleaned, password)
         if self.accounts.by_username(cleaned) is not None:
@@ -65,7 +70,7 @@ class AuthService:
                 operator_id="system",
             )
         )
-        return resolve_role(account), self._session(account.account_id)
+        return resolve_role(account)
 
     def login(self, username: str, password: str) -> tuple[Account, str]:
         cleaned = username.strip()

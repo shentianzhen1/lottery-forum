@@ -23,7 +23,7 @@
 - 宽度低于 960 时提示使用横屏，不把窄屏页伪装成横屏首页
 - CI 工作流已添加；是否通过以 GitHub Actions 实际结果为准
 - 个人中心可注册、登录和退出。注册发放 100 开户积分
-- 期号状态机骨架：可创建/查询，单向推进 `UPCOMING → OPEN → CLOSED → DRAWN → SETTLING`；仅管理员可创建和推进。尚无 `SETTLED`、无派奖
+- 期号状态机骨架：可创建/查询，单向推进 `UPCOMING → OPEN → CLOSED → DRAWN → SETTLING`；管理员或该期所属版块的版主可创建和推进（期号挂 `board_id`），写结算仅管理员。尚无 `SETTLED`、无派奖
 - 结算骨架：管理员可在 `SETTLING` 期写 `WIN`/`LOSS`/`VOID` 记录；不写派奖分录、不动版主冻结池。产品口径：下注由开设该版块的版主赔付，赔付公式未定
 - 投注生命周期骨架：挂 `OPEN` 期号，校验→记录→冻结占位（`ACCEPTED`）。不取消、不开奖、不派奖
 
@@ -40,12 +40,12 @@
 
 ```bash
 python -m pip install -r apps/api/requirements-dev.txt
-cd apps/api && python -m pytest tests
-cd apps/mobile && flutter pub get && flutter analyze && flutter test
+(cd apps/api && python -m pytest tests)
+(cd apps/mobile && flutter pub get && flutter analyze && flutter test)
 uvicorn app.main:app --app-dir apps/api --reload
 ```
 
-期号创建/推进与写结算仅限管理员：本地用 `LOTTERY_FORUM_ADMIN_USERNAMES=alice,bob uvicorn …` 指定（逗号分隔用户名），注册不能自封管理员，详见 `docs/API_CONTRACT.md`。
+期号创建/推进：管理员，或在自己版块上的版主；写结算仅限管理员。管理员本地用 `LOTTERY_FORUM_ADMIN_USERNAMES=alice,bob uvicorn …` 指定（逗号分隔用户名），注册不能自封管理员，详见 `docs/API_CONTRACT.md`。
 
 ### 本地演示：开一个销售中期号
 
@@ -67,5 +67,32 @@ curl -s -X POST localhost:8000/api/v1/rounds/<round_id>/open -H "Authorization: 
 ```
 
 之后客户端玩法中心就能找到该彩种的销售中期号并下单。普通账号照常注册、下注，不需要管理员权限。
+
+### 本地演示：版主在自己版块开期号
+
+开版块要 10000 积分门槛。本地可用启动种子直接造两个版主（**仅限本地/测试，线上不要设**；不设就什么都不发生，也没有任何加积分接口）：
+
+```bash
+# 1. 启动 API：种子建 alice（福建31版块）和 bob（数字选号版块），密码默认 secret-pass
+LOTTERY_FORUM_DEV_SEED_MODERATORS=alice:fujian-31,bob:demo-digit \
+  uvicorn app.main:app --app-dir apps/api --reload
+
+# 2. 两人登录，各自查自己的版块
+curl -s -X POST localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' -d '{"username":"alice","password":"secret-pass"}'
+ALICE=<alice 的 token>   # bob 同理得到 BOB
+curl -s localhost:8000/api/v1/moderator/boards/me -H "Authorization: Bearer $ALICE"
+BOARD=<alice 的 board_id>
+
+# 3. alice 在自己版块建福建31期号并开售（board_id 必填，lottery_id 须与版块一致）
+curl -s -X POST localhost:8000/api/v1/rounds -H "Authorization: Bearer $ALICE" \
+  -H 'Content-Type: application/json' -d "{\"lottery_id\":\"fujian-31\",\"board_id\":\"$BOARD\"}"
+curl -s -X POST localhost:8000/api/v1/rounds/<round_id>/open -H "Authorization: Bearer $ALICE"
+
+# 4. bob 动 alice 的期号 → 403 FORBIDDEN「无权限执行此操作」
+curl -s -X POST localhost:8000/api/v1/rounds/<round_id>/close -H "Authorization: Bearer $BOB"
+```
+
+版主能建号、开售、截止、开奖、进结算中，但**写结算（`POST /settlements/{round_id}`）仍只限管理员**。可与 `LOTTERY_FORUM_ADMIN_USERNAMES` 同时设置。种子密码可用 `LOTTERY_FORUM_DEV_SEED_PASSWORD` 改。
 
 不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。

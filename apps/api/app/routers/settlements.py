@@ -18,7 +18,9 @@ def record_settlements(
     request: Request,
     account: object = Depends(require_admin),
 ) -> dict[str, object]:
-    del account  # admin only
+    # Admin only, including moderators of the round's board: the board moderator is the payer
+    # (版主赔付) and must not judge their own payout results.
+    del account
     results = payload.get("results", [])
     if not isinstance(results, list):
         raise HTTPException(

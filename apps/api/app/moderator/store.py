@@ -44,6 +44,12 @@ class ModeratorStore:
             (account_id, lottery_id),
         ).fetchone()
 
+    def get(self, board_id: str) -> sqlite3.Row | None:
+        return self.connection.execute(
+            "select * from moderator_boards where board_id = ?",
+            (board_id,),
+        ).fetchone()
+
     def add(self, board_id: str, account_id: str, lottery_id: str, hold_id: str) -> None:
         self.connection.execute(
             """
