@@ -5,6 +5,7 @@ import '../api/api_config.dart';
 import '../api/session.dart';
 import '../pages/account_page.dart';
 import '../api/home_feed_api.dart';
+import '../api/play_betting_api.dart';
 import '../pages/home_page.dart';
 import '../pages/moderator_page.dart';
 import '../pages/play_center_page.dart';
@@ -70,7 +71,12 @@ class _AppShellState extends State<AppShell> {
           onGoToModerator: () => setState(() => _index = 3),
         );
       case 1:
-        return PlayCenterPage(landscapeReady: landscapeReady);
+        return PlayCenterPage(
+          landscapeReady: landscapeReady,
+          loggedIn: loggedIn,
+          gateway: ApiPlayBettingGateway(_client),
+          onGoToAccount: () => setState(() => _index = 4),
+        );
       case 2:
         return PointsCenterPage(
           landscapeReady: landscapeReady,
