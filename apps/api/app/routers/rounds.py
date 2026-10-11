@@ -8,7 +8,7 @@ Permissions (版主归属期号与权限):
 - The permission check runs before any existence check, so a non-admin who does not own the
   target gets 403 even when the round/board does not exist (no existence leak).
 - Settlements stay admin-only (see routers/settlements.py).
-- POST /rounds/{id}/settled: admin only. Applies VOID/LOSS ledger effects then SETTLING→SETTLED.
+- POST /rounds/{id}/settled: admin only. Applies VOID/LOSS/WIN ledger effects then SETTLING→SETTLED.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -122,7 +122,7 @@ def settled_round(
     request: Request,
     account: object = Depends(require_admin),
 ) -> dict[str, object]:
-    """Admin-only: finalize VOID/LOSS and advance SETTLING → SETTLED."""
+    """Admin-only: finalize VOID/LOSS/WIN and advance SETTLING → SETTLED."""
     try:
         return request.app.state.services.settlements.finalize(
             round_id, operator_id=account.account_id  # type: ignore[attr-defined]

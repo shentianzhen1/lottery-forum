@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from app.rounds.store import RoundStore
 
-# Closed → Drawn → Settling → Settled. WIN payout still unset; see SettlementService.finalize.
+# Closed → Drawn → Settling → Settled. WIN payout: fixed 2x via SettlementService.finalize.
 TRANSITIONS: dict[str, str] = {
     "UPCOMING": "OPEN",
     "OPEN": "CLOSED",
