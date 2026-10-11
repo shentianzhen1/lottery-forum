@@ -15,7 +15,7 @@
 - DemoRanking：`ranking-pick`，三个不重复选项。
 - DemoPick：`fujian-31`，七个 1 到 31 的不重复号码，返回 21 对。
 
-示例不能绕过钱包、期号和投注对象。`fujian-31` 当前不走临时固定 10 积分扣分。
+示例不能绕过钱包、期号和投注对象。`fujian-31` 已与数字选号同款：`stake_enabled`，可走 `POST /bets` 冻结占位（固定 10 积分，不派奖）。
 
 ## 尚未实现
 

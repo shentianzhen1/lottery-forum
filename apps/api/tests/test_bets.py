@@ -172,7 +172,7 @@ def test_unauthorized_and_no_cancel() -> None:
     assert cancel.status_code == 404
 
 
-def test_stake_disabled_play_rejected() -> None:
+def test_fujian_31_happy_path_on_open_round() -> None:
     token, _ = token_and_account("bet-fujian")
     round_id = open_round(token, lottery_id="fujian-31")
     response = client.post(
@@ -183,8 +183,20 @@ def test_stake_disabled_play_rejected() -> None:
             "round_id": round_id,
             "play_id": "fujian-31",
             "rule_version": "0.1.0",
-            "numbers": [1, 2, 3, 4, 5, 6, 7],
+            "numbers": [7, 1, 31, 8, 2, 9, 3],
         },
     )
-    assert response.status_code == 400
-    assert response.json()["detail"]["code"] == "STAKE_DISABLED"
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ACCEPTED"
+    assert body["play_id"] == "fujian-31"
+    assert body["round_id"] == round_id
+    assert body["stake"] == 10
+    assert body["hold_id"]
+    assert body["odds_snapshot"] == {"status": "unset"}
+    assert body["selection"] == {"numbers": [1, 2, 3, 7, 8, 9, 31], "pair_count": 21}
+    assert body["message"] == "投注已受理（积分已冻结占位，暂不派奖）"
+    balance = client.get("/api/v1/points/balance", headers=auth(token)).json()
+    assert balance["balance"] == 100
+    assert balance["frozen"] == 10
+    assert balance["available"] == 90
