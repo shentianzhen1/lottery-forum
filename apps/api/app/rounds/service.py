@@ -2,11 +2,12 @@ from uuid import uuid4
 
 from app.rounds.store import RoundStore
 
-# This slice only advances through CLOSED. Later states exist in the model
-# but transitions into them are not exposed yet.
+# Closed → Drawn → Settling are opened this slice. SETTLED stays closed (no payout).
 TRANSITIONS: dict[str, str] = {
     "UPCOMING": "OPEN",
     "OPEN": "CLOSED",
+    "CLOSED": "DRAWN",
+    "DRAWN": "SETTLING",
 }
 
 
@@ -41,6 +42,12 @@ class RoundService:
 
     def close(self, round_id: str) -> dict[str, object]:
         return self._advance(round_id, expected_from="OPEN", to="CLOSED")
+
+    def draw(self, round_id: str) -> dict[str, object]:
+        return self._advance(round_id, expected_from="CLOSED", to="DRAWN")
+
+    def settling(self, round_id: str) -> dict[str, object]:
+        return self._advance(round_id, expected_from="DRAWN", to="SETTLING")
 
     def _advance(self, round_id: str, expected_from: str, to: str) -> dict[str, object]:
         row = self.store.get(round_id)

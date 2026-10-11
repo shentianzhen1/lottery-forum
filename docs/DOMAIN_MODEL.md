@@ -4,6 +4,8 @@
 
 积分是平台内部记账单位。不能提现、转账或兑付。可以用于玩法赔付，也可以在开通版主时冻结。本模型不包含充值、提现、兑付或用户间转账。
 
+**产品口径**：该玩法下注由**开设该玩法版块的版主**承担赔付（非平台兑付）。`payout_formula` 仍 `unset`；真实扣付尚未实现。
+
 ## User
 
 已有注册和登录。字段：`account_id`、`username`、`password_hash`、`role`。角色尚未用于授权。
@@ -31,11 +33,11 @@
 
 ## Round
 
-骨架已实现到 `CLOSED`：可创建、查询，并单向推进 `UPCOMING` → `OPEN` → `CLOSED`。状态只能按这个顺序变化：
+骨架已实现到 `SETTLING`：可创建、查询，并单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING`。状态只能按这个顺序变化：
 
 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`
 
-中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`DRAWN` 及之后尚未开放推进；无开奖数据、无派奖。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
+中文展示：未开售 / 销售中 / 已截止 / 已开奖 / 结算中 / 已结算。`SETTLED` 尚未开放推进；本片无开奖号码落库、无真实派奖。关闭后不能新增投注。开奖结果写入后不能覆盖，只能追加纠错记录。
 
 ## Bet / BetItem
 
@@ -45,7 +47,7 @@
 
 异常终态：`REJECTED`、`CANCELLED`、`REFUNDED`。
 
-中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消、开奖或派奖。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
+中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消；结算记录本片不推进投注到 `SETTLED`。须挂在 `OPEN` 期号；`stake_enabled` 玩法（`number-pick` / `ranking-pick` / `fujian-31`）可投。
 
 BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
 
@@ -55,7 +57,7 @@ BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`
 
 ## Settlement
 
-未实现。结果只允许 `WIN`、`LOSS`、`VOID`。派奖和退回都必须写成账本分录，不能直接改余额。
+骨架已实现：`POST /settlements/{round_id}` 可在 `SETTLING` 期为投注落 `WIN` / `LOSS` / `VOID` 记录；`GET /settlements/{round_id}` 可查。本片**不写派奖分录、不扣版主冻结池、不改余额**。派奖和退回将来都必须写成账本分录，不能直接改余额。
 
 ## BankerSession / BankerOffer
 

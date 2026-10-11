@@ -6,6 +6,11 @@ from app.rounds.service import RoundError
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 
+def _raise_round(error: RoundError) -> None:
+    status = 404 if error.code == "ROUND_NOT_FOUND" else 400
+    raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
+
+
 @router.post("")
 def create_round(
     payload: dict[str, str],
@@ -19,7 +24,7 @@ def create_round(
             payload.get("code"),
         )
     except RoundError as error:
-        raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
+        _raise_round(error)
 
 
 @router.get("")
@@ -42,8 +47,7 @@ def get_round(
     try:
         return request.app.state.services.rounds.get(round_id)
     except RoundError as error:
-        status = 404 if error.code == "ROUND_NOT_FOUND" else 400
-        raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
+        _raise_round(error)
 
 
 @router.post("/{round_id}/open")
@@ -56,8 +60,7 @@ def open_round(
     try:
         return request.app.state.services.rounds.open(round_id)
     except RoundError as error:
-        status = 404 if error.code == "ROUND_NOT_FOUND" else 400
-        raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
+        _raise_round(error)
 
 
 @router.post("/{round_id}/close")
@@ -70,5 +73,30 @@ def close_round(
     try:
         return request.app.state.services.rounds.close(round_id)
     except RoundError as error:
-        status = 404 if error.code == "ROUND_NOT_FOUND" else 400
-        raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
+        _raise_round(error)
+
+
+@router.post("/{round_id}/draw")
+def draw_round(
+    round_id: str,
+    request: Request,
+    account: object = Depends(current_account),
+) -> dict[str, object]:
+    del account
+    try:
+        return request.app.state.services.rounds.draw(round_id)
+    except RoundError as error:
+        _raise_round(error)
+
+
+@router.post("/{round_id}/settling")
+def settling_round(
+    round_id: str,
+    request: Request,
+    account: object = Depends(current_account),
+) -> dict[str, object]:
+    del account
+    try:
+        return request.app.state.services.rounds.settling(round_id)
+    except RoundError as error:
+        _raise_round(error)
