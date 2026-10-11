@@ -17,13 +17,33 @@
 - `GET /moderator/settings`：返回 `{"threshold": …}`，默认门槛 10000
 - `POST /moderator/boards`：请求体 `{"lottery_id"}`；达标则冻结门槛积分并开通版块，返回含 `approval: not_required`、`payout_formula: unset`；可用积分不足返回 `INSUFFICIENT_POINTS`；同一彩种已开通则幂等返回原版块
 - `GET /moderator/boards/me`：返回当前账号已开通的版块列表
+- `POST /rounds`：请求体 `{"lottery_id", "code?"}`；创建期号，初始状态 `UPCOMING`
+- `GET /rounds`：可选 `lottery_id` 过滤；返回 `{"rounds":[…]}`
+- `GET /rounds/{round_id}`：期号不存在返回 `ROUND_NOT_FOUND`
+- `POST /rounds/{round_id}/open`：仅 `UPCOMING` → `OPEN`；非法跳转返回 `INVALID_TRANSITION`
+- `POST /rounds/{round_id}/close`：仅 `OPEN` → `CLOSED`；非法跳转返回 `INVALID_TRANSITION`
 
 没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账。开通版主达到后台门槛后冻结积分，不需要人工批准；冻结不是转账。默认门槛是 10000 积分。
+
+本片期号状态机只演示到 `CLOSED`。不提供 `draw`、派奖或结算接口。
+
+### 期号状态（API 枚举 / 中文展示）
+
+| 枚举 | 中文 |
+| --- | --- |
+| `UPCOMING` | 未开售 |
+| `OPEN` | 销售中 |
+| `CLOSED` | 已截止 |
+| `DRAWN` | 已开奖 |
+| `SETTLING` | 结算中 |
+| `SETTLED` | 已结算 |
+
+客户端展示用中文，不直接显示英文码。本片可演示：`UPCOMING`（未开售）→ `OPEN`（销售中）→ `CLOSED`（已截止）。`DRAWN` / `SETTLING` / `SETTLED` 仅预留枚举，尚无推进接口。
 
 ## 预定但未实现
 
 - `GET /lotteries`、`GET /lotteries/{lottery_id}`
-- `POST /rounds`、`GET /rounds/{round_id}`、`POST /rounds/{round_id}/close`、`POST /rounds/{round_id}/draw`
+- `POST /rounds/{round_id}/draw`（以及进入 `DRAWN` / `SETTLING` / `SETTLED` 的推进）
 - `POST /bets`：必须带 `idempotency_key`、`round_id`、`play_id`、`rule_version`
 - `GET /bets/{bet_id}`
 - `POST /bets/{bet_id}/cancel`：只允许 `OPEN` 期号内、未锁定的投注
