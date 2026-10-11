@@ -21,6 +21,14 @@ void main() {
     await _pumpAt(tester, const Size(1920, 1080));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
     expect(find.text('热门玩法'), findsOneWidget);
+    expect(find.byKey(const Key('home-game-number-pick')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-fujian-31')), findsOneWidget);
+    expect(find.text('数字选号'), findsOneWidget);
+    expect(find.text('福建31'), findsOneWidget);
+    expect(find.textContaining('未接入'), findsNothing);
+    expect(find.text('排名竞猜'), findsNothing);
+    expect(find.text('自选组合'), findsNothing);
+    expect(find.text('本期推荐'), findsNothing);
     expect(find.byKey(const Key('announcement-board')), findsOneWidget);
     expect(find.text('平台公告'), findsOneWidget);
     expect(find.text('暂无公告'), findsOneWidget);
@@ -110,6 +118,21 @@ void main() {
     await tester.tap(find.byKey(const Key('home-points-login-hint')));
     await tester.pumpAndSettle();
     expect(opened, isTrue);
+  });
+
+  testWidgets('home hot play cards open play center with matching kind', (tester) async {
+    await _pumpAt(tester, const Size(1920, 1080));
+    await tester.tap(find.byKey(const Key('home-game-fujian-31')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
+    expect(find.text('去个人中心登录后再投注'), findsOneWidget);
+  });
+
+  testWidgets('home hot number-pick card opens play center', (tester) async {
+    await _pumpAt(tester, const Size(1920, 1080));
+    await tester.tap(find.byKey(const Key('home-game-number-pick')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
   });
 }
 

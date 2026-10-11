@@ -8,6 +8,7 @@ import '../api/home_feed_api.dart';
 import '../api/play_betting_api.dart';
 import '../pages/home_page.dart';
 import '../pages/moderator_page.dart';
+import '../pages/play_betting.dart';
 import '../pages/play_center_page.dart';
 import '../pages/points_center_page.dart';
 
@@ -35,6 +36,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  PlayKind _playKind = PlayKind.numberPick;
   final _client = ApiClient(const ApiConfig(), Session());
 
   @override
@@ -69,12 +71,17 @@ class _AppShellState extends State<AppShell> {
           feed: ApiHomeFeed(_client),
           onGoToAccount: () => setState(() => _index = 4),
           onGoToModerator: () => setState(() => _index = 3),
+          onOpenPlay: (kind) => setState(() {
+            _playKind = kind;
+            _index = 1;
+          }),
         );
       case 1:
         return PlayCenterPage(
           landscapeReady: landscapeReady,
           loggedIn: loggedIn,
           gateway: ApiPlayBettingGateway(_client),
+          initialKind: _playKind,
           onGoToAccount: () => setState(() => _index = 4),
         );
       case 2:

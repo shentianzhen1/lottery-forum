@@ -8,6 +8,7 @@ class PlayCenterPage extends StatefulWidget {
     required this.landscapeReady,
     required this.loggedIn,
     required this.gateway,
+    this.initialKind = PlayKind.numberPick,
     this.onGoToAccount,
     super.key,
   });
@@ -15,6 +16,7 @@ class PlayCenterPage extends StatefulWidget {
   final bool landscapeReady;
   final bool loggedIn;
   final PlayBettingGateway gateway;
+  final PlayKind initialKind;
   final VoidCallback? onGoToAccount;
 
   @override
@@ -22,7 +24,7 @@ class PlayCenterPage extends StatefulWidget {
 }
 
 class _PlayCenterPageState extends State<PlayCenterPage> {
-  PlayKind _kind = PlayKind.numberPick;
+  late PlayKind _kind = widget.initialKind;
   OpenRound? _openRound;
   String? _roundHint;
   bool _loadingRound = false;
@@ -53,7 +55,16 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   @override
   void didUpdateWidget(covariant PlayCenterPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.loggedIn != oldWidget.loggedIn || widget.gateway != oldWidget.gateway) {
+    final kindChanged = widget.initialKind != oldWidget.initialKind;
+    if (kindChanged) {
+      _kind = widget.initialKind;
+      _fujianPicks.clear();
+      _resultMessage = null;
+      _openRound = null;
+    }
+    if (widget.loggedIn != oldWidget.loggedIn ||
+        widget.gateway != oldWidget.gateway ||
+        kindChanged) {
       if (widget.loggedIn) {
         _refreshRound();
       } else {
