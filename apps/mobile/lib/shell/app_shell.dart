@@ -90,7 +90,11 @@ class _AppShellState extends State<AppShell> {
           onGoToAccount: () => setState(() => _index = 4),
         );
       default:
-        return AccountPage(client: _client, onChanged: () => setState(() {}));
+        return AccountPage(
+          landscapeReady: landscapeReady,
+          client: _client,
+          onChanged: () => setState(() {}),
+        );
     }
   }
 }
