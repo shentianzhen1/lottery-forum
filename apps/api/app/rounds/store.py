@@ -15,6 +15,7 @@ class RoundStore:
                 round_id text primary key,
                 lottery_id text not null,
                 code text,
+                board_id text,
                 status text not null check (
                     status in ('UPCOMING', 'OPEN', 'CLOSED', 'DRAWN', 'SETTLING', 'SETTLED')
                 ),
@@ -23,14 +24,27 @@ class RoundStore:
             create index if not exists idx_rounds_lottery on rounds(lottery_id);
             """
         )
+        # 006: legacy databases created before board ownership get a nullable board_id.
+        columns = {row[1] for row in self.connection.execute("pragma table_info(rounds)")}
+        if "board_id" not in columns:
+            self.connection.execute("alter table rounds add column board_id text")
+        self.connection.execute("create index if not exists idx_rounds_board on rounds(board_id)")
+        self.connection.commit()
 
-    def add(self, round_id: str, lottery_id: str, code: str | None, status: str = "UPCOMING") -> None:
+    def add(
+        self,
+        round_id: str,
+        lottery_id: str,
+        code: str | None,
+        status: str = "UPCOMING",
+        board_id: str | None = None,
+    ) -> None:
         self.connection.execute(
             """
-            insert into rounds(round_id, lottery_id, code, status)
-            values (?, ?, ?, ?)
+            insert into rounds(round_id, lottery_id, code, status, board_id)
+            values (?, ?, ?, ?, ?)
             """,
-            (round_id, lottery_id, code, status),
+            (round_id, lottery_id, code, status, board_id),
         )
         self.connection.commit()
 

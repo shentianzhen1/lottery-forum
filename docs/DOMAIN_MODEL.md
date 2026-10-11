@@ -8,7 +8,7 @@
 
 ## User
 
-已有注册和登录。字段：`account_id`、`username`、`password_hash`、`role`。角色已用于授权：`admin` 可创建/推进期号与写结算（来源：`LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子；注册一律 `user`）。
+已有注册和登录。字段：`account_id`、`username`、`password_hash`、`role`。角色已用于授权：`admin` 可创建/推进任意期号与写结算（来源：`LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子；注册一律 `user`）。版主不是角色，而是「开设了某版块（`ModeratorBoard`）的账号」，按版块归属授权。
 
 ## Wallet
 
@@ -31,9 +31,17 @@
 
 未实现为独立配置。当前示例是 `number-pick`、`ranking-pick`、`fujian-31`。玩法必须声明 `rule_version` 和 `stake_enabled`。Demo 不能绕过钱包、期号和投注对象。
 
+## ModeratorBoard
+
+已实现。字段：`board_id`、`account_id`（开设该版块的版主）、`lottery_id`、`hold_id`（门槛冻结）、`status`（`open`）。同一账号同一彩种只能开一个版块；同一彩种可以有多个版主各自开版块。
+
 ## Round
 
-骨架已实现到 `SETTLING`：可创建、查询，并单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING`。状态只能按这个顺序变化：
+骨架已实现到 `SETTLING`：可创建、查询，并单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING`。
+
+字段：`round_id`、`lottery_id`、`code`、`board_id`、`status`。`board_id` 指向开设该版块的版主（该期投注由此版主赔付），`lottery_id` 必须与版块彩种一致；可空，仅用于本片之前建的旧期号与管理员不挂版块创建的期号。推进权限：管理员，或该版块版主；`board_id` 为空时仅管理员。写结算仅管理员（版主是赔付方）。
+
+状态只能按这个顺序变化：
 
 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`
 
