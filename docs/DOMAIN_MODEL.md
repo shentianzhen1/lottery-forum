@@ -39,13 +39,15 @@
 
 ## Bet / BetItem
 
-未实现完整生命周期。预定状态：
+骨架已实现到 `ACCEPTED`：`POST /bets` 校验→记录→冻结占位；`GET /bets/{bet_id}` 可查。状态序：
 
 `CREATED` → `ACCEPTED` → `LOCKED` → `SETTLED`
 
 异常终态：`REJECTED`、`CANCELLED`、`REFUNDED`。
 
-BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。福建 31 选 7 当前只有选号校验，选号记录尚未进入 `main`，不扣分。
+中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消、开奖或派奖。须挂在 `OPEN` 期号；`stake_enabled` 玩法（如 `number-pick`）可投，`fujian-31` 仍 `STAKE_DISABLED`。
+
+BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
 
 ## Settlement
 

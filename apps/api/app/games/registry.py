@@ -13,6 +13,10 @@ class GameRegistry:
     def list_enabled(self) -> list[GameSpec]:
         return [plugin.spec for plugin in self._plugins.values() if plugin.spec.enabled]
 
+    def get_spec(self, game_id: str) -> GameSpec | None:
+        plugin = self._plugins.get(game_id)
+        return plugin.spec if plugin is not None else None
+
     def validate(self, game_id: str, payload: dict[str, object]) -> ValidationResult:
         plugin = self._plugins.get(game_id)
         if plugin is None or not plugin.spec.enabled:
@@ -29,5 +33,3 @@ class GameRegistry:
     def records_selections(self, game_id: str) -> bool:
         plugin = self._plugins.get(game_id)
         return plugin is not None and plugin.spec.records_selections
-        plugin = self._plugins.get(game_id)
-        return plugin is not None and plugin.spec.stake_enabled

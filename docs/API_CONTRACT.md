@@ -22,10 +22,14 @@
 - `GET /rounds/{round_id}`：期号不存在返回 `ROUND_NOT_FOUND`
 - `POST /rounds/{round_id}/open`：仅 `UPCOMING` → `OPEN`；非法跳转返回 `INVALID_TRANSITION`
 - `POST /rounds/{round_id}/close`：仅 `OPEN` → `CLOSED`；非法跳转返回 `INVALID_TRANSITION`
+- `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"unset"}`，不派奖。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；`fujian-31` 等未开放投注冻结的玩法返回 `STAKE_DISABLED`
+- `GET /bets/{bet_id}`：仅本人投注；不存在返回 `BET_NOT_FOUND`
 
 没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账。开通版主达到后台门槛后冻结积分，不需要人工批准；冻结不是转账。默认门槛是 10000 积分。
 
 本片期号状态机只演示到 `CLOSED`。不提供 `draw`、派奖或结算接口。
+
+本片投注生命周期只做到 `ACCEPTED` + 冻结占位。不提供 `cancel`、`draw` 或派奖。
 
 ### 期号状态（API 枚举 / 中文展示）
 
@@ -40,12 +44,32 @@
 
 客户端展示用中文，不直接显示英文码。本片可演示：`UPCOMING`（未开售）→ `OPEN`（销售中）→ `CLOSED`（已截止）。`DRAWN` / `SETTLING` / `SETTLED` 仅预留枚举，尚无推进接口。
 
+### 投注状态（API 枚举 / 中文展示）
+
+| 枚举 | 中文 |
+| --- | --- |
+| `CREATED` | 已创建 |
+| `ACCEPTED` | 已受理 |
+| `LOCKED` | 已锁定 |
+| `SETTLED` | 已结算 |
+| `REJECTED` | 已拒绝 |
+| `CANCELLED` | 已取消 |
+| `REFUNDED` | 已退回 |
+
+客户端展示用中文，不直接显示英文码。本片成功投注落在 `ACCEPTED`（已受理）并冻结占位；`LOCKED` / `SETTLED` 及取消、退回尚未开放。
+
+### 投注提示文案
+
+- 成功：「投注已受理（积分已冻结占位，暂不派奖）」
+- `ROUND_CLOSED`：「当期已截止，无法投注」
+- 选号校验失败：「选号未通过校验」
+- 积分不足：「积分不足」
+- 幂等命中：「已提交过，返回原投注」
+
 ## 预定但未实现
 
 - `GET /lotteries`、`GET /lotteries/{lottery_id}`
 - `POST /rounds/{round_id}/draw`（以及进入 `DRAWN` / `SETTLING` / `SETTLED` 的推进）
-- `POST /bets`：必须带 `idempotency_key`、`round_id`、`play_id`、`rule_version`
-- `GET /bets/{bet_id}`
 - `POST /bets/{bet_id}/cancel`：只允许 `OPEN` 期号内、未锁定的投注
 - `POST /settlements/{round_id}`：只允许服务内部或管理员触发
 - `POST /banker/sessions`、`GET /banker/sessions/me`
