@@ -1,6 +1,6 @@
 # Android 横屏测试包
 
-状态：Android 平台文件已在 `main`。仓库里没有 APK。本环境安装了命令行 SDK，但 Gradle 进程中途退出，仍未生成包。
+状态：Android 平台文件已在 `main`。仓库不提交 APK 二进制；可在本机或 CI 执行 `flutter build apk --debug` 出包。部分受限环境曾因内存不足导致 Gradle 中途退出，属环境备注。
 
 ## 配置 Android SDK
 

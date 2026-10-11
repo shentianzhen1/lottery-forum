@@ -1,6 +1,6 @@
 # 领域模型
 
-状态：2026-10-09 按 Framework V0.1 规划书写的契约。除特别标明外，对象尚未实现。
+状态：与 main 对齐的 Framework V0.1 契约。下列对象中，已标明「已实现/骨架」的以代码为准；其余仍为规划。
 
 积分是平台内部记账单位。不能提现、转账或兑付。可以用于玩法赔付，也可以在开通版主时冻结。本模型不包含充值、提现、兑付或用户间转账。
 
@@ -48,6 +48,10 @@
 中文展示：已创建 / 已受理 / 已锁定 / 已结算 / 已拒绝 / 已取消 / 已退回。本片成功投注落在 `ACCEPTED` 并冻结固定 10 积分占位；`odds_snapshot` 与冻结分存（本片为 `unset` 占位）；不接取消、开奖或派奖。须挂在 `OPEN` 期号；`stake_enabled` 玩法（如 `number-pick`）可投，`fujian-31` 仍 `STAKE_DISABLED`。
 
 BetItem 必须保存 `play_id`、`round_id`、`rule_version` 和 `odds_snapshot`。
+
+## HomeBanner / Announcement
+
+只读首页数据已实现：`GET /home/banners`、`GET /home/announcements`。字段与上限见 `docs/HOME_BANNER.md` 与 `docs/API_CONTRACT.md`。无写接口、无管理后台。空横幅为空列表（客户端不占位）；空公告客户端显示「暂无公告」。
 
 ## Settlement
 
