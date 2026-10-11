@@ -10,7 +10,7 @@
 
 积分不能提现或转账，但可以用于玩法赔付和开通版主。边界见 `docs/decisions/2026-10-10-points-boundary.md`。
 
-框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`，页面尚未实现。
+框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`；只读 API 已实现，客户端首页接入尚未完成。
 
 已实现：
 
@@ -19,7 +19,7 @@
 - 福建31选7 可保存校验后的选号记录。重复幂等键不新增。不扣分、不开奖、不派奖
 - 可用积分达到默认 10000 即可开通版主版块，不需要批准。开通会冻结门槛积分。赔付公式未定
 - 玩法中心横屏骨架：左侧玩法，右侧输入区和结果区
-- 首页有平台公告栏。没有数据时显示暂无公告，接口尚未接入
+- 首页有平台公告栏。没有数据时显示暂无公告；只读接口 `GET /home/banners`、`GET /home/announcements` 已实现，客户端尚未接入
 - 宽度低于 960 时提示使用横屏，不把窄屏页伪装成横屏首页
 - CI 工作流已添加；是否通过以 GitHub Actions 实际结果为准
 - 个人中心可注册、登录和退出。注册发放 100 开户积分

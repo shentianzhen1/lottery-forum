@@ -10,6 +10,8 @@ from app.db import connect
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
 from app.games.selections import SelectionStore
+from app.home.service import HomeService
+from app.home.store import HomeStore
 from app.ledger.service import LedgerService
 from app.ledger.sqlite_store import SqliteLedgerStore
 from app.moderator.service import ModeratorService
@@ -28,6 +30,7 @@ class AppState:
     moderator: ModeratorService
     rounds: RoundService
     bets: BetService
+    home: HomeService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -38,6 +41,9 @@ def build_state(database: Path | None = None) -> AppState:
     ledger = LedgerService(SqliteLedgerStore(connection=connection))
     games = GameRegistry()
     rounds = RoundService(RoundStore(connection=connection))
+    home = HomeService(HomeStore(connection=connection))
+    if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
+        home.seed_demo()
     return AppState(
         AuthService(AccountStore(connection=connection), ledger),
         ledger,
@@ -47,4 +53,5 @@ def build_state(database: Path | None = None) -> AppState:
         ModeratorService(ModeratorStore(connection=connection), ledger),
         rounds,
         BetService(BetStore(connection=connection), rounds, games, ledger),
+        home,
     )
