@@ -28,4 +28,16 @@ class ApiHomeFeed implements HomeFeed {
       rethrow;
     }
   }
+
+  @override
+  Future<HomeAnnouncement> loadAnnouncement(String id) async {
+    try {
+      final body = await client.getJson('/api/v1/home/announcements/$id');
+      return announcementFromApi(body);
+    } on ApiException catch (error) {
+      throw AnnouncementLoadException(
+        messageForAnnouncementCode(error.code, error.message),
+      );
+    }
+  }
 }

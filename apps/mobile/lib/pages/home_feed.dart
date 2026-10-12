@@ -16,12 +16,14 @@ class HomeAnnouncement {
     required this.title,
     required this.body,
     required this.pinned,
+    this.publishedAt = '',
   });
 
   final String id;
   final String title;
   final String body;
   final bool pinned;
+  final String publishedAt;
 
   String get summary {
     final lines = body
@@ -30,6 +32,11 @@ class HomeAnnouncement {
         .where((line) => line.isNotEmpty)
         .take(2);
     return lines.join(' ');
+  }
+
+  String get publishedAtLabel {
+    if (publishedAt.isEmpty) return '';
+    return publishedAt.replaceFirst('T', ' ').replaceFirst(RegExp(r'Z$'), '');
   }
 }
 
@@ -45,6 +52,7 @@ class HomeFeedData {
 
 abstract class HomeFeed {
   Future<HomeFeedData> load();
+  Future<HomeAnnouncement> loadAnnouncement(String id);
 }
 
 class EmptyHomeFeed implements HomeFeed {
@@ -53,6 +61,29 @@ class EmptyHomeFeed implements HomeFeed {
   @override
   Future<HomeFeedData> load() async {
     return const HomeFeedData(banners: [], announcements: []);
+  }
+
+  @override
+  Future<HomeAnnouncement> loadAnnouncement(String id) async {
+    throw const AnnouncementLoadException('公告不存在');
+  }
+}
+
+class AnnouncementLoadException implements Exception {
+  const AnnouncementLoadException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+String messageForAnnouncementCode(String? code, String fallback) {
+  switch (code) {
+    case 'ANNOUNCEMENT_NOT_FOUND':
+      return '公告不存在';
+    default:
+      return fallback.isEmpty ? '读取失败' : fallback;
   }
 }
 
@@ -70,5 +101,6 @@ HomeAnnouncement announcementFromApi(Map<String, Object?> row) {
     title: '${row['title'] ?? ''}',
     body: '${row['body'] ?? ''}',
     pinned: row['pinned'] == true,
+    publishedAt: '${row['published_at'] ?? ''}',
   );
 }
