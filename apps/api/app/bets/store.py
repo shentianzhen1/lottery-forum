@@ -109,3 +109,31 @@ class BetStore:
             (status, bet_id),
         )
         self.connection.commit()
+
+    def list_for_account(
+        self,
+        account_id: str,
+        round_id: str | None = None,
+        status: str | None = None,
+    ) -> list[sqlite3.Row]:
+        sql = "select * from bets where account_id = ?"
+        params: list[object] = [account_id]
+        if round_id is not None:
+            sql += " and round_id = ?"
+            params.append(round_id)
+        if status is not None:
+            sql += " and status = ?"
+            params.append(status)
+        sql += " order by rowid desc"
+        return self.connection.execute(sql, params).fetchall()
+
+    def transition(self, bet_id: str, from_status: str, to_status: str) -> bool:
+        """Compare-and-set status; returns True only for the single caller that wins."""
+        if to_status not in ALLOWED_STATUSES:
+            raise ValueError(f"invalid bet status: {to_status}")
+        cursor = self.connection.execute(
+            "update bets set status = ? where bet_id = ? and status = ?",
+            (to_status, bet_id, from_status),
+        )
+        self.connection.commit()
+        return cursor.rowcount == 1

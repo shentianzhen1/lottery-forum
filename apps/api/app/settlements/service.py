@@ -73,6 +73,8 @@ class SettlementService:
                 raise SettlementError("BET_NOT_FOUND", "投注不存在")
             if bet["round_id"] != round_id:
                 raise SettlementError("BET_ROUND_MISMATCH", "投注不属于该期号")
+            if bet["status"] == "CANCELLED":
+                raise SettlementError("BET_CANCELLED", "投注已取消，无需结算")
 
             existing = self.store.get_by_bet(bet_id)
             if existing is not None:
@@ -142,7 +144,8 @@ class SettlementService:
                 f"期号须为结算中才能进入已结算（当前 {round_row['status']}）",
             )
 
-        bets = list(self.bets.list_for_round(round_id))
+        # Cancelled bets were refunded at cancel time; they take no part in settlement.
+        bets = [bet for bet in self.bets.list_for_round(round_id) if bet["status"] != "CANCELLED"]
         settlements = {row["bet_id"]: row for row in self.store.list_for_round(round_id)}
 
         missing = [bet["bet_id"] for bet in bets if bet["bet_id"] not in settlements]

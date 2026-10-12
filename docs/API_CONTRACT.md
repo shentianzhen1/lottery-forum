@@ -85,6 +85,10 @@
   - 非管理员（含该版块版主）403 `FORBIDDEN`
 - `POST /bets`：请求体必须含 `idempotency_key`、`round_id`、`play_id`、`rule_version`，以及玩法选号字段（如 `numbers` / `ranking`）。须挂在 `OPEN` 期号上；流程为校验→记录→冻结占位（固定 10 积分，仅 `stake_enabled` 玩法）。成功状态为 `ACCEPTED`（积分已冻结；`LOCKED` 留给期号截止后再推进）。`odds_snapshot` 与冻结分存，本片为 `{"status":"fixed","multiplier":2}`；finalize 时按快照倍率连本带利派 `WIN`（版主付 `stake × (倍率 − 1)`）。非 `OPEN` 返回 `ROUND_CLOSED`；选号失败 `INVALID_SELECTION`；积分不足 `INSUFFICIENT_POINTS`；相同幂等键返回原单不重复冻结；未开放投注冻结的玩法返回 `STAKE_DISABLED`（当前示例玩法均已开放：`number-pick` / `ranking-pick` / `fujian-31` / `fujian-31-any-2`…`fujian-31-any-5`）。福建31 彩种期号 `lottery_id=fujian-31` 共用；投注 `play_id` 可为选7 `fujian-31` 或任选 `fujian-31-any-2`…`any-5`（从 1–31 选对应个数、不重复；失败码仍 `INVALID_SELECTION`「选号未通过校验」）
 - `GET /bets/{bet_id}`：仅本人投注；不存在返回 `BET_NOT_FOUND`
+- 投注响应字段（`POST /bets`、`GET /bets/{id}`、`GET /bets` 每条、取消成功均同）：`bet_id`、`play_id`、`round_id`、`status`、`stake`、`selection`（规范化选号对象）、`numbers`（= `selection.numbers` 的镜像，非数字玩法为 `null`）、`rule_version`、`odds_snapshot`、`hold_id`、`idempotency_key`、`account_id`；`POST` 类成功另带 `message`。
+- `GET /bets?round_id=&status=`（需登录）：仅返回当前登录用户的投注，`{"items":[...]}`，按创建倒序；两个参数均可选；`status` 须为 `CREATED/ACCEPTED/LOCKED/SETTLED/REJECTED/CANCELLED/REFUNDED` 之一，否则 400 `INVALID_STATUS`「投注状态无效」。客户端「本期可取消」列表用 `round_id=<当前OPEN期>&status=ACCEPTED`。
+- `POST /bets/{bet_id}/cancel`（需登录，无请求体）：仅本人、期号仍 `OPEN`、投注仍 `ACCEPTED` 可取消；原子地 `ACCEPTED→CANCELLED` 后解除冻结（积分回到可用，不另写扣/入分录，与 VOID 解冻同套路），返回投注体 + `message`「投注已取消，积分已解冻」。不可取消（期号已截止/开奖/结算中/已结算，投注已锁定/已结算/已取消等）统一 400 `BET_NOT_CANCELLABLE`「当前投注无法取消」；别人的单或不存在 404 `BET_NOT_FOUND`（不暴露存在）；未登录 401。重复或并发取消只有一次成功，其余返回 `BET_NOT_CANCELLABLE`，不会重复解冻。不做部分取消、手续费。
+- 已取消投注不参与结算：`POST /settlements/{round_id}` 对其返回 400 `BET_CANCELLED`「投注已取消，无需结算」；`settled` finalize 忽略已取消投注。
 - `POST /settlements/{round_id}`：请求体 `{"results":[{"bet_id","result"},…]}`，`result` 仅 `WIN` / `LOSS` / `VOID`。期号须为 `SETTLING`；为该期投注落结算记录，**本接口仍不改余额/冻结、不推进投注状态**（入账在 `POST /rounds/{id}/settled`）。同一 `bet_id` 幂等返回原结果，冲突返回 `SETTLEMENT_CONFLICT`。**仅管理员**（非管理员 403 `FORBIDDEN`，**包括该版块版主**——版主是赔付方，不能自己判结果）
 - `GET /settlements/{round_id}`：返回该期已落结算记录列表
 - `GET /home/banners`：只读；无需登录。返回 `{"banners":[…]}`，字段 `id`/`title`/`subtitle`/`image_key`/`sort_order`/`enabled`；仅 `enabled`，按 `sort_order` 升序，最多 5 条；空列表时客户端不占位
@@ -153,7 +157,6 @@
 
 - `GET /lotteries`、`GET /lotteries/{lottery_id}`
 - 阶梯/复杂赔率、从开通门槛冻结池扣付（本片 `WIN` 连本带利共 2 倍从版主可用派盈利已开放）
-- `POST /bets/{bet_id}/cancel`：只允许 `OPEN` 期号内、未锁定的投注
 - `POST /banker/sessions`、`GET /banker/sessions/me`
 - `POST /banker/offers`：保存积分赔率快照，不接收现金金额
 - `GET /market/offers`
