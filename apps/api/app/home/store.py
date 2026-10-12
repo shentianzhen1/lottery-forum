@@ -88,3 +88,14 @@ class HomeStore:
             """,
             (limit,),
         ).fetchall()
+
+    def get_announcement(self, announcement_id: str) -> sqlite3.Row | None:
+        return self.connection.execute(
+            """
+            select id, title, body, published_at, pinned
+            from home_announcements
+            where id = ?
+            """,
+            (announcement_id,),
+        ).fetchone()
+

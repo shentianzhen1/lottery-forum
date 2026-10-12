@@ -4,6 +4,12 @@ HOME_BANNER_LIMIT = 5
 HOME_ANNOUNCEMENT_LIMIT = 4
 
 
+class HomeError(Exception):
+    def __init__(self, code: str, message: str) -> None:
+        self.code = code
+        self.message = message
+
+
 class HomeService:
     def __init__(self, store: HomeStore) -> None:
         self.store = store
@@ -15,6 +21,12 @@ class HomeService:
     def list_announcements(self) -> list[dict[str, object]]:
         rows = self.store.list_announcements(HOME_ANNOUNCEMENT_LIMIT)
         return [self._announcement(row) for row in rows]
+
+    def get_announcement(self, announcement_id: str) -> dict[str, object]:
+        row = self.store.get_announcement(announcement_id)
+        if row is None:
+            raise HomeError("ANNOUNCEMENT_NOT_FOUND", "公告不存在")
+        return self._announcement(row)
 
     def seed_demo(self) -> None:
         """Optional demo rows for local demos; tests insert explicitly."""
