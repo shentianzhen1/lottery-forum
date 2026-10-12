@@ -22,9 +22,50 @@ class BetResult {
   final String? status;
 }
 
+class AcceptedBet {
+  const AcceptedBet({
+    required this.betId,
+    required this.playId,
+    required this.numbers,
+    required this.stake,
+    required this.status,
+  });
+
+  final String betId;
+  final String playId;
+  final List<int> numbers;
+  final int stake;
+  final String status;
+
+  String get numbersLabel => numbers.isEmpty ? '—' : numbers.join(' ');
+
+  String get statusLabel {
+    switch (status) {
+      case 'ACCEPTED':
+        return '已受理';
+      case 'CANCELLED':
+        return '已取消';
+      case 'LOCKED':
+        return '已锁定';
+      case 'SETTLED':
+        return '已结算';
+      case 'REJECTED':
+        return '已拒绝';
+      case 'REFUNDED':
+        return '已退回';
+      case 'CREATED':
+        return '已创建';
+      default:
+        return status;
+    }
+  }
+}
+
 abstract class PlayBettingGateway {
   Future<OpenRound?> findOpenRound(String lotteryId);
   Future<BetResult> placeBet(Map<String, Object?> payload);
+  Future<List<AcceptedBet>> listAcceptedBets(String roundId);
+  Future<BetResult> cancelBet(String betId);
 }
 
 enum PlayKind {
@@ -125,6 +166,10 @@ String messageForBetCode(String? code, String fallback) {
       return '积分不足';
     case 'STAKE_DISABLED':
       return '该玩法尚未开放投注冻结';
+    case 'BET_NOT_CANCELLABLE':
+      return '当前投注无法取消';
+    case 'BET_NOT_FOUND':
+      return '投注不存在';
     default:
       return fallback;
   }

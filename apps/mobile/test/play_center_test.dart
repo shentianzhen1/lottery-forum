@@ -4,22 +4,38 @@ import 'package:lottery_forum/pages/play_betting.dart';
 import 'package:lottery_forum/pages/play_center_page.dart';
 
 class _FakeGateway implements PlayBettingGateway {
-  _FakeGateway({required this.openFor, this.result});
+  _FakeGateway({
+    required this.openFor,
+    this.result,
+    this.cancelResult,
+    List<AcceptedBet>? initialAccepted,
+  }) : accepted = List<AcceptedBet>.from(initialAccepted ?? const []);
 
-  factory _FakeGateway.simple({OpenRound? open, BetResult? result}) {
+  factory _FakeGateway.simple({
+    OpenRound? open,
+    BetResult? result,
+    BetResult? cancelResult,
+    List<AcceptedBet>? initialAccepted,
+  }) {
     return _FakeGateway(
       openFor: {
         numberPickLotteryId: open,
         fujian31LotteryId: open,
       },
       result: result,
+      cancelResult: cancelResult,
+      initialAccepted: initialAccepted,
     );
   }
 
   final Map<String, OpenRound?> openFor;
   final BetResult? result;
+  BetResult? cancelResult;
   Map<String, Object?>? lastPayload;
   final List<String> lotteryQueries = <String>[];
+  final List<AcceptedBet> accepted;
+  final List<String> cancelCalls = <String>[];
+  final List<String> listQueries = <String>[];
 
   @override
   Future<OpenRound?> findOpenRound(String lotteryId) async {
@@ -30,13 +46,55 @@ class _FakeGateway implements PlayBettingGateway {
   @override
   Future<BetResult> placeBet(Map<String, Object?> payload) async {
     lastPayload = payload;
-    return result ??
+    final bet = result ??
         const BetResult(
           ok: true,
           message: '投注已受理，积分已冻结，结算后按结果派奖',
           status: 'ACCEPTED',
           betId: 'bet-1',
         );
+    if (bet.ok && bet.betId != null) {
+      final numbers = <int>[];
+      final raw = payload['numbers'];
+      if (raw is List) {
+        for (final n in raw) {
+          if (n is int) numbers.add(n);
+        }
+      }
+      accepted.insert(
+        0,
+        AcceptedBet(
+          betId: bet.betId!,
+          playId: '${payload['play_id'] ?? ''}',
+          numbers: numbers,
+          stake: 10,
+          status: 'ACCEPTED',
+        ),
+      );
+    }
+    return bet;
+  }
+
+  @override
+  Future<List<AcceptedBet>> listAcceptedBets(String roundId) async {
+    listQueries.add(roundId);
+    return List<AcceptedBet>.from(accepted);
+  }
+
+  @override
+  Future<BetResult> cancelBet(String betId) async {
+    cancelCalls.add(betId);
+    final outcome = cancelResult ??
+        BetResult(
+          ok: true,
+          message: '投注已取消，积分已解冻',
+          betId: betId,
+          status: 'CANCELLED',
+        );
+    if (outcome.ok) {
+      accepted.removeWhere((b) => b.betId == betId);
+    }
+    return outcome;
   }
 }
 
@@ -54,6 +112,8 @@ void main() {
     expect(messageForBetCode('ROUND_CLOSED', 'x'), '当期已截止，无法投注');
     expect(messageForBetCode('INVALID_SELECTION', 'x'), '选号未通过校验');
     expect(messageForBetCode('INSUFFICIENT_POINTS', 'x'), '积分不足');
+    expect(messageForBetCode('BET_NOT_CANCELLABLE', 'x'), '当前投注无法取消');
+    expect(messageForBetCode('BET_NOT_FOUND', 'x'), '投注不存在');
   });
 
   test('fujian play helpers map ids and pick counts', () {
@@ -76,6 +136,7 @@ void main() {
     );
     expect(find.text('当期已截止，无法投注'), findsOneWidget);
     expect(find.text('参与扣固定积分，不派奖'), findsNothing);
+    expect(find.text('销售中才可取消本期投注'), findsOneWidget);
   });
 
   testWidgets('successful number-pick bet shows accepted message', (tester) async {
@@ -96,6 +157,8 @@ void main() {
     expect(gateway.lastPayload?['play_id'], 'number-pick');
     expect(gateway.lastPayload?['round_id'], 'r1');
     expect(gateway.lastPayload?['numbers'], [1, 2, 3]);
+    expect(find.byKey(const Key('play-cancel-last-bet')), findsOneWidget);
+    expect(find.byKey(const Key('play-cancellable-item-bet-1')), findsOneWidget);
   });
 
   testWidgets('insufficient points shows locked copy', (tester) async {
@@ -190,5 +253,92 @@ void main() {
     expect(find.text('投注已受理，积分已冻结，结算后按结果派奖'), findsOneWidget);
     expect(gateway.lastPayload?['play_id'], 'fujian-31-any-3');
     expect(gateway.lastPayload?['numbers'], [1, 2, 3]);
+  });
+
+  testWidgets('cancellable list shows accepted bets for open round', (tester) async {
+    final gateway = _FakeGateway.simple(
+      open: const OpenRound(roundId: 'r1', lotteryId: 'demo-digit', code: 'demo'),
+      initialAccepted: const [
+        AcceptedBet(
+          betId: 'bet-a',
+          playId: 'number-pick',
+          numbers: [1, 2, 3],
+          stake: 10,
+          status: 'ACCEPTED',
+        ),
+      ],
+    );
+    await _pump(
+      tester,
+      PlayCenterPage(
+        landscapeReady: true,
+        loggedIn: true,
+        gateway: gateway,
+      ),
+    );
+    expect(gateway.listQueries, contains('r1'));
+    expect(find.byKey(const Key('play-cancellable-list')), findsOneWidget);
+    expect(find.byKey(const Key('play-cancellable-item-bet-a')), findsOneWidget);
+    expect(find.textContaining('选号 1 2 3'), findsOneWidget);
+    expect(find.textContaining('注额 10'), findsOneWidget);
+  });
+
+  testWidgets('cancel from result bar shows success copy and refreshes list',
+      (tester) async {
+    final gateway = _FakeGateway.simple(
+      open: const OpenRound(roundId: 'r1', lotteryId: 'demo-digit', code: 'demo'),
+    );
+    await _pump(
+      tester,
+      PlayCenterPage(
+        landscapeReady: true,
+        loggedIn: true,
+        gateway: gateway,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('play-submit-bet')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('play-cancellable-item-bet-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('play-cancel-last-bet')));
+    await tester.pumpAndSettle();
+    expect(gateway.cancelCalls, ['bet-1']);
+    expect(find.text('投注已取消，积分已解冻'), findsOneWidget);
+    expect(find.byKey(const Key('play-cancellable-item-bet-1')), findsNothing);
+    expect(find.byKey(const Key('play-cancellable-empty')), findsOneWidget);
+    expect(find.byKey(const Key('play-cancel-last-bet')), findsNothing);
+  });
+
+  testWidgets('cancel from list shows not-cancellable copy', (tester) async {
+    final gateway = _FakeGateway.simple(
+      open: const OpenRound(roundId: 'r1', lotteryId: 'demo-digit', code: 'demo'),
+      initialAccepted: const [
+        AcceptedBet(
+          betId: 'bet-x',
+          playId: 'number-pick',
+          numbers: [4, 5, 6],
+          stake: 10,
+          status: 'ACCEPTED',
+        ),
+      ],
+      cancelResult: const BetResult(
+        ok: false,
+        code: 'BET_NOT_CANCELLABLE',
+        message: '当前投注无法取消',
+      ),
+    );
+    await _pump(
+      tester,
+      PlayCenterPage(
+        landscapeReady: true,
+        loggedIn: true,
+        gateway: gateway,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('play-cancel-bet-bet-x')));
+    await tester.pumpAndSettle();
+    expect(gateway.cancelCalls, ['bet-x']);
+    expect(find.text('当前投注无法取消'), findsOneWidget);
+    expect(find.byKey(const Key('play-cancellable-item-bet-x')), findsOneWidget);
   });
 }
