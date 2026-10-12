@@ -171,18 +171,11 @@ def test_get_by_id() -> None:
     assert missing.json()["detail"]["code"] == "BET_NOT_FOUND"
 
 
-def test_unauthorized_and_no_cancel() -> None:
+def test_unauthorized() -> None:
     assert client.post("/api/v1/bets", json=bet_payload("x")).status_code == 401
     assert client.get("/api/v1/bets/x").status_code == 401
-    token, _ = token_and_account("bet-nocancel")
-    round_id = open_round(token)
-    bet_id = client.post(
-        "/api/v1/bets",
-        headers=auth(token),
-        json=bet_payload(round_id, key="nc"),
-    ).json()["bet_id"]
-    cancel = client.post(f"/api/v1/bets/{bet_id}/cancel", headers=auth(token))
-    assert cancel.status_code == 404
+    assert client.get("/api/v1/bets").status_code == 401
+    assert client.post("/api/v1/bets/x/cancel").status_code == 401
 
 
 def test_fujian_31_happy_path_on_open_round() -> None:

@@ -2,7 +2,7 @@ import json
 import sqlite3
 from uuid import uuid4
 
-from app.bets.store import BetStore
+from app.bets.store import ALLOWED_STATUSES, BetStore
 from app.games.model import GameError
 from app.games.registry import GameRegistry
 from app.ledger.model import LedgerError
@@ -122,7 +122,39 @@ class BetService:
             raise BetError("BET_NOT_FOUND", "投注不存在")
         return self._bet(row)
 
+    def list_mine(
+        self,
+        account_id: str,
+        round_id: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, object]:
+        if status is not None and status not in ALLOWED_STATUSES:
+            raise BetError("INVALID_STATUS", "投注状态无效")
+        rows = self.store.list_for_account(account_id, round_id=round_id, status=status)
+        return {"items": [self._bet(row) for row in rows]}
+
+    def cancel(self, account_id: str, bet_id: str) -> dict[str, object]:
+        row = self.store.get(bet_id)
+        if row is None or row["account_id"] != account_id:
+            raise BetError("BET_NOT_FOUND", "投注不存在")
+        not_cancellable = BetError("BET_NOT_CANCELLABLE", "当前投注无法取消")
+        if row["status"] != "ACCEPTED":
+            raise not_cancellable
+        try:
+            round_row = self.rounds.get(row["round_id"])
+        except RoundError as error:
+            raise not_cancellable from error
+        if round_row["status"] != "OPEN":
+            raise not_cancellable
+        # Atomic ACCEPTED -> CANCELLED: only one concurrent caller wins and releases the hold.
+        if not self.store.transition(bet_id, "ACCEPTED", "CANCELLED"):
+            raise not_cancellable
+        if row["hold_id"]:
+            self.ledger.release_if_active(account_id, row["hold_id"])
+        return self._bet(self.store.get(bet_id), message="投注已取消，积分已解冻")
+
     def _bet(self, row: object, message: str | None = None) -> dict[str, object]:
+        selection = json.loads(row["selection_json"])  # type: ignore[index]
         body: dict[str, object] = {
             "bet_id": row["bet_id"],  # type: ignore[index]
             "account_id": row["account_id"],  # type: ignore[index]
@@ -130,9 +162,11 @@ class BetService:
             "play_id": row["play_id"],  # type: ignore[index]
             "rule_version": row["rule_version"],  # type: ignore[index]
             "status": row["status"],  # type: ignore[index]
-            "selection": json.loads(row["selection_json"]),  # type: ignore[index]
+            "selection": selection,
             "odds_snapshot": json.loads(row["odds_snapshot_json"]),  # type: ignore[index]
             "hold_id": row["hold_id"],  # type: ignore[index]
+            # Convenience mirror of selection["numbers"] (null for non-number plays).
+            "numbers": selection.get("numbers") if isinstance(selection, dict) else None,
             "stake": int(row["stake"]),  # type: ignore[index]
             "idempotency_key": row["idempotency_key"],  # type: ignore[index]
         }

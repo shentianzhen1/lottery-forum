@@ -22,6 +22,39 @@ def place_bet(
         raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
 
 
+@router.get("")
+def list_my_bets(
+    request: Request,
+    round_id: str | None = None,
+    status: str | None = None,
+    account: object = Depends(current_account),
+) -> dict[str, object]:
+    try:
+        return request.app.state.services.bets.list_mine(
+            account.account_id,  # type: ignore[attr-defined]
+            round_id=round_id,
+            status=status,
+        )
+    except BetError as error:
+        raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
+
+
+@router.post("/{bet_id}/cancel")
+def cancel_bet(
+    bet_id: str,
+    request: Request,
+    account: object = Depends(current_account),
+) -> dict[str, object]:
+    try:
+        return request.app.state.services.bets.cancel(
+            account.account_id,  # type: ignore[attr-defined]
+            bet_id,
+        )
+    except BetError as error:
+        status = 404 if error.code == "BET_NOT_FOUND" else 400
+        raise HTTPException(status_code=status, detail={"code": error.code, "message": error.message}) from error
+
+
 @router.get("/{bet_id}")
 def get_bet(
     bet_id: str,
