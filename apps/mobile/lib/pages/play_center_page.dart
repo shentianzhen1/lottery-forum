@@ -31,6 +31,10 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   bool _submitting = false;
   String? _resultMessage;
   bool _resultOk = false;
+  String? _resultBetId;
+  List<AcceptedBet> _cancellableBets = const [];
+  bool _loadingBets = false;
+  String? _cancellingBetId;
   final _n1 = TextEditingController(text: '1');
   final _n2 = TextEditingController(text: '2');
   final _n3 = TextEditingController(text: '3');
@@ -60,7 +64,9 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       _kind = widget.initialKind;
       _fujianPicks.clear();
       _resultMessage = null;
+      _resultBetId = null;
       _openRound = null;
+      _cancellableBets = const [];
     }
     if (widget.loggedIn != oldWidget.loggedIn ||
         widget.gateway != oldWidget.gateway ||
@@ -72,6 +78,8 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
           _openRound = null;
           _roundHint = null;
           _resultMessage = null;
+          _resultBetId = null;
+          _cancellableBets = const [];
         });
       }
     }
@@ -90,7 +98,9 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     setState(() {
       _kind = kind;
       _resultMessage = null;
+      _resultBetId = null;
       _openRound = null;
+      _cancellableBets = const [];
       _fujianPicks.clear();
     });
     if (widget.loggedIn) {
@@ -111,14 +121,37 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         _loadingRound = false;
         if (open == null) {
           _roundHint = '当期已截止，无法投注';
+          _cancellableBets = const [];
         }
       });
+      if (open != null) {
+        await _refreshCancellableBets(open.roundId);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _openRound = null;
         _loadingRound = false;
         _roundHint = '当期已截止，无法投注';
+        _cancellableBets = const [];
+      });
+    }
+  }
+
+  Future<void> _refreshCancellableBets(String roundId) async {
+    setState(() => _loadingBets = true);
+    try {
+      final items = await widget.gateway.listAcceptedBets(roundId);
+      if (!mounted) return;
+      setState(() {
+        _cancellableBets = items;
+        _loadingBets = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _cancellableBets = const [];
+        _loadingBets = false;
       });
     }
   }
@@ -140,6 +173,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       setState(() {
         _resultOk = false;
         _resultMessage = '当期已截止，无法投注';
+        _resultBetId = null;
       });
       return;
     }
@@ -153,6 +187,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
           setState(() {
             _resultOk = false;
             _resultMessage = '选号未通过校验';
+            _resultBetId = null;
           });
           return;
         }
@@ -164,6 +199,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         setState(() {
           _resultOk = false;
           _resultMessage = '选号未通过校验';
+          _resultBetId = null;
         });
         return;
       }
@@ -173,6 +209,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     setState(() {
       _submitting = true;
       _resultMessage = null;
+      _resultBetId = null;
     });
     final key = 'mobile-${DateTime.now().microsecondsSinceEpoch}';
     final result = await widget.gateway.placeBet({
@@ -187,7 +224,30 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       _submitting = false;
       _resultOk = result.ok;
       _resultMessage = result.message;
+      _resultBetId = result.ok ? result.betId : null;
     });
+    if (result.ok) {
+      await _refreshCancellableBets(open.roundId);
+    }
+  }
+
+  Future<void> _cancelBet(String betId) async {
+    if (_cancellingBetId != null) return;
+    setState(() => _cancellingBetId = betId);
+    final result = await widget.gateway.cancelBet(betId);
+    if (!mounted) return;
+    setState(() {
+      _cancellingBetId = null;
+      _resultOk = result.ok;
+      _resultMessage = result.message;
+      if (result.ok && _resultBetId == betId) {
+        _resultBetId = null;
+      }
+    });
+    final open = _openRound;
+    if (open != null) {
+      await _refreshCancellableBets(open.roundId);
+    }
   }
 
   Key _gameKey(PlayKind kind) {
@@ -285,6 +345,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
             ? (_roundHint ?? '当期已截止，无法投注')
             : '销售中 · ${open.code.isEmpty ? open.roundId : open.code}';
     final pickNeed = isFujianKind(_kind) ? fujianPickCount(_kind) : 3;
+    final canCancelLast = _resultOk && _resultBetId != null && open != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,12 +418,73 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
               _resultMessage ?? '确认后冻结注额，结算后由本版块版主按结果派奖',
               key: const Key('play-result-message'),
             ),
-            trailing: _resultMessage == null
-                ? null
-                : Text(_resultOk ? '已受理' : '失败'),
+            trailing: canCancelLast
+                ? TextButton(
+                    key: const Key('play-cancel-last-bet'),
+                    onPressed: _cancellingBetId != null
+                        ? null
+                        : () => _cancelBet(_resultBetId!),
+                    child: Text(
+                      _cancellingBetId == _resultBetId ? '取消中' : '取消本注',
+                    ),
+                  )
+                : _resultMessage == null
+                    ? null
+                    : Text(_resultOk ? '已受理' : '失败'),
           ),
         ),
+        const SizedBox(height: 12),
+        _buildCancellableSection(open),
       ],
+    );
+  }
+
+  Widget _buildCancellableSection(OpenRound? open) {
+    return Card(
+      key: const Key('play-cancellable-list'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('本期可取消', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (open == null)
+              const Text('销售中才可取消本期投注')
+            else if (_loadingBets)
+              const Text('正在加载可取消投注…')
+            else if (_cancellableBets.isEmpty)
+              const Text('暂无可取消投注', key: Key('play-cancellable-empty'))
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 160),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _cancellableBets.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final bet = _cancellableBets[index];
+                    final cancelling = _cancellingBetId == bet.betId;
+                    return ListTile(
+                      key: Key('play-cancellable-item-${bet.betId}'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('选号 ${bet.numbersLabel} · 注额 ${bet.stake}'),
+                      subtitle: Text(bet.statusLabel),
+                      trailing: TextButton(
+                        key: Key('play-cancel-bet-${bet.betId}'),
+                        onPressed: _cancellingBetId != null
+                            ? null
+                            : () => _cancelBet(bet.betId),
+                        child: Text(cancelling ? '取消中' : '取消'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
