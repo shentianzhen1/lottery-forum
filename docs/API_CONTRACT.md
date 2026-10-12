@@ -93,6 +93,7 @@
 - `GET /settlements/{round_id}`：返回该期已落结算记录列表
 - `GET /home/banners`：只读；无需登录。返回 `{"banners":[…]}`，字段 `id`/`title`/`subtitle`/`image_key`/`sort_order`/`enabled`；仅 `enabled`，按 `sort_order` 升序，最多 5 条；空列表时客户端不占位
 - `GET /home/announcements`：只读；无需登录。返回 `{"announcements":[…]}`，字段 `id`/`title`/`body`/`published_at`/`pinned`；置顶优先、再按 `published_at` 倒序，最多 4 条；空列表时客户端显示「暂无公告」
+- `GET /home/announcements/{id}`：只读；无需登录。返回单条公告，字段同列表项 `id`/`title`/`body`/`published_at`/`pinned`；不存在 404 `ANNOUNCEMENT_NOT_FOUND`「公告不存在」
 
 没有 `POST /points/transfer`、充值或提现路径。玩法赔付只通过结算分录入账（本片 `WIN` 连本带利共 2 倍：版主付 `stake × (倍率 − 1)`）。开通版主达到后台门槛后冻结积分，不需要人工批准；冻结不是转账。默认门槛是 10000 积分。
 
@@ -149,7 +150,7 @@
 ### 首页横幅与公告（本片只读）
 
 - 区标题：「平台公告」；空态客户端显示「暂无公告」
-- 有公告：标题 + 摘要（取 `body` 前一两行）；置顶项标「置顶」；本片不进详情、无管理后台
+- 有公告：标题 + 摘要（取 `body` 前一两行）；置顶项标「置顶」；详情见 `GET /home/announcements/{id}`（免登）；无管理后台
 - 横幅：主文 `title`、副文 `subtitle`；空列表不占位、不显示假图；本片不点跳、不编辑
 - 不做管理后台或写接口；可选本地种子：`LOTTERY_FORUM_HOME_SEED=1`
 

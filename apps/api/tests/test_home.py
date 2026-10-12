@@ -94,3 +94,43 @@ def test_seed_demo_loads_when_empty() -> None:
     # idempotent
     service.seed_demo()
     assert len(service.list_banners()) == 1
+
+
+def test_announcement_detail_by_id() -> None:
+    store = _home().store
+    store.add_announcement(
+        "a-detail",
+        "详情标题",
+        "详情正文全文",
+        "2026-10-12T12:00:00Z",
+        pinned=True,
+    )
+
+    response = client.get("/api/v1/home/announcements/a-detail")
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": "a-detail",
+        "title": "详情标题",
+        "body": "详情正文全文",
+        "published_at": "2026-10-12T12:00:00Z",
+        "pinned": True,
+    }
+
+
+def test_announcement_detail_not_found() -> None:
+    response = client.get("/api/v1/home/announcements/does-not-exist")
+    assert response.status_code == 404
+    assert response.json()["detail"] == {
+        "code": "ANNOUNCEMENT_NOT_FOUND",
+        "message": "公告不存在",
+    }
+
+
+def test_announcement_detail_public_no_auth() -> None:
+    store = _home().store
+    store.add_announcement("a-public", "公开", "body", "2026-10-01T00:00:00Z", pinned=False)
+    # no Authorization header
+    response = client.get("/api/v1/home/announcements/a-public")
+    assert response.status_code == 200
+    assert response.json()["id"] == "a-public"
+    assert response.json()["title"] == "公开"

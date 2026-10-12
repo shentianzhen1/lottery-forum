@@ -1,6 +1,6 @@
 # 首页横幅与公告
 
-状态：信息架构已定；只读 API 已实现（`GET /api/v1/home/banners`、`GET /api/v1/home/announcements`）；客户端首页已接入只读展示。管理后台与编辑入口尚未实现。
+状态：信息架构已定；只读 API 已实现（`GET /api/v1/home/banners`、`GET /api/v1/home/announcements`、`GET /api/v1/home/announcements/{id}`）；客户端首页列表已接入；详情页客户端另片。管理后台与编辑入口尚未实现。
 
 ## 位置
 
@@ -26,6 +26,6 @@
 
 字段：`id`、`title`、`body`、`published_at`、`pinned`。置顶最多一条。没有数据时显示「暂无公告」，不放示例通知。
 
-「更多」完整列表与单条详情为未实现的产品愿望，本片不做；当前不可点进详情或管理后台。
+单条详情 API 已开放（`GET /home/announcements/{id}`，免登；不存在 404 `ANNOUNCEMENT_NOT_FOUND`）。「更多」完整列表与管理后台仍未实现；客户端详情页另片。
 
 公告不扣分，不承载玩法规则，也不触发起算。
