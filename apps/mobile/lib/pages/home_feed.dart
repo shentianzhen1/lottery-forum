@@ -34,10 +34,24 @@ class HomeAnnouncement {
     return lines.join(' ');
   }
 
-  String get publishedAtLabel {
-    if (publishedAt.isEmpty) return '';
-    return publishedAt.replaceFirst('T', ' ').replaceFirst(RegExp(r'Z$'), '');
-  }
+  String get publishedAtLabel => formatPublishedAt(publishedAt);
+}
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+/// 纯函数：按传入 DateTime 的字段格式化为 `yyyy-MM-dd HH:mm`。
+String formatDateTimeMinute(DateTime value) {
+  return '${value.year.toString().padLeft(4, '0')}-${_two(value.month)}-${_two(value.day)} '
+      '${_two(value.hour)}:${_two(value.minute)}';
+}
+
+/// 把 UTC ISO 字符串转本地时间再格式化；解析失败返回空串。
+String formatPublishedAt(String iso, {DateTime Function(DateTime utc)? toLocal}) {
+  if (iso.isEmpty) return '';
+  final parsed = DateTime.tryParse(iso);
+  if (parsed == null) return '';
+  final local = toLocal != null ? toLocal(parsed.toUtc()) : parsed.toLocal();
+  return formatDateTimeMinute(local);
 }
 
 class HomeFeedData {

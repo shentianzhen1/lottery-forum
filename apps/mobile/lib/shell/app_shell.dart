@@ -7,6 +7,7 @@ import '../pages/account_page.dart';
 import '../api/home_feed_api.dart';
 import '../api/play_betting_api.dart';
 import '../pages/announcement_detail_page.dart';
+import '../pages/home_feed.dart';
 import '../pages/home_page.dart';
 import '../pages/moderator_page.dart';
 import '../pages/play_betting.dart';
@@ -29,7 +30,10 @@ const destinations = <AppDestination>[
 ];
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({this.homeFeed, super.key});
+
+  /// 测试注入；默认用 ApiHomeFeed，State 内只建一次。
+  final HomeFeed? homeFeed;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -40,6 +44,7 @@ class _AppShellState extends State<AppShell> {
   PlayKind _playKind = PlayKind.numberPick;
   String? _announcementId;
   final _client = ApiClient(const ApiConfig(), Session());
+  late final HomeFeed _homeFeed = widget.homeFeed ?? ApiHomeFeed(_client);
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +78,7 @@ class _AppShellState extends State<AppShell> {
           return AnnouncementDetailPage(
             landscapeReady: landscapeReady,
             announcementId: _announcementId!,
-            feed: ApiHomeFeed(_client),
+            feed: _homeFeed,
             onBack: () => setState(() => _announcementId = null),
           );
         }
@@ -81,7 +86,7 @@ class _AppShellState extends State<AppShell> {
           landscapeReady: landscapeReady,
           loggedIn: loggedIn,
           reader: ApiPointsReader(_client, includeEntries: false),
-          feed: ApiHomeFeed(_client),
+          feed: _homeFeed,
           onGoToAccount: () => setState(() => _index = 4),
           onGoToModerator: () => setState(() => _index = 3),
           onOpenPlay: (kind) => setState(() {

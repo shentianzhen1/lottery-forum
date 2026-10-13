@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/pages/announcement_detail_page.dart';
 import 'package:lottery_forum/pages/home_feed.dart';
 import 'package:lottery_forum/pages/home_page.dart';
+import 'package:lottery_forum/shell/app_shell.dart';
 
 class _FakeHomeFeed implements HomeFeed {
   _FakeHomeFeed({
@@ -54,15 +55,31 @@ void main() {
     expect(messageForAnnouncementCode('ANNOUNCEMENT_NOT_FOUND', 'x'), '公告不存在');
   });
 
-  test('formats published_at for display', () {
-    const item = HomeAnnouncement(
-      id: 'a1',
-      title: 't',
-      body: 'b',
-      pinned: false,
-      publishedAt: '2026-10-12T12:00:00Z',
-    );
-    expect(item.publishedAtLabel, '2026-10-12 12:00:00');
+  test('formatDateTimeMinute pads to yyyy-MM-dd HH:mm', () {
+    expect(formatDateTimeMinute(DateTime(2026, 1, 2, 3, 4, 59)), '2026-01-02 03:04');
+    expect(formatDateTimeMinute(DateTime(2026, 10, 12, 23, 5)), '2026-10-12 23:05');
+  });
+
+  test('formatPublishedAt converts UTC to local via fixed offset (+8)', () {
+    DateTime plus8(DateTime utc) {
+      final shifted = utc.add(const Duration(hours: 8));
+      return DateTime(shifted.year, shifted.month, shifted.day, shifted.hour, shifted.minute);
+    }
+
+    expect(formatPublishedAt('2026-10-12T04:05:00Z', toLocal: plus8), '2026-10-12 12:05');
+    expect(formatPublishedAt('2026-10-12T20:30:00Z', toLocal: plus8), '2026-10-13 04:30');
+    expect(formatPublishedAt(''), '');
+    expect(formatPublishedAt('not-a-date'), '');
+  });
+
+  test('formatPublishedAt default path uses DateTime.toLocal', () {
+    const iso = '2026-10-12T04:05:00Z';
+    final expected = formatDateTimeMinute(DateTime.parse(iso).toLocal());
+    expect(formatPublishedAt(iso), expected);
+    const item = HomeAnnouncement(id: 'a', title: 't', body: 'b', pinned: false, publishedAt: iso);
+    expect(item.publishedAtLabel, expected);
+    expect(item.publishedAtLabel, isNot(contains('T')));
+    expect(item.publishedAtLabel.length, 16);
   });
 
   testWidgets('narrow width blocks announcement detail', (tester) async {
@@ -109,7 +126,10 @@ void main() {
     expect(find.text('详情标题'), findsOneWidget);
     expect(find.byKey(const Key('announcement-detail-pinned')), findsOneWidget);
     expect(find.text('置顶'), findsOneWidget);
-    expect(find.text('2026-10-12 12:00:00'), findsOneWidget);
+    expect(
+      find.text(formatPublishedAt('2026-10-12T12:00:00Z')),
+      findsOneWidget,
+    );
     expect(find.text('详情正文全文\n第二段'), findsOneWidget);
   });
 
@@ -182,5 +202,58 @@ void main() {
     await tester.tap(find.byKey(const Key('announcement-detail-back')));
     await tester.pumpAndSettle();
     expect(backed, isTrue);
+  });
+
+  testWidgets('detail rebuild across rotation does not reload', (tester) async {
+    final feed = _FakeHomeFeed(
+      data: const HomeFeedData(banners: [], announcements: []),
+    );
+    Widget build(bool landscape) => MaterialApp(
+          home: AnnouncementDetailPage(
+            landscapeReady: landscape,
+            announcementId: 'a1',
+            feed: feed,
+          ),
+        );
+    await _pumpDetail(tester, AnnouncementDetailPage(
+      landscapeReady: true,
+      announcementId: 'a1',
+      feed: feed,
+    ));
+    await tester.pumpWidget(build(false));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(build(true));
+    await tester.pumpAndSettle();
+    expect(feed.detailQueries, ['a1']);
+    expect(find.text('正在读取'), findsNothing);
+    expect(find.text('详情标题'), findsOneWidget);
+  });
+
+  testWidgets('app shell reuses home feed so rotation keeps detail loaded',
+      (tester) async {
+    final feed = _FakeHomeFeed(
+      data: const HomeFeedData(
+        banners: [],
+        announcements: [
+          HomeAnnouncement(id: 'a7', title: '壳内公告', body: '摘要', pinned: false),
+        ],
+      ),
+    );
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1920, 1080);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(home: AppShell(homeFeed: feed)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('announcement-a7')));
+    await tester.pumpAndSettle();
+    expect(feed.detailQueries, ['a7']);
+
+    tester.view.physicalSize = const Size(800, 1280);
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(1920, 1080);
+    await tester.pumpAndSettle();
+    expect(feed.detailQueries, ['a7']);
+    expect(find.byKey(const Key('announcement-detail-title')), findsOneWidget);
   });
 }
