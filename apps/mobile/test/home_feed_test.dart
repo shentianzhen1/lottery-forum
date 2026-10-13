@@ -10,6 +10,11 @@ class _FakeHomeFeed implements HomeFeed {
 
   @override
   Future<HomeFeedData> load() async => data;
+
+  @override
+  Future<HomeAnnouncement> loadAnnouncement(String id) async {
+    throw const AnnouncementLoadException('公告不存在');
+  }
 }
 
 Future<void> _pumpHome(WidgetTester tester, HomeFeed feed) async {
