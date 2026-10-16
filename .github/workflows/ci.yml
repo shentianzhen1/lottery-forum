@@ -36,3 +36,9 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+      - name: Test configurable API address
+        working-directory: apps/mobile
+        run: >-
+          flutter test test/api_config_test.dart
+          --dart-define=API_BASE_URL=http://127.0.0.1:8000
+          --dart-define=EXPECTED_API_BASE_URL=http://127.0.0.1:8000
