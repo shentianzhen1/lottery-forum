@@ -5,16 +5,16 @@
 ## 文案与产品体验
 
 - **未开售 vs 已截止拆文案**：当前 `UPCOMING`（未开售）投注失败也走 `ROUND_CLOSED`「当期已截止，无法投注」。宜拆独立错误码/文案（如「当期未开售」）。
-- ~~**公告详情（后端）**~~：`GET /home/announcements/{id}` 免登已开放；不存在 404 `ANNOUNCEMENT_NOT_FOUND`。客户端详情页另片。
+- ~~**公告详情（后端）**~~：`GET /home/announcements/{id}` 免登已开放；不存在 404 `ANNOUNCEMENT_NOT_FOUND`。客户端详情页见未合并 PR #65，合入前不计入 main 能力。
 - **「更多」完整列表**：无公告完整列表页；管理后台未做。
 - **横幅点击跳转**：横幅本片不点跳；站内玩法/公告跳转为产品愿望。
 
 ## 玩法与投注
 
-- ~~**福建 31 选 7 接投注骨架**~~：已放开 `stake_enabled`，与数字选号同款 `POST /bets` 冻结占位（本片不派奖）。客户端横屏选号已接投注（#47）。
-- ~~**福建 31 任选 2/3/4/5（后端）**~~：已注册 `fujian-31-any-2`…`any-5`，与选7共用期号彩种 `fujian-31`；同款冻结 + 连本带利共 2 倍。客户端入口另片。
-- **取消投注**：`POST /bets/{bet_id}/cancel`（仅 `OPEN` 期内、未锁定）未开放。
-- ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；本片不派奖。
+- ~~**福建 31 选 7 接投注骨架**~~：已放开 `stake_enabled`，与数字选号同款 `POST /bets` 冻结占位（结算已支持固定 2 倍 WIN 与 LOSS/VOID）。客户端横屏选号已接投注（#47）。
+- ~~**福建 31 任选 2/3/4/5（后端）**~~：已注册 `fujian-31-any-2`…`any-5`，与选7共用期号彩种 `fujian-31`；同款冻结 + 连本带利共 2 倍。客户端任选入口已随 #59 合入。
+- ~~**取消投注与本人列表**~~：#62/#63 已合入。仅本人、`OPEN` 期、`ACCEPTED` 投注可取消并解冻；客户端已有「取消本注」和「本期可取消」列表。不做部分取消与手续费。
+- ~~**期号推进到 SETTLING + Settlement 骨架**~~：已开放 `CLOSED`→`DRAWN`→`SETTLING` 与 `WIN`/`LOSS`/`VOID` 记录；管理员 finalize 已支持 VOID/LOSS/WIN 入账。
 - ~~**结算权限收口（管理员）**~~：期号创建/推进与写结算已限 `role=admin`，越权 403 `FORBIDDEN`；管理员来自 `LOTTERY_FORUM_ADMIN_USERNAMES` 或本地种子，注册不能自封。
 - ~~**版主归属期号与权限**~~：期号挂 `board_id`（归属开设该版块的版主，彩种须一致）；该版块版主可建号并推进自己版块的期号，旧期号（无 `board_id`）仅管理员；写结算仍只限管理员（版主是赔付方）；管理员保留全部权限。本地造版主用 `LOTTERY_FORUM_DEV_SEED_MODERATORS` 启动种子（默认关闭）；本地造 OPEN 期用 `LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS`（默认关闭）。
 - **版主写结算 / 结算复核**：如需让版主参与结算，须有独立复核（版主是赔付方，不能自判）；当前不做。

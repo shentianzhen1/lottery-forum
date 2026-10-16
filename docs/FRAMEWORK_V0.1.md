@@ -20,7 +20,7 @@
 - Lottery：福建 31 选 7 等示例玩法已登记选号校验；没有独立彩种配置对象。
 - Play：数字选号、排名竞猜和福建 31 选 7 是示例插件；`stake_enabled` 玩法可走投注冻结占位。
 - Round：骨架已实现到 `SETTLED`。可创建/查询，单向推进 `UPCOMING` → `OPEN` → `CLOSED` → `DRAWN` → `SETTLING` → `SETTLED`；可挂 `board_id`（彩种须与版块一致）。推进到结算中：管理员或该版块版主；进已结算仅管理员。无开奖号码落库。
-- Bet：骨架已实现到 `ACCEPTED`，finalize 后 VOID/LOSS/WIN 进 `SETTLED`。挂 `OPEN` 期号，校验→记录→冻结占位（固定 10 积分）；`odds_snapshot` 为固定 2 倍。数字选号与福建 31 选 7 客户端已接投注；不取消。
+- Bet：骨架已实现到 `ACCEPTED`，finalize 后 VOID/LOSS/WIN 进 `SETTLED`。挂 `OPEN` 期号，校验→记录→冻结占位（固定 10 积分）；`odds_snapshot` 为固定 2 倍。数字选号、福建 31 选 7 与任选 2/3/4/5 客户端已接投注。本人可在 `OPEN` 期内取消 `ACCEPTED` 投注并解冻，客户端取消入口已接入。
 - Settlement：已实现。`SETTLING` 期可落 `WIN`/`LOSS`/`VOID` 记录；`POST /rounds/{id}/settled` 对 VOID/LOSS/WIN 入账并进 `SETTLED`；版主可用不足整期挡。写结算与 finalize 仅管理员。
 - ModeratorBoard：达标自助开通已实现（API + 客户端入口，无需人工审核）；门槛冻结已有。坐庄会话 / 赔付公式未实现。
 - Risk：未实现。
@@ -35,7 +35,7 @@
 
 ## 5. 投注框架
 
-已有校验、投注单记录、冻结占位与幂等。赔率快照与冻结分存（本片固定 2 倍）。生命周期做到 `ACCEPTED`，finalize 后 VOID/LOSS/WIN 进 `SETTLED`；取消与 `LOCKED` 未开放。
+已有校验、投注单记录、冻结占位与幂等。赔率快照与冻结分存（本片固定 2 倍）。生命周期做到 `ACCEPTED`，finalize 后 VOID/LOSS/WIN 进 `SETTLED`；本人取消与列表接口已开放；取消后为 `CANCELLED` 并解冻，已取消投注不参与结算；`LOCKED` 未开放。
 
 ## 6. 期号框架
 
@@ -51,4 +51,4 @@
 
 ## 当前顺序
 
-对照 `docs/ROADMAP.md` / `docs/BACKLOG.md`：期号到 `SETTLED`（VOID/LOSS/WIN 连本带利共 2 倍）、投注冻结占位、Settlement、结算权限与版主归属已进 main。下一步可做阶梯赔率/冻结池扣付等，不跳到现金投注或 Redis。PostgreSQL 有实际库服务后再接。
+对照 `docs/ROADMAP.md` / `docs/BACKLOG.md`：期号到 `SETTLED`（VOID/LOSS/WIN 连本带利共 2 倍）、投注冻结占位、Settlement、结算权限与版主归属已进 main。近期先收口文档与公告详情 PR #65，再验证 Android 横屏业务链路。阶梯赔率/冻结池扣付仍是待办，不跳到现金投注或 Redis。PostgreSQL 有实际库服务后再接。
