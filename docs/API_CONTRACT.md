@@ -126,7 +126,7 @@
 | `CANCELLED` | 已取消 |
 | `REFUNDED` | 已退回 |
 
-客户端展示用中文，不直接显示英文码。本片成功投注落在 `ACCEPTED`（已受理）并冻结占位；`POST /rounds/{id}/settled` 后 VOID/LOSS/WIN 投注进 `SETTLED`。`LOCKED`、取消、退回尚未开放。
+客户端展示用中文，不直接显示英文码。本片成功投注落在 `ACCEPTED`（已受理）并冻结占位；`POST /rounds/{id}/settled` 后 VOID/LOSS/WIN 投注进 `SETTLED`。本人可在 `OPEN` 期内通过取消接口把 `ACCEPTED` 推进为 `CANCELLED` 并解冻；`LOCKED`、独立的 `REFUNDED` 流程尚未开放。
 
 ### 结算结果（API 枚举 / 中文展示）
 
