@@ -3,6 +3,7 @@ import sqlite3
 from uuid import uuid4
 
 from app.bets.store import ALLOWED_STATUSES, BetStore
+from app.db import atomic_command, require_shared_connection
 from app.games.model import GameError
 from app.games.registry import GameRegistry
 from app.ledger.model import LedgerError
@@ -34,7 +35,9 @@ class BetService:
         self.rounds = rounds
         self.games = games
         self.ledger = ledger
+        require_shared_connection(store, rounds.store, ledger.store)
 
+    @atomic_command
     def place(
         self,
         account_id: str,
@@ -133,6 +136,7 @@ class BetService:
         rows = self.store.list_for_account(account_id, round_id=round_id, status=status)
         return {"items": [self._bet(row) for row in rows]}
 
+    @atomic_command
     def cancel(self, account_id: str, bet_id: str) -> dict[str, object]:
         row = self.store.get(bet_id)
         if row is None or row["account_id"] != account_id:

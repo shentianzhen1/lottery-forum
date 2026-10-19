@@ -2,6 +2,7 @@ import json
 from uuid import uuid4
 
 from app.bets.store import BetStore
+from app.db import atomic_command, require_shared_connection
 from app.ledger.model import Direction, LedgerError, PostRequest, Reason
 from app.ledger.service import LedgerService
 from app.rounds.service import RoundError, RoundService
@@ -36,7 +37,9 @@ class SettlementService:
         self.rounds = rounds
         self.bets = bets
         self.ledger = ledger
+        require_shared_connection(store, rounds.store, bets, *([ledger.store] if ledger else []))
 
+    @atomic_command
     def record(self, round_id: str, results: list[dict[str, object]]) -> dict[str, object]:
         try:
             round_row = self.rounds.get(round_id)
@@ -108,6 +111,7 @@ class SettlementService:
             "settlements": [self._row(row) for row in self.store.list_for_round(round_id)],
         }
 
+    @atomic_command
     def finalize(self, round_id: str, operator_id: str) -> dict[str, object]:
         """Apply VOID/LOSS/WIN effects and advance SETTLING → SETTLED. Admin-only at the router.
 
