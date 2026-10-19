@@ -81,13 +81,15 @@ def require_shared_connection(*stores) -> AtomicConnection:
     return connection
 
 
-def atomic_command(method):
-    """Transaction boundary for services with a SQLite store attribute."""
-    @wraps(method)
-    def wrapped(self, *args, **kwargs):
-        with require_shared_connection(self.store).atomic():
-            return method(self, *args, **kwargs)
-    return wrapped
+def atomic_command(method=None, *, store_attribute="store"):
+    """Transaction boundary; auth explicitly selects its accounts store."""
+    def decorate(command):
+        @wraps(command)
+        def wrapped(self, *args, **kwargs):
+            with require_shared_connection(getattr(self, store_attribute)).atomic():
+                return command(self, *args, **kwargs)
+        return wrapped
+    return decorate(method) if method is not None else decorate
 
 
 def connect(path: str | Path) -> AtomicConnection:

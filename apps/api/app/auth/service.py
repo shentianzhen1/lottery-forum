@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from app.auth.passwords import hash_password, verify_password
 from app.auth.store import Account, AccountStore
+from app.db import atomic_command, require_shared_connection
 from app.ledger.model import Direction, LedgerError, PostRequest, Reason
 from app.ledger.service import LedgerService
 
@@ -44,12 +45,15 @@ class AuthService:
     def __init__(self, accounts: AccountStore, ledger: LedgerService) -> None:
         self.accounts = accounts
         self.ledger = ledger
+        require_shared_connection(accounts, ledger.store)
         self.failures: dict[str, int] = {}
 
+    @atomic_command(store_attribute="accounts")
     def register(self, username: str, password: str) -> tuple[Account, str]:
         account = self.create_account(username, password)
         return account, self._session(account.account_id)
 
+    @atomic_command(store_attribute="accounts")
     def create_account(self, username: str, password: str) -> Account:
         """Create a ``user`` account with the opening grant, without issuing a session."""
         cleaned = username.strip()
