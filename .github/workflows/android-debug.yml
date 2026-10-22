@@ -1,0 +1,58 @@
+name: Android debug APK
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/android-debug.yml'
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: '测试连接方式（USB 需 adb reverse）'
+        required: true
+        default: 'http://127.0.0.1:8000'
+        type: choice
+        options:
+          - 'http://127.0.0.1:8000'
+          - 'http://10.0.2.2:8000'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      API_BASE_URL: ${{ inputs.api_base_url || 'http://127.0.0.1:8000' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+      - name: Build debug APK
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          flutter build apk --debug --dart-define="API_BASE_URL=$API_BASE_URL"
+      - name: Record build identity
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p android-debug-artifact
+          cp apps/mobile/build/app/outputs/flutter-apk/app-debug.apk android-debug-artifact/
+          printf 'commit=%s\napi_base_url=%s\nmode=debug\n' "$BUILD_COMMIT" "$API_BASE_URL" > android-debug-artifact/build-info.txt
+          cd android-debug-artifact
+          sha256sum app-debug.apk > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-${{ github.run_id }}
+          path: android-debug-artifact/
+          if-no-files-found: error
+          retention-days: 7
