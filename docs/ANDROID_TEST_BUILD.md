@@ -6,7 +6,7 @@
 
 本流程固定 Flutter 3.24.5、Java 17、AGP 8.1.0、Gradle 8.3、Kotlin 1.8.22，与 Flutter 3.24.5 的 Gradle 模板版本对齐。保留现有 Kotlin DSL，不重新生成 Android 项目。原 AGP 9.1/Gradle 9.3/Kotlin 2.4 配置不能当成 Flutter 3.24.5 已验收工具链。
 
-涉及 mobile 或工作流的 PR 会自动构建 USB 地址测试包（`http://127.0.0.1:8000`）。在 GitHub Actions 的对应运行页下载 `android-debug-<run_id>` artifact，解压后含 APK、构建 SHA/API 地址记录和 SHA256SUMS；保留 7 天。PR 运行记录的 SHA 可能是 GitHub 测试合并提交，不是分支 HEAD。
+涉及 mobile 或工作流的 PR，以及这些文件进入 main 的 push，都会自动构建 USB 地址测试包（`http://127.0.0.1:8000`）。在 GitHub Actions 的对应运行页下载 `android-debug-<run_id>` artifact，解压后含 APK、构建 SHA/API 地址记录和 SHA256SUMS；保留 7 天。PR 运行记录的 SHA 可能是 GitHub 测试合并提交，不是分支 HEAD。设备验收优先使用 main 的成功 push 构建，并核对 build-info.txt 中的提交与目标 main 一致；仅后端或文档变化不会触发 APK 重编译。
 
 工作流进入默认分支后，可在 Actions → Android debug APK → Run workflow 中选择 USB 或模拟器地址；未进入默认分支前手动入口可能不可见。自动 PR 构建不依赖手动入口，不发布 Release、不上传商店，也不需要正式签名密钥。
 
