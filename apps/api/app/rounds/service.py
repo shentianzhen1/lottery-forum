@@ -3,6 +3,7 @@ from typing import Callable
 from uuid import uuid4
 
 from app.rounds.store import RoundStore
+from app.db import atomic_command
 
 # Closed → Drawn → Settling → Settled. WIN payout: fixed 2x via SettlementService.finalize.
 TRANSITIONS: dict[str, str] = {
@@ -87,6 +88,7 @@ class RoundService:
         """SETTLING → SETTLED. Callers must apply VOID/LOSS ledger effects first."""
         return self._advance(round_id, expected_from="SETTLING", to="SETTLED")
 
+    @atomic_command
     def _advance(self, round_id: str, expected_from: str, to: str) -> dict[str, object]:
         row = self.store.get(round_id)
         if row is None:

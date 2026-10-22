@@ -1,17 +1,15 @@
 import sqlite3
-import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-from app.db import connect
+from app.db import connect, require_shared_connection
 from app.ledger.model import Direction, Entry, Reason
 
 
 class SqliteLedgerStore:
     def __init__(self, path: str | Path = ":memory:", connection: sqlite3.Connection | None = None) -> None:
         self.connection = connection or connect(path)
-        self.lock = threading.RLock()
-        self._local = threading.local()
+        self.lock = require_shared_connection(self).lock
         self.connection.execute("pragma foreign_keys = on")
         self.connection.executescript(
             """
@@ -55,27 +53,15 @@ class SqliteLedgerStore:
 
     @contextmanager
     def locked(self):
-        with self.lock:
-            if self.connection.in_transaction:
-                self.connection.commit()
-            self.connection.execute("begin immediate")
-            self._local.in_locked = True
-            try:
-                yield
-                self.connection.commit()
-            except Exception:
-                self.connection.rollback()
-                raise
-            finally:
-                self._local.in_locked = False
+        with self.connection.atomic():
+            yield
 
     def ensure_account(self, account_id: str) -> None:
         self.connection.execute(
             "insert or ignore into points_accounts(account_id, balance) values (?, 0)",
             (account_id,),
         )
-        if not getattr(self._local, "in_locked", False):
-            self.connection.commit()
+        self.connection.commit()
 
     def balance(self, account_id: str) -> int:
         with self.lock:
@@ -128,8 +114,7 @@ class SqliteLedgerStore:
             "update points_accounts set balance = balance + ? where account_id = ?",
             (delta, entry.account_id),
         )
-        if not getattr(self._local, "in_locked", False):
-            self.connection.commit()
+        self.connection.commit()
 
     def add_hold(self, hold_id: str, account_id: str, amount: int, idempotency_key: str, operator_id: str) -> None:
         self.connection.execute(
@@ -139,8 +124,7 @@ class SqliteLedgerStore:
             """,
             (hold_id, account_id, amount, idempotency_key, operator_id),
         )
-        if not getattr(self._local, "in_locked", False):
-            self.connection.commit()
+        self.connection.commit()
 
     def find_hold(self, account_id: str, idempotency_key: str) -> sqlite3.Row | None:
         return self.connection.execute(
@@ -153,8 +137,7 @@ class SqliteLedgerStore:
             "update points_holds set status = 'released' where hold_id = ? and status = 'active'",
             (hold_id,),
         )
-        if not getattr(self._local, "in_locked", False):
-            self.connection.commit()
+        self.connection.commit()
         return cursor.rowcount
 
     def find_hold_by_id(self, hold_id: str) -> sqlite3.Row | None:
