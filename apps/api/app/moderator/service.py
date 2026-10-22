@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from app.db import atomic_command, require_shared_connection
 from app.ledger.service import LedgerService
 from app.moderator.store import ModeratorStore
 
@@ -8,7 +9,9 @@ class ModeratorService:
     def __init__(self, store: ModeratorStore, ledger: LedgerService) -> None:
         self.store = store
         self.ledger = ledger
+        require_shared_connection(store, ledger.store)
 
+    @atomic_command
     def open_board(self, account_id: str, lottery_id: str) -> dict[str, object]:
         if not lottery_id:
             return {"code": "INVALID_LOTTERY", "message": "必须选择彩种版块"}
