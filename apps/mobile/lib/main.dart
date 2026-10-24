@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'design/app_theme.dart';
 import 'shell/app_shell.dart';
 
 void main() {
@@ -12,13 +13,9 @@ class LotteryForumApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '彩票论坛',
+      title: '彩友论坛',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F6F6A)),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF4F1EA),
-      ),
+      theme: AppTheme.dark,
       home: const AppShell(),
     );
   }
