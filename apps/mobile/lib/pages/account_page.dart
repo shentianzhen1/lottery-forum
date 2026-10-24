@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../design/app_theme.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({
@@ -75,27 +76,37 @@ class _AccountPageState extends State<AccountPage> {
         ),
       );
     }
-    return Padding(
+    return Center(child: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
+      child: SizedBox(width: 460, child: Card(child: Padding(
+      padding: const EdgeInsets.all(28),
       child: Column(
         key: const Key('login-form'),
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('登录', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 12),
+          const Icon(Icons.person_outline, size: 28, color: AppTheme.gold),
+          const SizedBox(height: 16),
+          Text('欢迎来到社区', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          Text('登录账户，继续你的探索。', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 24),
           TextField(controller: _username, decoration: const InputDecoration(labelText: '用户名')),
+          const SizedBox(height: 16),
           TextField(
             controller: _password,
             obscureText: true,
             decoration: const InputDecoration(labelText: '密码'),
           ),
-          const SizedBox(height: 12),
-          FilledButton(onPressed: () => _submit('/api/v1/auth/register'), child: const Text('注册')),
-          const SizedBox(width: 12),
-          OutlinedButton(onPressed: () => _submit('/api/v1/auth/login'), child: const Text('登录')),
-          if (_error != null) Text(_error!, key: const Key('login-error')),
+          const SizedBox(height: 24),
+          Row(children: [
+            Expanded(child: OutlinedButton(onPressed: () => _submit('/api/v1/auth/login'), child: const Text('登录'))),
+            const SizedBox(width: 12),
+            Expanded(child: FilledButton(onPressed: () => _submit('/api/v1/auth/register'), child: const Text('注册'))),
+          ]),
+          if (_error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_error!, key: const Key('login-error'), style: TextStyle(color: Theme.of(context).colorScheme.error))),
         ],
       ),
-    );
+    ))))));
   }
 }

@@ -35,7 +35,7 @@ class AppTheme {
         titleMedium: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         bodyMedium: const TextStyle(fontSize: 14, height: 1.6),
         bodySmall: const TextStyle(fontSize: 12, height: 1.5, color: muted),
-      ),
+      ).apply(fontFamily: 'Noto Sans CJK SC'),
       cardTheme: CardTheme(
         color: surface,
         surfaceTintColor: Colors.transparent,
@@ -51,15 +51,15 @@ class AppTheme {
         indicatorColor: Color(0xFF343229),
         selectedIconTheme: IconThemeData(color: gold, size: 23),
         unselectedIconTheme: IconThemeData(color: muted, size: 23),
-        selectedLabelTextStyle: TextStyle(color: gold, fontWeight: FontWeight.w600),
-        unselectedLabelTextStyle: TextStyle(color: muted),
+        selectedLabelTextStyle: TextStyle(color: gold, fontWeight: FontWeight.w600, fontFamily: 'Noto Sans CJK SC'),
+        unselectedLabelTextStyle: TextStyle(color: muted, fontFamily: 'Noto Sans CJK SC'),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Noto Sans CJK SC'),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
