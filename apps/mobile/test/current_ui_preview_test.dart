@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lottery_forum/main.dart';
+import 'package:lottery_forum/design/app_theme.dart';
+import 'package:lottery_forum/shell/app_shell.dart';
 
 void main() {
   const export = bool.fromEnvironment('EXPORT_UI_PREVIEW');
@@ -38,7 +39,7 @@ void main() {
       await tester.pumpWidget(
         RepaintBoundary(
           key: boundaryKey,
-          child: const LotteryForumApp(),
+          child: const _PreviewApp(),
         ),
       );
       await tester.pumpAndSettle();
@@ -47,6 +48,33 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     }
   });
+}
+
+class _PreviewApp extends StatelessWidget {
+  const _PreviewApp();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.dark;
+    return MaterialApp(
+      title: '彩友论坛',
+      debugShowCheckedModeBanner: false,
+      theme: theme.copyWith(
+        textTheme: theme.textTheme.apply(fontFamily: 'Noto Sans CJK SC'),
+        primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Noto Sans CJK SC'),
+        navigationRailTheme: theme.navigationRailTheme.copyWith(
+          selectedLabelTextStyle: theme.navigationRailTheme.selectedLabelTextStyle
+              ?.copyWith(fontFamily: 'Noto Sans CJK SC'),
+          unselectedLabelTextStyle: theme.navigationRailTheme.unselectedLabelTextStyle
+              ?.copyWith(fontFamily: 'Noto Sans CJK SC'),
+        ),
+      ),
+      home: const DefaultTextStyle(
+        style: TextStyle(fontFamily: 'Noto Sans CJK SC'),
+        child: AppShell(),
+      ),
+    );
+  }
 }
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
