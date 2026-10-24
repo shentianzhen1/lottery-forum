@@ -12,16 +12,16 @@ void main() {
 
   testWidgets('premium shell stays usable at compact landscape and desktop sizes', (tester) async {
     if (export) {
+      await tester.runAsync(() async {
       final font = File('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc');
       final bytes = ByteData.sublistView(font.readAsBytesSync());
-      for (final family in ['Noto Sans CJK SC', 'Roboto', 'Ahem']) {
-        final loader = FontLoader(family)..addFont(Future.value(bytes));
-        await loader.load();
-      }
+      final loader = FontLoader('Noto Sans CJK SC')..addFont(Future.value(bytes));
+      await loader.load();
       final icons = File('${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
       final iconLoader = FontLoader('MaterialIcons')
         ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
       await iconLoader.load();
+      });
     }
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetDevicePixelRatio);
