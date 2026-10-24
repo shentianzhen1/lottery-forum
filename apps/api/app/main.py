@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
         logger.info("api stopped")
 
     app = FastAPI(
-        title="彩票论坛",
+        title="彩友论坛",
         version="0.1.0",
         description="横屏优先的多玩法基础平台。当前不提供现金充值、提现、兑付或用户间积分转账。",
         lifespan=lifespan,
