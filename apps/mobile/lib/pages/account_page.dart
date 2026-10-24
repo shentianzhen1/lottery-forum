@@ -107,6 +107,6 @@ class _AccountPageState extends State<AccountPage> {
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_error!, key: const Key('login-error'), style: TextStyle(color: Theme.of(context).colorScheme.error))),
         ],
       ),
-    ))))));
+    )))));
   }
 }
