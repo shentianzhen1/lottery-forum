@@ -1,0 +1,31 @@
+name: UI Preview
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/ui-preview.yml'
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+      - name: Install CJK font
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - name: Export Flutter UI previews
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          flutter test test/current_ui_preview_test.dart --dart-define=EXPORT_UI_PREVIEW=true
+      - name: Upload UI previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: caiyou-ui-preview
+          path: apps/mobile/build/ui-preview/*.png
+          if-no-files-found: error
