@@ -78,7 +78,7 @@ class DrawObservationService:
         )
         return self._observation(self.store.get(observation_id), duplicate=False)
 
-    def list(
+    def list_observations(
         self,
         *,
         lottery_id: str | None = None,
