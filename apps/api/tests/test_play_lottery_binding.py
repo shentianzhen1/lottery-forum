@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.games.registry import GameRegistry
 from app.main import app
 
 client = TestClient(app)
@@ -48,6 +49,14 @@ def assert_no_freeze(token: str) -> None:
     assert balance.json()["balance"] == 100
     assert balance.json()["frozen"] == 0
     assert balance.json()["available"] == 100
+
+
+def test_every_stake_enabled_play_declares_lottery() -> None:
+    specs = GameRegistry().list_enabled()
+    assert specs
+    for spec in specs:
+        if spec.stake_enabled:
+            assert spec.lottery_id, spec.game_id
 
 
 def test_fujian_play_cannot_use_demo_digit_round() -> None:
