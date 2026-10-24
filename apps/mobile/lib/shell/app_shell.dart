@@ -5,6 +5,7 @@ import '../api/api_config.dart';
 import '../api/home_feed_api.dart';
 import '../api/play_betting_api.dart';
 import '../api/session.dart';
+import '../api/standalone_api_client.dart';
 import '../design/app_theme.dart';
 import '../pages/account_page.dart';
 import '../pages/home_page.dart';
@@ -12,6 +13,8 @@ import '../pages/moderator_page.dart';
 import '../pages/play_betting.dart';
 import '../pages/play_center_page.dart';
 import '../pages/points_center_page.dart';
+
+const standaloneMode = bool.fromEnvironment('STANDALONE_MODE');
 
 class AppDestination {
   const AppDestination(this.label, this.icon);
@@ -38,7 +41,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   PlayKind _playKind = PlayKind.numberPick;
-  final _client = ApiClient(const ApiConfig(), Session());
+  late final ApiClient _client = standaloneMode
+      ? StandaloneApiClient()
+      : ApiClient(const ApiConfig(), Session());
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +150,26 @@ class _WorkspaceHeader extends StatelessWidget {
             '彩友论坛',
             style: TextStyle(fontSize: 12, color: AppTheme.muted),
           ),
+          if (standaloneMode) ...[
+            const SizedBox(width: 10),
+            Container(
+              key: const Key('standalone-mode-badge'),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF332F27),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.gold.withOpacity(.3)),
+              ),
+              child: const Text(
+                '单机测试',
+                style: TextStyle(
+                  color: AppTheme.gold,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
           const Spacer(),
           const Text(
             'CAIYOU FORUM',
