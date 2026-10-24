@@ -10,31 +10,35 @@
 
 积分不能提现或转账，但可以用于玩法赔付和开通版主。边界见 `docs/decisions/2026-10-10-points-boundary.md`。
 
-框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`；只读 API 与客户端横屏展示均已接入。待办见 `docs/BACKLOG.md`。
+框架文档见 `docs/ARCHITECTURE.md`、`docs/DOMAIN_MODEL.md`、`docs/API_CONTRACT.md`。首页横幅和公告见 `docs/HOME_BANNER.md`；只读 API 与客户端横屏展示均已接入。待办见 `docs/BACKLOG.md`，近期顺序见 `docs/ROADMAP.md`。
 
 已实现：
 
 - `GET /health`
 - 积分钱包写入 SQLite 文件，重启后余额仍在。PostgreSQL 迁移尚未执行
 - 福建31选7 可保存校验后的选号记录。重复幂等键不新增
-- 可用积分达到默认 10000 即可开通版主版块，不需要批准。开通会冻结门槛积分。本片 WIN 连本带利共 2 倍派奖；客户端开通入口已接入
-- 玩法中心：数字选号已挂 `OPEN` 期号并走 `POST /bets` 真实冻结占位（非假扣固定分）；福建31选7 横屏选号也已接同一投注骨架（冻结占位，结算后按结果派奖）；后端已开放任选 2/3/4/5（`fujian-31-any-2`…`any-5`，期号仍 `fujian-31`），客户端入口另片；排名竞猜未接投注
+- 可用积分达到默认 10000 即可开通版主版块，不需要批准。开通会冻结门槛积分；WIN 当前按连本带利共 2 倍最小口径派奖；客户端开通入口已接入
+- 玩法中心：数字选号、福建31选7及任选2/3/4/5均已接真实投注骨架，挂 `OPEN` 期号并走 `POST /bets` 冻结占位；福建任选玩法共用 `fujian-31` 期号，客户端入口已存在；排名竞猜仅保留示例能力
 - 首页公告/横幅只读展示已接入：空态「暂无公告」，横幅空不占位；接口 `GET /home/banners`、`GET /home/announcements`、`GET /home/announcements/{id}`（免登详情）
 - 宽度低于 960 时提示使用横屏，不把窄屏页伪装成横屏首页
-- CI 工作流已添加；是否通过以 GitHub Actions 实际结果为准
+- CI 工作流已添加；main 客户端变更可自动构建 Android debug APK，是否通过以 GitHub Actions 实际结果为准
+- Android 真机 API 地址支持构建参数配置；debug 可用于本地 HTTP 测试，正式环境仍应 HTTPS
 - 个人中心可注册、登录和退出。注册发放 100 开户积分
+- 注册开户、版主开通、投注/取消/结算等关键多步写操作已收口 SQLite 命令级事务边界
 - 期号状态机骨架：可创建/查询，单向推进 `UPCOMING → OPEN → CLOSED → DRAWN → SETTLING → SETTLED`；管理员或该期所属版块的版主可创建和推进到结算中（期号挂 `board_id`）；写结算与进已结算仅管理员
 - 结算：管理员可在 `SETTLING` 期写 `WIN`/`LOSS`/`VOID` 记录，再 `POST /rounds/{id}/settled` 入账——`VOID` 解冻退回、`LOSS` 划入版主可用余额、`WIN` 连本带利共 2 倍（版主付盈利 `stake×(倍率−1)`）从版主可用余额派奖（不足整期挡；判断可用不算同批 LOSS）。产品口径：下注由开设该版块的版主赔付
-- 投注生命周期骨架：挂 `OPEN` 期号，校验→记录→冻结占位（`ACCEPTED`，`odds_snapshot` 固定 2 倍）；finalize 后 VOID/LOSS/WIN 进 `SETTLED`。不取消
+- 投注生命周期：挂 `OPEN` 期号，校验→记录→冻结占位（`ACCEPTED`，`odds_snapshot` 当前固定 2 倍）；本人在期号仍 `OPEN` 且投注仍 `ACCEPTED` 时可取消并原子解冻；finalize 后 VOID/LOSS/WIN 进 `SETTLED`
+- 本人投注列表与取消接口已开放：`GET /bets?round_id=&status=`、`POST /bets/{bet_id}/cancel`；客户端已有「本期可取消」与「取消本注」
 
-未实现：
+未实现 / 未完成验收：
 
+- **玩法 → 彩种强绑定**：仍需在投注命令边界硬校验 `play_id` 所属彩种与 `round.lottery_id` 一致，阻断跨彩种/串期；这是开奖数据接入前的第一优先级
 - PostgreSQL 尚未连接。当前持久化是 SQLite 文件
-- 阶梯/复杂赔率与从开通门槛冻结池扣付（本片仅固定 2 倍、从可用余额派）
-- 坐庄引擎（门槛开通与固定 2 倍派奖已落地；坐庄未做）
+- 阶梯/复杂赔率与从开通门槛冻结池扣付（当前仅固定 2 倍、从可用余额派）
+- 版主风险/赔率引擎尚未完整实现；当前只有门槛开通、版块归属与固定倍率最小结算闭环
 - 管理后台
-- Android 平台文件已生成，测试包默认横屏。可在本机或 GitHub Release/CI 打 debug APK（见 `docs/ANDROID_TEST_BUILD.md`）；仓库不提交 APK 二进制；部分受限环境曾因内存不足导致构建失败，属环境备注
-- 真机或模拟器横屏验收
+- 开奖数据 provider、原始数据存储、去重/更正审计、人工确认与自动判奖尚未接入；未核验来源不得直接触发派奖
+- 真机或模拟器横屏主链路验收尚未完成
 
 ## 本地运行
 
@@ -106,6 +110,6 @@ LOTTERY_FORUM_DEV_SEED_MODERATORS=alice:fujian-31,bob:demo-digit \
   uvicorn app.main:app --app-dir apps/api --reload
 ```
 
-同彩种已有 `OPEN` 则跳过（重启幂等）。有版主版块时会挂上 `board_id`；没有则 `board_id` 为空（仍可下单，派奖需带版块）。详见 `docs/API_CONTRACT.md`。
+同彩种已有 `OPEN` 则跳过（重启幂等）。有版主版块时会挂上对应 `board_id`；没有则 `board_id` 为空（仍可下单，派奖需带版块）。详见 `docs/API_CONTRACT.md`。
 
 不全局锁定屏幕方向。主要页面仍以 16:9 横屏为第一验收方向。
