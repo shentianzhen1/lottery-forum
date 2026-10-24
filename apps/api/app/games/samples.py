@@ -2,7 +2,15 @@ from app.games.model import GameError, GameSpec, ValidationResult
 
 
 class NumberPick:
-    spec = GameSpec("number-pick", "数字选号", "number", "0.1.0", True, True)
+    spec = GameSpec(
+        "number-pick",
+        "数字选号",
+        "number",
+        "0.1.0",
+        True,
+        True,
+        lottery_id="demo-digit",
+    )
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:
         numbers = payload.get("numbers")
@@ -17,7 +25,15 @@ class NumberPick:
 
 class RankingPick:
     options = ("甲", "乙", "丙", "丁")
-    spec = GameSpec("ranking-pick", "排名竞猜", "ranking", "0.1.0", True, True)
+    spec = GameSpec(
+        "ranking-pick",
+        "排名竞猜",
+        "ranking",
+        "0.1.0",
+        True,
+        True,
+        lottery_id="demo-digit",
+    )
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:
         ranking = payload.get("ranking")
@@ -31,7 +47,16 @@ class RankingPick:
 class Fujian31Pick:
     """福建31选7（play_id 仍为 fujian-31，与彩种/期号 id 相同）。"""
 
-    spec = GameSpec("fujian-31", "福建31选7", "number", "0.1.0", True, True, True)
+    spec = GameSpec(
+        "fujian-31",
+        "福建31选7",
+        "number",
+        "0.1.0",
+        True,
+        True,
+        True,
+        lottery_id="fujian-31",
+    )
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:
         numbers = payload.get("numbers")
@@ -60,6 +85,7 @@ class Fujian31AnyPick:
             True,
             True,
             True,
+            lottery_id="fujian-31",
         )
 
     def validate(self, payload: dict[str, object]) -> ValidationResult:

@@ -72,6 +72,10 @@ class BetService:
         spec = self.games.get_spec(play_id)
         if spec is None or not spec.enabled:
             raise BetError("GAME_NOT_FOUND", "玩法不存在或未启用")
+        if not spec.lottery_id:
+            raise BetError("PLAY_LOTTERY_UNBOUND", "玩法尚未绑定彩种")
+        if spec.lottery_id != round_row["lottery_id"]:
+            raise BetError("PLAY_LOTTERY_MISMATCH", "玩法与期号彩种不匹配")
         if spec.version != rule_version:
             raise BetError("RULE_VERSION_MISMATCH", "规则版本不匹配")
         if not spec.stake_enabled:
@@ -108,7 +112,6 @@ class BetService:
                 idempotency_key=idempotency_key,
             )
         except sqlite3.IntegrityError:
-            # Concurrent same-key: hold is idempotent; return the original bet.
             existing = self.store.find_by_idempotency(account_id, idempotency_key)
             if existing is None:
                 raise
@@ -150,7 +153,6 @@ class BetService:
             raise not_cancellable from error
         if round_row["status"] != "OPEN":
             raise not_cancellable
-        # Atomic ACCEPTED -> CANCELLED: only one concurrent caller wins and releases the hold.
         if not self.store.transition(bet_id, "ACCEPTED", "CANCELLED"):
             raise not_cancellable
         if row["hold_id"]:
@@ -169,7 +171,6 @@ class BetService:
             "selection": selection,
             "odds_snapshot": json.loads(row["odds_snapshot_json"]),  # type: ignore[index]
             "hold_id": row["hold_id"],  # type: ignore[index]
-            # Convenience mirror of selection["numbers"] (null for non-number plays).
             "numbers": selection.get("numbers") if isinstance(selection, dict) else None,
             "stake": int(row["stake"]),  # type: ignore[index]
             "idempotency_key": row["idempotency_key"],  # type: ignore[index]

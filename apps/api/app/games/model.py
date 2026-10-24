@@ -17,6 +17,7 @@ class GameSpec:
     enabled: bool
     stake_enabled: bool = False
     records_selections: bool = False
+    lottery_id: str | None = None
 
 
 @dataclass(frozen=True)
