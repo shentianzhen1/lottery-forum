@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/app_theme.dart';
 
 import 'home_feed.dart';
 import 'play_betting.dart';
@@ -106,9 +107,10 @@ class _MainColumnState extends State<_MainColumn> {
   @override
   Widget build(BuildContext context) {
     final data = _data;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
       children: [
+        const _WelcomePanel(),
+        const SizedBox(height: 20),
         if (data != null && data.banners.isNotEmpty) ...[
           _BannerStrip(banners: data.banners),
           const SizedBox(height: 16),
@@ -118,7 +120,7 @@ class _MainColumnState extends State<_MainColumn> {
           loading: data == null && _error == null,
         ),
         const SizedBox(height: 16),
-        Expanded(child: _GameBoard(onOpenPlay: widget.onOpenPlay)),
+        _GameBoard(onOpenPlay: widget.onOpenPlay),
       ],
     );
   }
@@ -146,6 +148,43 @@ class _BannerStrip extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _WelcomePanel extends StatelessWidget {
+  const _WelcomePanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 132,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF203A40), Color(0xFF182735), Color(0xFF151E2B)]),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFF365052)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(right: -24, top: -62, child: Container(width: 230, height: 230, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppTheme.gold.withOpacity(.15), width: 32)))),
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('THE COMMUNITY', style: TextStyle(fontSize: 10, letterSpacing: 3, color: AppTheme.gold)),
+                SizedBox(height: 8),
+                Text('从容选择，清晰记录。', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600, color: AppTheme.ink)),
+                SizedBox(height: 6),
+                Text('探索玩法 · 管理积分 · 查看每一笔记录', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -213,14 +252,19 @@ class _GameBoard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('热门玩法', style: Theme.of(context).textTheme.headlineSmall),
+        Row(children: [
+          Text('热门玩法', style: Theme.of(context).textTheme.headlineSmall),
+          const Spacer(),
+          const Text('EXPLORE', style: TextStyle(fontSize: 10, letterSpacing: 2, color: AppTheme.muted)),
+        ]),
         const SizedBox(height: 16),
-        Expanded(
-          child: GridView.count(
+        GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: 2.2,
+            childAspectRatio: 1.55,
             children: [
               for (final game in HomePage.games)
                 _GameCard(
@@ -230,7 +274,6 @@ class _GameBoard extends StatelessWidget {
                   onTap: onOpenPlay == null ? null : () => onOpenPlay!(game.$1),
                 ),
             ],
-          ),
         ),
       ],
     );
@@ -262,9 +305,15 @@ class _GameCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(subtitle),
+              Row(children: [
+                Icon(title == '福建31' ? Icons.blur_circular : Icons.dialpad_rounded, size: 24, color: Theme.of(context).colorScheme.primary),
+                const Spacer(),
+                Icon(Icons.north_east, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ]),
+              const Spacer(),
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -299,6 +348,7 @@ class _SidePanel extends StatelessWidget {
         Card(
           child: ListTile(
             key: const Key('open-moderator'),
+            leading: const Icon(Icons.workspace_premium_outlined),
             title: const Text('开通版主'),
             subtitle: const Text('达标即可开通（默认门槛 10000，开通时冻结），无需审核'),
             onTap: onGoToModerator,
@@ -382,6 +432,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
       return Card(
         child: ListTile(
           key: const Key('home-points-login-hint'),
+          leading: const Icon(Icons.account_balance_wallet_outlined),
           title: const Text('积分'),
           subtitle: const Text('去个人中心登录'),
           trailing: const Text('--'),

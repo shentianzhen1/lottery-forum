@@ -42,3 +42,15 @@ jobs:
           flutter test test/api_config_test.dart
           --dart-define=API_BASE_URL=http://127.0.0.1:8000
           --dart-define=EXPECTED_API_BASE_URL=http://127.0.0.1:8000
+      - name: Render UI previews
+        working-directory: apps/mobile
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+          flutter test test/premium_layout_test.dart --dart-define=EXPORT_UI_PREVIEW=true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-preview-${{ github.run_id }}
+          path: apps/mobile/build/ui-preview/*.png
+          if-no-files-found: error
+          retention-days: 7

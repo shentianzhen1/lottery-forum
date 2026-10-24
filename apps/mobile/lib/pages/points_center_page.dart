@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/app_theme.dart';
 
 import 'points_reader.dart';
 
@@ -82,18 +83,26 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Icon(Icons.account_balance_wallet_outlined, color: AppTheme.gold, size: 28),
+        const SizedBox(height: 20),
         Text('积分钱包', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        Text('账面余额 ${snapshot.balance}', key: const Key('points-book-balance')),
-        Text('冻结 ${snapshot.frozen}'),
-        Text('可用余额 ${snapshot.available}', key: const Key('points-available')),
-        const SizedBox(height: 12),
-        const Text('冻结会减少可用余额，不改变账面余额。保证金数量尚未确定。'),
+        const SizedBox(height: 24),
+        Text('账面余额 ${snapshot.balance}', key: const Key('points-book-balance'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 16),
+        Text('冻结 ${snapshot.frozen}', style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 8),
+        Text('可用余额 ${snapshot.available}', key: const Key('points-available'), style: const TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 24),
+        Text('冻结会减少可用余额，不改变账面余额。保证金数量尚未确定。', style: Theme.of(context).textTheme.bodySmall),
       ],
-    );
+    )));
   }
 }
 

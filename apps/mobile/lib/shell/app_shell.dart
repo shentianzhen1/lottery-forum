@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/app_theme.dart';
 
 import '../api/api_client.dart';
 import '../api/api_config.dart';
@@ -42,7 +43,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayoutBuilder(
+      body: SafeArea(child: LayoutBuilder(
         builder: (context, constraints) {
           final landscapeReady = constraints.maxWidth >= 960;
           return Row(
@@ -52,11 +53,33 @@ class _AppShellState extends State<AppShell> {
                 compact: !landscapeReady,
                 onSelected: (index) => setState(() => _index = index),
               ),
-              Expanded(child: _pageFor(_index, landscapeReady)),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: Column(
+                  children: [
+                    if (landscapeReady)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 20, 28, 16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.space_dashboard_outlined, size: 18, color: AppTheme.gold),
+                            const SizedBox(width: 12),
+                            Text('${destinations[_index].label} /', style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
+                            const SizedBox(width: 8),
+                            const Text('积分社区', style: TextStyle(fontSize: 13)),
+                            const Spacer(),
+                            const Text('LOTTERY FORUM', style: TextStyle(color: AppTheme.muted, fontSize: 10, letterSpacing: 2)),
+                          ],
+                        ),
+                      ),
+                    Expanded(child: _pageFor(_index, landscapeReady)),
+                  ],
+                ),
+              ),
             ],
           );
         },
-      ),
+      )),
     );
   }
 
@@ -128,14 +151,28 @@ class _NavRail extends StatelessWidget {
       labelType: compact
           ? NavigationRailLabelType.all
           : NavigationRailLabelType.none,
+      groupAlignment: -0.7,
       leading: compact
           ? const SizedBox(height: 24)
           : const Padding(
-              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                '彩票论坛',
-                key: Key('brand-mark'),
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 32),
+              child: Column(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF343229),
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(13),
+                      child: Icon(Icons.auto_awesome_outlined, color: AppTheme.gold, size: 28),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text('彩票论坛', key: Key('brand-mark'), style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600, letterSpacing: 1)),
+                  SizedBox(height: 6),
+                  Text('每一笔，都有迹可循', style: TextStyle(fontSize: 10, color: AppTheme.muted)),
+                ],
               ),
             ),
       destinations: [
