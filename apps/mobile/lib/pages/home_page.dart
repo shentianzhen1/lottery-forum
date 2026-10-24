@@ -159,7 +159,7 @@ class _WelcomePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 132,
+      constraints: const BoxConstraints(minHeight: 156),
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -174,6 +174,7 @@ class _WelcomePanel extends StatelessWidget {
             padding: EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text('THE COMMUNITY', style: TextStyle(fontSize: 10, letterSpacing: 3, color: AppTheme.gold)),
