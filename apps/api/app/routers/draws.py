@@ -31,7 +31,7 @@ def list_observations(
     account: object = Depends(require_admin),
 ) -> dict[str, object]:
     del account
-    return request.app.state.services.draws.list(
+    return request.app.state.services.draws.list_observations(
         lottery_id=lottery_id,
         normalized_code=normalized_code,
         provider=provider,
