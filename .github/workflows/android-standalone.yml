@@ -1,0 +1,51 @@
+name: Android standalone APK
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/android-standalone.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  standalone-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+      - name: Analyze and test standalone client
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test test/standalone_api_client_test.dart
+      - name: Build standalone debug APK
+        working-directory: apps/mobile
+        run: flutter build apk --debug --dart-define=STANDALONE_MODE=true
+      - name: Record standalone build identity
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p standalone-apk-artifact
+          cp apps/mobile/build/app/outputs/flutter-apk/app-debug.apk standalone-apk-artifact/caiyou-standalone-debug.apk
+          printf 'commit=%s\nmode=standalone-debug\nnetwork_required=false\n' "$BUILD_COMMIT" > standalone-apk-artifact/build-info.txt
+          cd standalone-apk-artifact
+          sha256sum caiyou-standalone-debug.apk > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caiyou-standalone-${{ github.run_id }}
+          path: standalone-apk-artifact/
+          if-no-files-found: error
+          retention-days: 14
