@@ -13,6 +13,7 @@ class HomePage extends StatelessWidget {
     this.onGoToAccount,
     this.onGoToModerator,
     this.onOpenPlay,
+    this.onOpenAnnouncement,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class HomePage extends StatelessWidget {
   final VoidCallback? onGoToAccount;
   final VoidCallback? onGoToModerator;
   final ValueChanged<PlayKind>? onOpenPlay;
+  final ValueChanged<String>? onOpenAnnouncement;
 
   static const games = <(PlayKind, String, String, String)>[
     (PlayKind.numberPick, '数字选号', '选择 3 个不重复数字', 'home-game-number-pick'),
@@ -42,7 +44,11 @@ class HomePage extends StatelessWidget {
         children: [
           Expanded(
             flex: 5,
-            child: _MainColumn(feed: feed, onOpenPlay: onOpenPlay),
+            child: _MainColumn(
+              feed: feed,
+              onOpenPlay: onOpenPlay,
+              onOpenAnnouncement: onOpenAnnouncement,
+            ),
           ),
           const SizedBox(width: 20),
           SizedBox(
@@ -61,10 +67,15 @@ class HomePage extends StatelessWidget {
 }
 
 class _MainColumn extends StatefulWidget {
-  const _MainColumn({required this.feed, this.onOpenPlay});
+  const _MainColumn({
+    required this.feed,
+    this.onOpenPlay,
+    this.onOpenAnnouncement,
+  });
 
   final HomeFeed feed;
   final ValueChanged<PlayKind>? onOpenPlay;
+  final ValueChanged<String>? onOpenAnnouncement;
 
   @override
   State<_MainColumn> createState() => _MainColumnState();
@@ -116,6 +127,7 @@ class _MainColumnState extends State<_MainColumn> {
         _AnnouncementBoard(
           announcements: data?.announcements ?? const [],
           loading: data == null && _error == null,
+          onOpenAnnouncement: widget.onOpenAnnouncement,
         ),
         const SizedBox(height: 16),
         Expanded(child: _GameBoard(onOpenPlay: widget.onOpenPlay)),
@@ -155,10 +167,12 @@ class _AnnouncementBoard extends StatelessWidget {
   const _AnnouncementBoard({
     required this.announcements,
     required this.loading,
+    this.onOpenAnnouncement,
   });
 
   final List<HomeAnnouncement> announcements;
   final bool loading;
+  final ValueChanged<String>? onOpenAnnouncement;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +209,10 @@ class _AnnouncementBoard extends StatelessWidget {
               subtitle: Text(item.summary),
               trailing: item.pinned
                   ? const Text('置顶', key: Key('announcement-pinned-badge'))
-                  : null,
+                  : const Icon(Icons.chevron_right),
+              onTap: onOpenAnnouncement == null
+                  ? null
+                  : () => onOpenAnnouncement!(item.id),
             ),
         ],
       ),
