@@ -7,6 +7,8 @@ from app.auth.store import AccountStore
 from app.bets.service import BetService
 from app.bets.store import BetStore
 from app.db import connect
+from app.draws.service import DrawObservationService
+from app.draws.store import DrawObservationStore
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
 from app.games.selections import SelectionStore
@@ -36,6 +38,7 @@ class AppState:
     bets: BetService
     home: HomeService
     settlements: SettlementService
+    draws: DrawObservationService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -51,6 +54,7 @@ def build_state(database: Path | None = None) -> AppState:
     rounds = RoundService(round_store, moderator_store.get)
     bet_store = BetStore(connection=connection)
     home = HomeService(HomeStore(connection=connection))
+    draws = DrawObservationService(DrawObservationStore(connection=connection))
     if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
         home.seed_demo()
     auth = AuthService(AccountStore(connection=connection), ledger)
@@ -70,4 +74,5 @@ def build_state(database: Path | None = None) -> AppState:
         BetService(bet_store, rounds, games, ledger),
         home,
         SettlementService(SettlementStore(connection=connection), rounds, bet_store, ledger),
+        draws,
     )
