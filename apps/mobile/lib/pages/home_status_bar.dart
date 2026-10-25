@@ -130,9 +130,9 @@ class _HomeStatusBarState extends State<HomeStatusBar> {
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(76, 82),
               ),
-              child: Column(
+              child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.receipt_long_outlined, size: 20),
                   SizedBox(height: 5),
                   Text('记录', style: TextStyle(fontSize: 11)),
