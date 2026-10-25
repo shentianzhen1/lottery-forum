@@ -60,6 +60,7 @@ def build_state(database: Path | None = None) -> AppState:
     round_store = RoundStore(connection=connection)
     rounds = RoundService(round_store, moderator_store.get)
     bet_store = BetStore(connection=connection)
+    settlement_store = SettlementStore(connection=connection)
     home = HomeService(HomeStore(connection=connection))
     draw_observation_store = DrawObservationStore(connection=connection)
     draw_result_store = DrawResultStore(connection=connection)
@@ -75,6 +76,8 @@ def build_state(database: Path | None = None) -> AppState:
     # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS is set.
     # Runs after moderator seed so existing boards can be attached.
     seed_open_rounds_from_env(rounds, moderator_store)
+    bets = BetService(bet_store, rounds, games, ledger, settlement_store)
+    settlements = SettlementService(settlement_store, rounds, bet_store, ledger)
     return AppState(
         auth,
         ledger,
@@ -83,9 +86,9 @@ def build_state(database: Path | None = None) -> AppState:
         SelectionStore(connection=connection),
         moderator,
         rounds,
-        BetService(bet_store, rounds, games, ledger),
+        bets,
         home,
-        SettlementService(SettlementStore(connection=connection), rounds, bet_store, ledger),
+        settlements,
         draws,
         draw_results,
         draw_ingestion,
