@@ -25,6 +25,20 @@ def pull_huiniao_observations(
         ) from error
 
 
+@router.get("/reconciliation")
+def reconcile_draw_issue(
+    lottery_id: str,
+    normalized_code: str,
+    request: Request,
+    account: object = Depends(require_admin),
+) -> dict[str, object]:
+    del account
+    return request.app.state.services.draw_reconciliation.report(
+        lottery_id=lottery_id,
+        normalized_code=normalized_code,
+    )
+
+
 @router.post("/observations")
 def record_observation(
     payload: dict[str, object],

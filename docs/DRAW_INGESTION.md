@@ -6,7 +6,9 @@
 2. **observation 证据层**：保存外部或人工获得的原始开奖观察，允许同一期保留多个更正版本；
 3. **result 确认层**：管理员人工复核后，从某一条 observation 生成不可静默覆盖的正式开奖结果快照。
 
-三层目前都与期号状态、判奖和积分结算解耦。
+另提供一层**只读 reconciliation 对账视图**，用于比较同一期不同来源的最新 observation；它不修改上述三层中的任何数据。
+
+所有层目前都与期号状态、判奖和积分结算解耦。
 
 ## Provider 采集
 
@@ -69,6 +71,25 @@ Huiniao 已观察到 `YYNNN` 与 `YYYYNNN` 两种期号形态，因此禁止无�
 - 同一来源、同一彩种、同一期号出现不同内容时，不覆盖旧记录；新内容写为 `version + 1`。
 - observation 内容和版本保留为来源证据。即使某条 observation 后续被选作正式结果，其 observation 状态也不被改写；“已确认”由独立 result 快照表达。
 
+## 只读来源对账 reconciliation
+
+管理员接口：
+
+- `GET /api/v1/draws/reconciliation?lottery_id=fujian-31&normalized_code=YYYYNNN`
+
+对账规则：
+
+- 同一期每个 provider 只取该来源的**最高 version** 参与当前对账；旧版本继续保留在 observation 历史中，不删除、不覆盖；
+- 比较 `draw_date`、7 个基本号和附加号；号码比较忽略排列顺序，避免仅因来源展示顺序不同产生假冲突；
+- `NO_DATA`：没有 observation；
+- `SINGLE_SOURCE`：只有一个来源，不能视为多源复核通过；
+- `MATCH`：至少两个来源且最新内容一致；
+- `CONFLICT`：至少两个来源且最新内容不一致；
+- 如该期已有 confirmed result，报告会显示其快照，以及哪些来源与正式结果一致/冲突；
+- reconciliation 本身完全只读，不会自动确认任何 observation。
+
+福建体彩官网人工复核数据如需进入对账，可由管理员按既有 observation 接口录入，并使用清晰的来源标识，例如 `fjtc-official-manual`。这只是证据来源标签，不赋予自动确认权限。
+
 ## 人工确认 result
 
 管理员接口：
@@ -108,7 +129,7 @@ Huiniao 已观察到 `YYNNN` 与 `YYYYNNN` 两种期号形态，因此禁止无�
 
 - 定时/无人值守调用第三方开奖 API；
 - 在无法由开奖日期校验的情况下猜测外部期号；
-- 因 provider pull 或 observation 自动生成 confirmed result；
+- 因 provider pull、reconciliation 或 observation 自动生成 confirmed result；
 - 修改 `rounds` 期号状态；
 - 生成 `WIN / LOSS / VOID` 判奖结果；
 - 调用 settlement；
