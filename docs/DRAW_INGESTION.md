@@ -1,11 +1,42 @@
 # 开奖数据采集与人工确认边界
 
-开奖域分成两层：
+开奖域分成三层：
 
-1. **observation 证据层**：保存外部或人工获得的原始开奖观察，允许同一期保留多个更正版本；
-2. **result 确认层**：管理员人工复核后，从某一条 observation 生成不可静默覆盖的正式开奖结果快照。
+1. **provider 采集层**：只读调用外部来源，把响应转换为本系统 observation 输入；
+2. **observation 证据层**：保存外部或人工获得的原始开奖观察，允许同一期保留多个更正版本；
+3. **result 确认层**：管理员人工复核后，从某一条 observation 生成不可静默覆盖的正式开奖结果快照。
 
-两层目前都与期号状态、判奖和积分结算解耦。
+三层目前都与期号状态、判奖和积分结算解耦。
+
+## Provider 采集
+
+当前首个适配器为 `huiniao`，仅支持福建31选7 `fujian-31`。
+
+管理员手动触发接口：
+
+- `POST /api/v1/draws/providers/huiniao/pull?limit=5`
+
+边界：
+
+- `limit` 只允许 `1..20`；
+- 外部请求使用 HTTPS，并设置短超时；
+- HTTP 失败、坏 JSON、业务错误码、字段结构变化都会使本次采集失败，不会静默吞掉；
+- 读取 `one..seven` 为 7 个基本号；`eight` 如存在只作为附加号码保存，不解释业务含义；
+- 保存每期开奖记录的原始 provider row 到 `raw_payload`；
+- provider 只把数据写成 `PENDING_REVIEW` observation，不自动调用 result confirm；
+- provider 不修改 rounds、不判奖、不调用 settlement、不冻结/扣除/增加任何积分；
+- 当前没有定时任务，必须由管理员显式触发采集。
+
+### 外部期号规范化
+
+Huiniao 已观察到 `YYNNN` 与 `YYYYNNN` 两种期号形态，因此禁止无条件补年份，也禁止根据 `next_code` 猜当前期号。
+
+当前适配规则只有两种：
+
+- 来源已经返回 `YYYYNNN`，且前四位与 `draw_date` 年份一致：直接采用；
+- 来源返回 `YYNNN`，且前两位与 `draw_date` 年份后两位一致：使用 `draw_date` 的完整年份生成 `YYYYNNN`。
+
+其他形态或年份不一致一律返回 `DRAW_PROVIDER_ISSUE_CODE_INVALID`，不写 observation，等待人工核查来源变化。
 
 ## 开奖观察 observation
 
@@ -75,13 +106,13 @@
 
 当前开奖模块**不会**：
 
-- 自动调用任何第三方开奖 API；
-- 自动把外部期号映射为本系统期号；
-- 因 observation 自动生成 confirmed result；
+- 定时/无人值守调用第三方开奖 API；
+- 在无法由开奖日期校验的情况下猜测外部期号；
+- 因 provider pull 或 observation 自动生成 confirmed result；
 - 修改 `rounds` 期号状态；
 - 生成 `WIN / LOSS / VOID` 判奖结果；
 - 调用 settlement；
 - 冻结、扣除、增加或派奖任何积分；
 - 因“最新 observation”自动覆盖历史版本或已确认 result。
 
-正式接入自动来源前仍需完成来源授权/稳定性确认和连续多期人工对账。后续判奖层只能读取明确确认后的 result，并继续与资金结算保持独立事务边界。
+正式进入自动化采集前仍需完成来源授权/稳定性确认和连续多期人工对账。后续判奖层只能读取明确确认后的 result，并继续与积分结算保持独立事务边界。
