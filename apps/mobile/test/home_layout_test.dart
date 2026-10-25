@@ -17,23 +17,28 @@ class _FakeHomePointsReader implements PointsReader {
 }
 
 void main() {
-  testWidgets('16:9 landscape home keeps three regions', (tester) async {
+  testWidgets('16:9 landscape home keeps dashboard regions and four lotteries', (tester) async {
     await _pumpAt(tester, const Size(1920, 1080));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
-    expect(find.text('热门玩法'), findsOneWidget);
+    expect(find.text('热门彩种'), findsOneWidget);
     expect(find.byKey(const Key('home-game-number-pick')), findsOneWidget);
     expect(find.byKey(const Key('home-game-fujian-31')), findsOneWidget);
-    expect(find.text('数字选号'), findsOneWidget);
-    expect(find.text('福建31'), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-3')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-kuaile-8')), findsOneWidget);
+    expect(find.text('数字选号'), findsWidgets);
+    expect(find.text('福建31'), findsWidgets);
+    expect(find.text('排列三'), findsOneWidget);
+    expect(find.text('快乐8'), findsOneWidget);
+    expect(find.text('筹备中'), findsNWidgets(2));
     expect(find.textContaining('未接入'), findsNothing);
     expect(find.text('排名竞猜'), findsNothing);
     expect(find.text('自选组合'), findsNothing);
-    expect(find.text('本期推荐'), findsNothing);
     expect(find.byKey(const Key('announcement-board')), findsOneWidget);
     expect(find.text('平台公告'), findsOneWidget);
     expect(find.text('暂无公告'), findsOneWidget);
     expect(find.byKey(const Key('announcement-empty')), findsOneWidget);
     expect(find.byKey(const Key('home-banner-strip')), findsNothing);
+    expect(find.byKey(const Key('home-boundary-strip')), findsOneWidget);
     expect(find.text('开通版主'), findsOneWidget);
     expect(find.text('达标即可开通（默认门槛 10000，开通时冻结），无需审核'), findsOneWidget);
     expect(find.text('审核流程未实现'), findsNothing);
@@ -47,8 +52,8 @@ void main() {
   testWidgets('16:10 landscape home uses the same skeleton', (tester) async {
     await _pumpAt(tester, const Size(2560, 1600));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
-    expect(find.text('数字选号'), findsOneWidget);
-    expect(find.text('版主中心'), findsOneWidget);
+    expect(find.text('数字选号'), findsWidgets);
+    expect(find.text('版主中心'), findsWidgets);
   });
 
   testWidgets('narrow width does not pretend to be the landscape home', (
@@ -133,6 +138,14 @@ void main() {
     await tester.tap(find.byKey(const Key('home-game-number-pick')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
+  });
+
+  testWidgets('preview lottery cards do not open betting flow', (tester) async {
+    await _pumpAt(tester, const Size(1920, 1080));
+    await tester.tap(find.byKey(const Key('home-game-pailie-3')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
+    expect(find.text('筹备中'), findsNWidgets(2));
   });
 }
 
