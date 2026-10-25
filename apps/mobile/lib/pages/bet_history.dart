@@ -7,15 +7,27 @@ class BetHistoryItem {
     required this.stake,
     required this.status,
     required this.createdAt,
+    this.roundCode = '',
+    this.settlementResult,
+    this.settlementFinalized = false,
+    this.settlementDelta,
+    this.settlementReturn,
+    this.settlementRecordedAt,
   });
 
   final String betId;
   final String roundId;
+  final String roundCode;
   final String playId;
   final List<int> numbers;
   final int stake;
   final String status;
   final String createdAt;
+  final String? settlementResult;
+  final bool settlementFinalized;
+  final int? settlementDelta;
+  final int? settlementReturn;
+  final String? settlementRecordedAt;
 
   String get numbersLabel => numbers.isEmpty ? '—' : numbers.join(' ');
 
@@ -38,6 +50,47 @@ class BetHistoryItem {
       default:
         return status;
     }
+  }
+
+  String? get resultLabel {
+    switch (settlementResult) {
+      case 'WIN':
+        return '中奖';
+      case 'LOSS':
+        return '未中';
+      case 'VOID':
+        return '退回';
+      default:
+        return null;
+    }
+  }
+
+  String get displayStatusLabel {
+    final result = resultLabel;
+    if (result == null) return statusLabel;
+    return settlementFinalized ? result : '$result · 待入账';
+  }
+
+  String? get settlementSummaryLabel {
+    final result = settlementResult;
+    if (result == null) return null;
+    if (!settlementFinalized) return '结果已记录，等待结算入账';
+    final delta = settlementDelta;
+    final returned = settlementReturn;
+    if (result == 'WIN') {
+      final deltaText = delta == null ? '—' : '+$delta';
+      final returnText = returned == null ? '—' : '$returned';
+      return '净积分 $deltaText · 连本带利 $returnText';
+    }
+    if (result == 'LOSS') {
+      final deltaText = delta == null ? '—' : '$delta';
+      return '净积分 $deltaText';
+    }
+    if (result == 'VOID') {
+      final returnText = returned == null ? '$stake' : '$returned';
+      return '净积分 0 · 解冻 $returnText';
+    }
+    return null;
   }
 
   bool get active => status == 'ACCEPTED' || status == 'LOCKED' || status == 'CREATED';
@@ -74,13 +127,37 @@ BetHistoryItem betHistoryItemFromApi(Map<String, Object?> row) {
       : rawStake is num
           ? rawStake.toInt()
           : int.tryParse('${rawStake ?? 0}') ?? 0;
+  final rawDelta = row['settlement_delta'];
+  final settlementDelta = rawDelta == null
+      ? null
+      : rawDelta is int
+          ? rawDelta
+          : rawDelta is num
+              ? rawDelta.toInt()
+              : int.tryParse('$rawDelta');
+  final rawReturn = row['settlement_return'];
+  final settlementReturn = rawReturn == null
+      ? null
+      : rawReturn is int
+          ? rawReturn
+          : rawReturn is num
+              ? rawReturn.toInt()
+              : int.tryParse('$rawReturn');
+  final rawResult = row['settlement_result'];
+  final rawRecordedAt = row['settlement_recorded_at'];
   return BetHistoryItem(
     betId: '${row['bet_id'] ?? ''}',
     roundId: '${row['round_id'] ?? ''}',
+    roundCode: '${row['round_code'] ?? ''}',
     playId: '${row['play_id'] ?? ''}',
     numbers: numbers,
     stake: stake,
     status: '${row['status'] ?? ''}',
     createdAt: '${row['created_at'] ?? ''}',
+    settlementResult: rawResult == null ? null : '$rawResult',
+    settlementFinalized: row['settlement_finalized'] == true,
+    settlementDelta: settlementDelta,
+    settlementReturn: settlementReturn,
+    settlementRecordedAt: rawRecordedAt == null ? null : '$rawRecordedAt',
   );
 }

@@ -9,6 +9,7 @@ from app.games.registry import GameRegistry
 from app.ledger.model import LedgerError
 from app.ledger.service import LedgerService
 from app.rounds.service import RoundError, RoundService
+from app.settlements.store import SettlementStore
 
 # Fixed demo stake for stake_enabled plays this slice. Not a final pricing rule.
 STAKE = 10
@@ -30,12 +31,17 @@ class BetService:
         rounds: RoundService,
         games: GameRegistry,
         ledger: LedgerService,
+        settlements: SettlementStore | None = None,
     ) -> None:
         self.store = store
         self.rounds = rounds
         self.games = games
         self.ledger = ledger
-        require_shared_connection(store, rounds.store, ledger.store)
+        self.settlements = settlements
+        stores: list[object] = [store, rounds.store, ledger.store]
+        if settlements is not None:
+            stores.append(settlements)
+        require_shared_connection(*stores)
 
     @atomic_command
     def place(
@@ -161,21 +167,85 @@ class BetService:
 
     def _bet(self, row: object, message: str | None = None) -> dict[str, object]:
         selection = json.loads(row["selection_json"])  # type: ignore[index]
+        odds_snapshot = json.loads(row["odds_snapshot_json"])  # type: ignore[index]
+        round_id = str(row["round_id"])  # type: ignore[index]
+        round_code = ""
+        try:
+            round_code = str(self.rounds.get(round_id).get("code") or "")
+        except RoundError:
+            pass
+
         body: dict[str, object] = {
             "bet_id": row["bet_id"],  # type: ignore[index]
             "account_id": row["account_id"],  # type: ignore[index]
-            "round_id": row["round_id"],  # type: ignore[index]
+            "round_id": round_id,
+            "round_code": round_code,
             "play_id": row["play_id"],  # type: ignore[index]
             "rule_version": row["rule_version"],  # type: ignore[index]
             "status": row["status"],  # type: ignore[index]
             "selection": selection,
-            "odds_snapshot": json.loads(row["odds_snapshot_json"]),  # type: ignore[index]
+            "odds_snapshot": odds_snapshot,
             "hold_id": row["hold_id"],  # type: ignore[index]
             "numbers": selection.get("numbers") if isinstance(selection, dict) else None,
             "stake": int(row["stake"]),  # type: ignore[index]
             "idempotency_key": row["idempotency_key"],  # type: ignore[index]
             "created_at": row["created_at"],  # type: ignore[index]
         }
+        body.update(self._settlement_summary(row, odds_snapshot))
         if message is not None:
             body["message"] = message
         return body
+
+    def _settlement_summary(
+        self,
+        row: object,
+        odds_snapshot: object,
+    ) -> dict[str, object]:
+        empty: dict[str, object] = {
+            "settlement_result": None,
+            "settlement_finalized": False,
+            "settlement_delta": None,
+            "settlement_return": None,
+            "settlement_recorded_at": None,
+        }
+        if self.settlements is None:
+            return empty
+        settlement = self.settlements.get_by_bet(str(row["bet_id"]))  # type: ignore[index]
+        if settlement is None:
+            return empty
+
+        result = str(settlement["result"])
+        finalized = str(row["status"]) == "SETTLED"  # type: ignore[index]
+        stake = int(row["stake"])  # type: ignore[index]
+        delta: int | None = None
+        returned: int | None = None
+        if finalized:
+            if result == "WIN":
+                multiplier = self._multiplier(odds_snapshot)
+                delta = stake * (multiplier - 1)
+                returned = stake * multiplier
+            elif result == "LOSS":
+                delta = -stake
+                returned = 0
+            elif result == "VOID":
+                delta = 0
+                returned = stake
+
+        return {
+            "settlement_result": result,
+            "settlement_finalized": finalized,
+            "settlement_delta": delta,
+            "settlement_return": returned,
+            "settlement_recorded_at": settlement["created_at"],
+        }
+
+    @staticmethod
+    def _multiplier(odds_snapshot: object) -> int:
+        if isinstance(odds_snapshot, dict):
+            try:
+                value = int(odds_snapshot.get("multiplier", 2))
+                if value > 0:
+                    return value
+            except (TypeError, ValueError):
+                pass
+        return 2
