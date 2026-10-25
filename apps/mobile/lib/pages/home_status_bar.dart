@@ -8,6 +8,7 @@ class HomeStatusBar extends StatefulWidget {
     required this.reader,
     required this.loggedIn,
     this.onOpenFujian31,
+    this.onOpenHistory,
     this.onGoToAccount,
     super.key,
   });
@@ -15,6 +16,7 @@ class HomeStatusBar extends StatefulWidget {
   final HomeStatusReader reader;
   final bool loggedIn;
   final VoidCallback? onOpenFujian31;
+  final VoidCallback? onOpenHistory;
   final VoidCallback? onGoToAccount;
 
   @override
@@ -115,6 +117,27 @@ class _HomeStatusBarState extends State<HomeStatusBar> {
                           : '点击进入查看或撤单',
               accent: AppTheme.gold,
               onTap: widget.loggedIn ? widget.onOpenFujian31 : widget.onGoToAccount,
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 76,
+            height: 82,
+            child: OutlinedButton(
+              key: const Key('home-bet-history-button'),
+              onPressed: widget.loggedIn ? widget.onOpenHistory : widget.onGoToAccount,
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(76, 82),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long_outlined, size: 20),
+                  SizedBox(height: 5),
+                  Text('记录', style: TextStyle(fontSize: 11)),
+                ],
+              ),
             ),
           ),
         ],
