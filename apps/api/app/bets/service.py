@@ -174,6 +174,7 @@ class BetService:
             "numbers": selection.get("numbers") if isinstance(selection, dict) else None,
             "stake": int(row["stake"]),  # type: ignore[index]
             "idempotency_key": row["idempotency_key"],  # type: ignore[index]
+            "created_at": row["created_at"],  # type: ignore[index]
         }
         if message is not None:
             body["message"] = message
