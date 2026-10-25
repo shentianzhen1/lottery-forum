@@ -86,7 +86,7 @@ class _BetHistoryDialogState extends State<BetHistoryDialog> {
               ),
               const SizedBox(height: 6),
               const Text(
-                '仅展示当前账号自己的投注记录，最新记录排在前面。',
+                '仅展示当前账号自己的投注记录；已结算记录会显示中奖结果和积分变化。',
                 style: TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
               const SizedBox(height: 14),
@@ -184,11 +184,13 @@ class _BetHistoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = item.active ? AppTheme.teal : AppTheme.muted;
+    final statusColor = _statusColor(item);
+    final settlementSummary = item.settlementSummaryLabel;
     return Padding(
       key: Key('bet-history-${item.betId}'),
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 42,
@@ -219,7 +221,8 @@ class _BetHistoryRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      item.statusLabel,
+                      item.displayStatusLabel,
+                      key: Key('bet-history-result-${item.betId}'),
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 11,
@@ -230,14 +233,28 @@ class _BetHistoryRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '号码 ${item.numbersLabel}  ·  ${item.stake} 积分',
+                  '号码 ${item.numbersLabel}  ·  投入 ${item.stake} 积分',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12, color: AppTheme.muted),
                 ),
+                if (settlementSummary != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    settlementSummary,
+                    key: Key('bet-history-settlement-${item.betId}'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: statusColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 3),
                 Text(
-                  '${item.timeLabel}  ·  期号记录 ${_shortId(item.roundId)}',
+                  '${item.timeLabel}  ·  期号 ${_roundLabel(item)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 10, color: AppTheme.muted),
@@ -248,6 +265,22 @@ class _BetHistoryRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+Color _statusColor(BetHistoryItem item) {
+  if (!item.settlementFinalized && item.settlementResult != null) {
+    return AppTheme.gold;
+  }
+  switch (item.settlementResult) {
+    case 'WIN':
+      return AppTheme.teal;
+    case 'VOID':
+      return AppTheme.gold;
+    case 'LOSS':
+      return AppTheme.muted;
+    default:
+      return item.active ? AppTheme.teal : AppTheme.muted;
   }
 }
 
@@ -268,6 +301,11 @@ String _playLabel(String playId) {
     default:
       return playId.isEmpty ? '未知玩法' : playId;
   }
+}
+
+String _roundLabel(BetHistoryItem item) {
+  if (item.roundCode.trim().isNotEmpty) return item.roundCode.trim();
+  return _shortId(item.roundId);
 }
 
 String _shortId(String value) {
