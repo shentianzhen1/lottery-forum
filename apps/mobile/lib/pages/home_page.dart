@@ -479,7 +479,7 @@ class _AnnouncementTickerState extends State<_AnnouncementTicker> {
   Widget build(BuildContext context) {
     final item = widget.announcements.isEmpty
         ? null
-        : widget.announcements[_index.clamp(0, widget.announcements.length - 1)];
+        : widget.announcements[_index % widget.announcements.length];
 
     return Card(
       key: const Key('announcement-board'),
@@ -515,7 +515,8 @@ class _AnnouncementTickerState extends State<_AnnouncementTicker> {
                 style: TextStyle(color: AppTheme.muted),
               )
             else
-              Expanded(
+              SizedBox(
+                height: widget.compact ? 72 : 112,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 320),
                   transitionBuilder: (child, animation) {
@@ -563,14 +564,16 @@ class _AnnouncementItem extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  item.pinned ? '置顶 · ${item.title}' : item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    item.pinned ? '置顶 · ${item.title}' : item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 if (item.pinned) ...[
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   const Text(
                     '置顶',
                     key: Key('announcement-pinned-badge'),
@@ -825,10 +828,8 @@ class _RecentDrawRow extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: [
-              for (final number in draw.mainNumbers)
-                _DrawNumber(number: number),
-              for (final number in draw.extraNumbers)
-                _DrawNumber(number: number, extra: true),
+              for (final number in draw.mainNumbers) _DrawNumber(number: number),
+              for (final number in draw.extraNumbers) _DrawNumber(number: number, extra: true),
             ],
           ),
         ),
