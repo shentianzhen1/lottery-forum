@@ -110,6 +110,9 @@ class HuiniaoDrawProvider:
                 "开奖数据源缺少开奖记录列表",
             )
 
+        # Parse and validate the entire requested batch before returning any row.
+        # DrawIngestionService only starts persistence after this returns, so one
+        # malformed row cannot leave a half-ingested provider batch behind.
         return [self._parse_row(row) for row in rows[:limit]]
 
     def _parse_row(self, row: Any) -> dict[str, object]:
@@ -133,6 +136,7 @@ class HuiniaoDrawProvider:
         extra_numbers: list[int] = []
         if row.get("eight") not in (None, ""):
             extra_numbers.append(self._number(row.get("eight"), "eight"))
+        self._validate_numbers(main_numbers, extra_numbers)
 
         normalized_code = self._normalize_issue_code(raw_code, parsed_date)
         return {
@@ -176,6 +180,34 @@ class HuiniaoDrawProvider:
                 f"开奖记录号码字段 {field} 异常",
             ) from error
         return number
+
+    @staticmethod
+    def _validate_numbers(main_numbers: list[int], extra_numbers: list[int]) -> None:
+        if len(main_numbers) != 7:
+            raise DrawProviderError(
+                "DRAW_PROVIDER_INVALID_DRAW",
+                "开奖数据源的福建31基本号数量异常",
+            )
+        if len(set(main_numbers)) != len(main_numbers):
+            raise DrawProviderError(
+                "DRAW_PROVIDER_INVALID_DRAW",
+                "开奖数据源的福建31基本号存在重复",
+            )
+        if any(number < 1 or number > 31 for number in main_numbers):
+            raise DrawProviderError(
+                "DRAW_PROVIDER_INVALID_DRAW",
+                "开奖数据源的福建31基本号超出 1 到 31",
+            )
+        if len(set(extra_numbers)) != len(extra_numbers):
+            raise DrawProviderError(
+                "DRAW_PROVIDER_INVALID_DRAW",
+                "开奖数据源的附加号码存在重复",
+            )
+        if any(number < 1 or number > 31 for number in extra_numbers):
+            raise DrawProviderError(
+                "DRAW_PROVIDER_INVALID_DRAW",
+                "开奖数据源的附加号码超出 1 到 31",
+            )
 
     @staticmethod
     def _normalize_issue_code(raw_code: str, draw_date: date) -> str:
