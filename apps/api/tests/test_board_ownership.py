@@ -1,4 +1,4 @@
-"""版主归属期号与权限：期号挂版块，版主只能操作自己版块的期号；写结算仍只限管理员。"""
+"""版主归属期号与权限：期号挂版块，版主只能操作自己版块的期号；整期结算明细与写结算只限管理员。"""
 import sqlite3
 
 from fastapi.testclient import TestClient
@@ -100,7 +100,7 @@ def test_moderator_advances_own_round_and_other_moderator_is_forbidden() -> None
     assert client.post("/api/v1/rounds/does-not-exist/open", headers=auth(token)).status_code == 403
 
 
-def test_moderator_cannot_write_settlements_even_on_own_board() -> None:
+def test_moderator_cannot_write_or_read_settlements_even_on_own_board() -> None:
     token, board_id = moderator("own-mod-settle", "demo-digit")
     bettor = register("own-settle-bettor")["token"]
     round_id = create(token, "demo-digit", board_id).json()["round_id"]
@@ -123,7 +123,8 @@ def test_moderator_cannot_write_settlements_even_on_own_board() -> None:
     payload = {"results": [{"bet_id": bet.json()["bet_id"], "result": "WIN"}]}
     forbidden = client.post(f"/api/v1/settlements/{round_id}", headers=auth(token), json=payload)
     assert forbidden.status_code == 403 and forbidden.json()["detail"] == FORBIDDEN
-    assert client.get(f"/api/v1/settlements/{round_id}", headers=auth(token)).json()["settlements"] == []
+    forbidden_read = client.get(f"/api/v1/settlements/{round_id}", headers=auth(token))
+    assert forbidden_read.status_code == 403 and forbidden_read.json()["detail"] == FORBIDDEN
 
     admin_ok = client.post(f"/api/v1/settlements/{round_id}", headers=auth(admin_token()), json=payload)
     assert admin_ok.status_code == 200
