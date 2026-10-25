@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/api_config.dart';
 import '../api/home_feed_api.dart';
+import '../api/home_status_api.dart';
 import '../api/play_betting_api.dart';
 import '../api/session.dart';
 import '../api/standalone_api_client.dart';
 import '../design/app_theme.dart';
 import '../pages/account_page.dart';
 import '../pages/home_page.dart';
+import '../pages/home_status_bar.dart';
 import '../pages/moderator_page.dart';
 import '../pages/play_betting.dart';
 import '../pages/play_center_page.dart';
@@ -81,17 +83,40 @@ class _AppShellState extends State<AppShell> {
     final loggedIn = _client.session.token != null;
     switch (index) {
       case 0:
-        return HomePage(
-          landscapeReady: landscapeReady,
-          loggedIn: loggedIn,
-          reader: ApiPointsReader(_client, includeEntries: false),
-          feed: ApiHomeFeed(_client),
-          onGoToAccount: () => setState(() => _index = 4),
-          onGoToModerator: () => setState(() => _index = 3),
-          onOpenPlay: (kind) => setState(() {
-            _playKind = kind;
-            _index = 1;
-          }),
+        if (!landscapeReady) {
+          return HomePage(
+            landscapeReady: false,
+            loggedIn: loggedIn,
+            reader: ApiPointsReader(_client, includeEntries: false),
+            feed: ApiHomeFeed(_client),
+          );
+        }
+        return Column(
+          children: [
+            HomeStatusBar(
+              reader: ApiHomeStatusReader(_client),
+              loggedIn: loggedIn,
+              onGoToAccount: () => setState(() => _index = 4),
+              onOpenFujian31: () => setState(() {
+                _playKind = PlayKind.fujian31;
+                _index = 1;
+              }),
+            ),
+            Expanded(
+              child: HomePage(
+                landscapeReady: true,
+                loggedIn: loggedIn,
+                reader: ApiPointsReader(_client, includeEntries: false),
+                feed: ApiHomeFeed(_client),
+                onGoToAccount: () => setState(() => _index = 4),
+                onGoToModerator: () => setState(() => _index = 3),
+                onOpenPlay: (kind) => setState(() {
+                  _playKind = kind;
+                  _index = 1;
+                }),
+              ),
+            ),
+          ],
         );
       case 1:
         return PlayCenterPage(
