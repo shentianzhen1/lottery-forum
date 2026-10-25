@@ -25,20 +25,40 @@ class HomePage extends StatelessWidget {
   final VoidCallback? onGoToModerator;
   final ValueChanged<PlayKind>? onOpenPlay;
 
-  static const games = <(PlayKind, String, String, String, String)>[
-    (
-      PlayKind.numberPick,
-      '数字选号',
-      '选择 3 个不重复数字',
-      'home-game-number-pick',
-      '3',
+  static const games = <_HomeGameEntry>[
+    _HomeGameEntry(
+      kind: PlayKind.fujian31,
+      title: '福建31',
+      subtitle: '任选2–5与选7',
+      keyName: 'home-game-fujian-31',
+      badge: '31',
+      status: '已开放',
+      accent: Color(0xFF83C9BC),
     ),
-    (
-      PlayKind.fujian31,
-      '福建31',
-      '任选2–5与选7',
-      'home-game-fujian-31',
-      '31',
+    _HomeGameEntry(
+      kind: PlayKind.numberPick,
+      title: '数字选号',
+      subtitle: '选择3个不重复数字',
+      keyName: 'home-game-number-pick',
+      badge: '3',
+      status: '已开放',
+      accent: Color(0xFFE3C58C),
+    ),
+    _HomeGameEntry(
+      title: '排列三',
+      subtitle: '彩种目录已加入',
+      keyName: 'home-game-pailie-3',
+      badge: 'P3',
+      status: '筹备中',
+      accent: Color(0xFF9D8AC7),
+    ),
+    _HomeGameEntry(
+      title: '快乐8',
+      subtitle: '彩种目录已加入',
+      keyName: 'home-game-kuaile-8',
+      badge: '8+',
+      status: '筹备中',
+      accent: Color(0xFF73B2E8),
     ),
   ];
 
@@ -142,39 +162,65 @@ class _MainColumnState extends State<_MainColumn> {
   @override
   Widget build(BuildContext context) {
     final data = _data;
+    final announcements = data?.announcements ?? const <HomeAnnouncement>[];
+    final banners = data?.banners ?? const <HomeBanner>[];
+
     return ListView(
       key: const Key('home-main-scroll'),
       padding: EdgeInsets.zero,
       children: [
-        _WelcomePanel(compact: widget.compact),
-        SizedBox(height: widget.compact ? 14 : 18),
-        if (data != null && data.banners.isNotEmpty) ...[
-          _BannerStrip(banners: data.banners),
-          const SizedBox(height: 14),
-        ],
-        _AnnouncementBoard(
-          announcements: data?.announcements ?? const [],
-          loading: data == null && _error == null,
-        ),
+        if (widget.compact) ...[
+          _PromoPanel(banners: banners, compact: true),
+          const SizedBox(height: 12),
+          _AnnouncementBoard(
+            announcements: announcements,
+            loading: data == null && _error == null,
+            compact: true,
+          ),
+        ] else
+          SizedBox(
+            height: 190,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: _PromoPanel(banners: banners, compact: false),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: _AnnouncementBoard(
+                    announcements: announcements,
+                    loading: data == null && _error == null,
+                    compact: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
         SizedBox(height: widget.compact ? 18 : 22),
         _GameBoard(onOpenPlay: widget.onOpenPlay, compact: widget.compact),
+        const SizedBox(height: 14),
+        const _HomeBoundaryStrip(),
         const SizedBox(height: 8),
       ],
     );
   }
 }
 
-class _WelcomePanel extends StatelessWidget {
-  const _WelcomePanel({required this.compact});
+class _PromoPanel extends StatelessWidget {
+  const _PromoPanel({required this.banners, required this.compact});
 
+  final List<HomeBanner> banners;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final height = compact ? 152.0 : 190.0;
     return Container(
       key: const Key('home-welcome-panel'),
-      constraints: BoxConstraints(minHeight: compact ? 122 : 138),
-      width: double.infinity,
+      height: height,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -185,89 +231,136 @@ class _WelcomePanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF355054)),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: compact ? -44 : -18,
-            top: compact ? -76 : -66,
-            child: Container(
-              width: compact ? 190 : 220,
-              height: compact ? 190 : 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.gold.withOpacity(.14),
-                  width: 28,
-                ),
-              ),
+      child: banners.isEmpty
+          ? _DefaultPromo(compact: compact)
+          : PageView.builder(
+              key: const Key('home-banner-strip'),
+              itemCount: banners.length,
+              itemBuilder: (context, index) {
+                final banner = banners[index];
+                return _BannerPage(banner: banner, index: index, total: banners.length);
+              },
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              compact ? 20 : 24,
-              compact ? 20 : 24,
-              compact ? 92 : 120,
-              compact ? 20 : 24,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'CAIYOU FORUM',
-                  style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 2.6,
-                    color: AppTheme.gold,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '玩法、积分与记录，一目了然。',
-                  style: TextStyle(
-                    fontSize: compact ? 22 : 26,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  '快速进入玩法 · 查看积分 · 管理版主入口',
-                  style: TextStyle(fontSize: 12, color: AppTheme.muted),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
 
-class _BannerStrip extends StatelessWidget {
-  const _BannerStrip({required this.banners});
+class _DefaultPromo extends StatelessWidget {
+  const _DefaultPromo({required this.compact});
 
-  final List<HomeBanner> banners;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      key: const Key('home-banner-strip'),
-      height: 88,
-      child: PageView.builder(
-        itemCount: banners.length,
-        itemBuilder: (context, index) {
-          final banner = banners[index];
-          return Card(
-            key: Key('home-banner-${banner.id}'),
-            child: ListTile(
-              title: Text(banner.title),
-              subtitle: Text(banner.subtitle),
+    return Stack(
+      children: [
+        Positioned(
+          right: compact ? -38 : -10,
+          top: compact ? -72 : -56,
+          child: Container(
+            width: compact ? 180 : 230,
+            height: compact ? 180 : 230,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppTheme.gold.withOpacity(.14), width: 28),
             ),
-          );
-        },
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 20 : 26,
+            compact ? 20 : 26,
+            compact ? 92 : 130,
+            compact ? 18 : 22,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'CAIYOU FORUM',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 2.6,
+                  color: AppTheme.gold,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                '多种玩法 · 清晰记录',
+                style: TextStyle(
+                  fontSize: compact ? 23 : 29,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '积分娱乐 · 开奖留证 · 规则透明',
+                style: TextStyle(fontSize: 12, color: AppTheme.muted),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerPage extends StatelessWidget {
+  const _BannerPage({required this.banner, required this.index, required this.total});
+
+  final HomeBanner banner;
+  final int index;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: Key('home-banner-${banner.id}'),
+      padding: const EdgeInsets.fromLTRB(26, 24, 26, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '平台推荐',
+            style: TextStyle(color: AppTheme.gold, fontSize: 11, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            banner.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            banner.subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppTheme.muted, height: 1.35),
+          ),
+          if (total > 1) ...[
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                for (var i = 0; i < total; i++)
+                  Container(
+                    width: i == index ? 18 : 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: i == index ? AppTheme.gold : AppTheme.muted.withOpacity(.35),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -277,51 +370,90 @@ class _AnnouncementBoard extends StatelessWidget {
   const _AnnouncementBoard({
     required this.announcements,
     required this.loading,
+    required this.compact,
   });
 
   final List<HomeAnnouncement> announcements;
   final bool loading;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Card(
-        key: Key('announcement-board'),
-        child: ListTile(
-          title: Text('平台公告'),
-          subtitle: Text('正在读取'),
-        ),
-      );
-    }
-    if (announcements.isEmpty) {
-      return const Card(
-        key: Key('announcement-board'),
-        child: ListTile(
-          title: Text('平台公告'),
-          subtitle: Text('暂无公告', key: Key('announcement-empty')),
-        ),
-      );
-    }
     return Card(
       key: const Key('announcement-board'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ListTile(title: Text('平台公告')),
-          for (final item in announcements)
-            ListTile(
-              key: Key('announcement-${item.id}'),
-              title: Text(item.pinned ? '置顶 · ${item.title}' : item.title),
-              subtitle: Text(item.summary),
-              trailing: item.pinned
-                  ? const Text(
-                      '置顶',
-                      key: Key('announcement-pinned-badge'),
-                      style: TextStyle(color: AppTheme.gold),
-                    )
-                  : null,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  '平台公告',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                Text(
+                  announcements.isEmpty ? '' : '${announcements.length} 条',
+                  style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                ),
+              ],
             ),
-        ],
+            const SizedBox(height: 10),
+            if (loading)
+              const Text('正在读取', style: TextStyle(color: AppTheme.muted))
+            else if (announcements.isEmpty)
+              const Text('暂无公告', key: Key('announcement-empty'), style: TextStyle(color: AppTheme.muted))
+            else
+              ...announcements.take(compact ? 3 : 4).map(
+                (item) => Padding(
+                  key: Key('announcement-${item.id}'),
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(top: 6, right: 8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: item.pinned ? AppTheme.gold : AppTheme.muted,
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.pinned ? '置顶 · ${item.title}' : item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            if (item.summary.isNotEmpty)
+                              Text(
+                                item.summary,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (item.pinned)
+                        const Text(
+                          '置顶',
+                          key: Key('announcement-pinned-badge'),
+                          style: TextStyle(fontSize: 10, color: AppTheme.gold),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -340,12 +472,9 @@ class _GameBoard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('热门玩法', style: Theme.of(context).textTheme.headlineSmall),
+            Text('热门彩种', style: Theme.of(context).textTheme.headlineSmall),
             const Spacer(),
-            const Text(
-              '快捷入口',
-              style: TextStyle(fontSize: 11, color: AppTheme.muted),
-            ),
+            const Text('4 个入口', style: TextStyle(fontSize: 11, color: AppTheme.muted)),
           ],
         ),
         const SizedBox(height: 14),
@@ -354,20 +483,17 @@ class _GameBoard extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: HomePage.games.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: compact ? 12 : 14,
-            crossAxisSpacing: compact ? 12 : 14,
-            mainAxisExtent: compact ? 136 : 148,
+            crossAxisCount: compact ? 2 : 4,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: compact ? 126 : 142,
           ),
           itemBuilder: (context, index) {
             final game = HomePage.games[index];
+            final enabled = game.kind != null && onOpenPlay != null;
             return _GameCard(
-              cardKey: Key(game.$4),
-              title: game.$2,
-              subtitle: game.$3,
-              badge: game.$5,
-              badgeKey: Key('${game.$4}-badge'),
-              onTap: onOpenPlay == null ? null : () => onOpenPlay!(game.$1),
+              entry: game,
+              onTap: enabled ? () => onOpenPlay!(game.kind!) : null,
             );
           },
         ),
@@ -376,87 +502,129 @@ class _GameBoard extends StatelessWidget {
   }
 }
 
-class _GameCard extends StatelessWidget {
-  const _GameCard({
-    required this.cardKey,
+class _HomeGameEntry {
+  const _HomeGameEntry({
+    this.kind,
     required this.title,
     required this.subtitle,
+    required this.keyName,
     required this.badge,
-    required this.badgeKey,
-    this.onTap,
+    required this.status,
+    required this.accent,
   });
 
-  final Key cardKey;
+  final PlayKind? kind;
   final String title;
   final String subtitle;
+  final String keyName;
   final String badge;
-  final Key badgeKey;
+  final String status;
+  final Color accent;
+}
+
+class _GameCard extends StatelessWidget {
+  const _GameCard({required this.entry, this.onTap});
+
+  final _HomeGameEntry entry;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return Card(
-      key: cardKey,
+      key: Key(entry.keyName),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                key: badgeKey,
-                width: 50,
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF332F27),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: AppTheme.gold.withOpacity(.34)),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: AppTheme.gold,
-                    fontWeight: FontWeight.w800,
-                    fontSize: badge.length > 1 ? 17 : 20,
+              Row(
+                children: [
+                  Container(
+                    key: Key('${entry.keyName}-badge'),
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: entry.accent.withOpacity(.12),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: entry.accent.withOpacity(.38)),
+                    ),
+                    child: Text(
+                      entry.badge,
+                      style: TextStyle(
+                        color: entry.accent,
+                        fontWeight: FontWeight.w800,
+                        fontSize: entry.badge.length > 1 ? 15 : 18,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge,
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: enabled ? entry.accent.withOpacity(.10) : AppTheme.surfaceSoft,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    child: Text(
+                      entry.status,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: enabled ? entry.accent : AppTheme.muted,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              const Text(
-                '→',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: AppTheme.muted,
-                  fontWeight: FontWeight.w500,
-                ),
+              const Spacer(),
+              Text(
+                entry.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                entry.subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _HomeBoundaryStrip extends StatelessWidget {
+  const _HomeBoundaryStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('home-boundary-strip'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceSoft.withOpacity(.72),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: const Row(
+        children: [
+          Text('●', style: TextStyle(color: AppTheme.teal, fontSize: 10)),
+          SizedBox(width: 8),
+          Text('积分娱乐', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+          SizedBox(width: 14),
+          Text('开奖数据留证后人工复核', style: TextStyle(color: AppTheme.muted, fontSize: 11)),
+          Spacer(),
+          Text('不含现金充值、提现或兑付', style: TextStyle(color: AppTheme.muted, fontSize: 11)),
+        ],
       ),
     );
   }
@@ -498,7 +666,7 @@ class _SidePanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '版主入口',
+                    '版主中心',
                     style: TextStyle(
                       color: AppTheme.gold,
                       fontSize: 11,
@@ -507,10 +675,7 @@ class _SidePanel extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    '开通版主',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
+                  Text('开通版主', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                   SizedBox(height: 7),
                   Text(
                     '达标即可开通（默认门槛 10000，开通时冻结），无需审核',
@@ -518,6 +683,24 @@ class _SidePanel extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('彩种进度', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                SizedBox(height: 10),
+                Text('福建31 · 已开放', style: TextStyle(fontSize: 12)),
+                SizedBox(height: 6),
+                Text('数字选号 · 已开放', style: TextStyle(fontSize: 12)),
+                SizedBox(height: 6),
+                Text('排列三 / 快乐8 · 筹备中', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+              ],
             ),
           ),
         ),
@@ -606,15 +789,9 @@ class _HomePointsCardState extends State<_HomePointsCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '积分钱包',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                ),
+                Text('我的积分', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                 SizedBox(height: 14),
-                Text(
-                  '--',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
-                ),
+                Text('--', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
                 SizedBox(height: 4),
                 Text('去个人中心登录', style: TextStyle(color: AppTheme.muted)),
               ],
@@ -626,10 +803,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
 
     if (_loading && _snapshot == null && _error == null) {
       return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(18),
-          child: Text('积分正在读取…'),
-        ),
+        child: Padding(padding: EdgeInsets.all(18), child: Text('积分正在读取…')),
       );
     }
 
@@ -647,9 +821,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
                 const Text('积分读取失败'),
                 const SizedBox(height: 6),
                 Text(
-                  _error is PointsLoadException
-                      ? (_error! as PointsLoadException).message
-                      : '读取失败',
+                  _error is PointsLoadException ? (_error! as PointsLoadException).message : '读取失败',
                   style: const TextStyle(color: AppTheme.muted),
                 ),
                 const SizedBox(height: 8),
@@ -669,10 +841,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '积分钱包',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
+            const Text('我的积分', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(height: 14),
             Text(
               balance == null ? '--' : '$balance',
