@@ -150,8 +150,8 @@ class _StatusCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          height: 82,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.border),
@@ -160,7 +160,7 @@ class _StatusCard extends StatelessWidget {
             children: [
               Container(
                 width: 4,
-                height: 36,
+                height: 40,
                 decoration: BoxDecoration(
                   color: accent,
                   borderRadius: BorderRadius.circular(6),
