@@ -52,10 +52,19 @@ class _AppShellState extends State<AppShell> {
       setState(() => _index = 4);
       return;
     }
+    final standaloneClient =
+        _client is StandaloneApiClient ? _client as StandaloneApiClient : null;
     showDialog<void>(
       context: context,
-      builder: (_) => BetHistoryDialog(reader: ApiBetHistoryReader(_client)),
-    );
+      builder: (_) => BetHistoryDialog(
+        reader: ApiBetHistoryReader(_client),
+        onSimulateSettlement: standaloneClient == null
+            ? null
+            : standaloneClient.simulateSettlement,
+      ),
+    ).whenComplete(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
