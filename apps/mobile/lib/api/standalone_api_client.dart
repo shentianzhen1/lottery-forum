@@ -48,6 +48,15 @@ class StandaloneApiClient extends ApiClient {
         };
       case '/api/v1/home/draws/recent':
         return {'items': <Map<String, Object?>>[]};
+      case '/api/v1/home/rounds/current':
+        return {
+          'round': {
+            'lottery_id': uri.queryParameters['lottery_id'] ?? 'fujian-31',
+            'code': 'TEST-001',
+            'status': 'OPEN',
+            'accepts_bets': true,
+          },
+        };
       case '/api/v1/points/balance':
         _requireLogin();
         return {'balance': _balance, 'frozen': _frozen};
