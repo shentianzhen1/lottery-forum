@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../design/app_theme.dart';
@@ -64,9 +66,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!landscapeReady) {
-      return const _NarrowNotice();
-    }
+    if (!landscapeReady) return const _NarrowNotice();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -89,8 +89,8 @@ class HomePage extends StatelessWidget {
               Expanded(
                 child: _MainColumn(
                   feed: feed,
-                  onOpenPlay: onOpenPlay,
                   compact: compact,
+                  onOpenPlay: onOpenPlay,
                 ),
               ),
               SizedBox(width: gap),
@@ -139,9 +139,7 @@ class _MainColumnState extends State<_MainColumn> {
   @override
   void didUpdateWidget(covariant _MainColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.feed != oldWidget.feed) {
-      _load();
-    }
+    if (widget.feed != oldWidget.feed) _load();
   }
 
   Future<void> _load() async {
@@ -150,20 +148,21 @@ class _MainColumnState extends State<_MainColumn> {
       final data = await widget.feed.load();
       if (mounted) setState(() => _data = data);
     } catch (error) {
-      if (mounted) {
-        setState(() {
-          _error = error;
-          _data = const HomeFeedData(banners: [], announcements: []);
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _data = const HomeFeedData(banners: [], announcements: []);
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final data = _data;
-    final announcements = data?.announcements ?? const <HomeAnnouncement>[];
     final banners = data?.banners ?? const <HomeBanner>[];
+    final announcements = data?.announcements ?? const <HomeAnnouncement>[];
+    final recentDraws = data?.recentDraws ?? const <HomeRecentDraw>[];
+    final loading = data == null && _error == null;
 
     return ListView(
       key: const Key('home-main-scroll'),
@@ -172,9 +171,9 @@ class _MainColumnState extends State<_MainColumn> {
         if (widget.compact) ...[
           _PromoPanel(banners: banners, compact: true),
           const SizedBox(height: 12),
-          _AnnouncementBoard(
+          _AnnouncementTicker(
             announcements: announcements,
-            loading: data == null && _error == null,
+            loading: loading,
             compact: true,
           ),
         ] else
@@ -190,9 +189,9 @@ class _MainColumnState extends State<_MainColumn> {
                 const SizedBox(width: 14),
                 Expanded(
                   flex: 3,
-                  child: _AnnouncementBoard(
+                  child: _AnnouncementTicker(
                     announcements: announcements,
-                    loading: data == null && _error == null,
+                    loading: loading,
                     compact: false,
                   ),
                 ),
@@ -202,6 +201,8 @@ class _MainColumnState extends State<_MainColumn> {
         SizedBox(height: widget.compact ? 18 : 22),
         _GameBoard(onOpenPlay: widget.onOpenPlay, compact: widget.compact),
         const SizedBox(height: 14),
+        _RecentDrawsPanel(draws: recentDraws),
+        const SizedBox(height: 14),
         const _HomeBoundaryStrip(),
         const SizedBox(height: 8),
       ],
@@ -209,15 +210,61 @@ class _MainColumnState extends State<_MainColumn> {
   }
 }
 
-class _PromoPanel extends StatelessWidget {
+class _PromoPanel extends StatefulWidget {
   const _PromoPanel({required this.banners, required this.compact});
 
   final List<HomeBanner> banners;
   final bool compact;
 
   @override
+  State<_PromoPanel> createState() => _PromoPanelState();
+}
+
+class _PromoPanelState extends State<_PromoPanel> {
+  final PageController _controller = PageController();
+  Timer? _timer;
+  int _current = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PromoPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.banners.length != widget.banners.length) {
+      _current = 0;
+      _timer?.cancel();
+      _startTimer();
+      if (_controller.hasClients) _controller.jumpToPage(0);
+    }
+  }
+
+  void _startTimer() {
+    if (widget.banners.length <= 1) return;
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_controller.hasClients || widget.banners.length <= 1) return;
+      final next = (_current + 1) % widget.banners.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final height = compact ? 152.0 : 190.0;
+    final height = widget.compact ? 152.0 : 190.0;
     return Container(
       key: const Key('home-welcome-panel'),
       height: height,
@@ -231,15 +278,43 @@ class _PromoPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF355054)),
       ),
-      child: banners.isEmpty
-          ? _DefaultPromo(compact: compact)
-          : PageView.builder(
-              key: const Key('home-banner-strip'),
-              itemCount: banners.length,
-              itemBuilder: (context, index) {
-                final banner = banners[index];
-                return _BannerPage(banner: banner, index: index, total: banners.length);
-              },
+      child: widget.banners.isEmpty
+          ? _DefaultPromo(compact: widget.compact)
+          : Stack(
+              children: [
+                PageView.builder(
+                  key: const Key('home-banner-strip'),
+                  controller: _controller,
+                  itemCount: widget.banners.length,
+                  onPageChanged: (index) => setState(() => _current = index),
+                  itemBuilder: (context, index) => _BannerPage(
+                    banner: widget.banners[index],
+                  ),
+                ),
+                if (widget.banners.length > 1)
+                  Positioned(
+                    left: 26,
+                    bottom: 18,
+                    child: Row(
+                      key: const Key('home-banner-dots'),
+                      children: [
+                        for (var i = 0; i < widget.banners.length; i++)
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            width: i == _current ? 18 : 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: i == _current
+                                  ? AppTheme.gold
+                                  : AppTheme.muted.withOpacity(.35),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
     );
   }
@@ -310,24 +385,26 @@ class _DefaultPromo extends StatelessWidget {
 }
 
 class _BannerPage extends StatelessWidget {
-  const _BannerPage({required this.banner, required this.index, required this.total});
+  const _BannerPage({required this.banner});
 
   final HomeBanner banner;
-  final int index;
-  final int total;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       key: Key('home-banner-${banner.id}'),
-      padding: const EdgeInsets.fromLTRB(26, 24, 26, 20),
+      padding: const EdgeInsets.fromLTRB(26, 24, 26, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text(
             '平台推荐',
-            style: TextStyle(color: AppTheme.gold, fontSize: 11, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: AppTheme.gold,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -343,31 +420,14 @@ class _BannerPage extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppTheme.muted, height: 1.35),
           ),
-          if (total > 1) ...[
-            const SizedBox(height: 15),
-            Row(
-              children: [
-                for (var i = 0; i < total; i++)
-                  Container(
-                    width: i == index ? 18 : 6,
-                    height: 6,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(
-                      color: i == index ? AppTheme.gold : AppTheme.muted.withOpacity(.35),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-              ],
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-class _AnnouncementBoard extends StatelessWidget {
-  const _AnnouncementBoard({
+class _AnnouncementTicker extends StatefulWidget {
+  const _AnnouncementTicker({
     required this.announcements,
     required this.loading,
     required this.compact,
@@ -378,12 +438,54 @@ class _AnnouncementBoard extends StatelessWidget {
   final bool compact;
 
   @override
+  State<_AnnouncementTicker> createState() => _AnnouncementTickerState();
+}
+
+class _AnnouncementTickerState extends State<_AnnouncementTicker> {
+  Timer? _timer;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnnouncementTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.announcements.length != widget.announcements.length) {
+      _index = 0;
+      _timer?.cancel();
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    if (widget.announcements.length <= 1) return;
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || widget.announcements.length <= 1) return;
+      setState(() => _index = (_index + 1) % widget.announcements.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.announcements.isEmpty
+        ? null
+        : widget.announcements[_index.clamp(0, widget.announcements.length - 1)];
+
     return Card(
       key: const Key('announcement-board'),
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        padding: EdgeInsets.fromLTRB(16, 14, 16, widget.compact ? 14 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -395,63 +497,97 @@ class _AnnouncementBoard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  announcements.isEmpty ? '' : '${announcements.length} 条',
+                  widget.announcements.isEmpty
+                      ? ''
+                      : '${_index + 1}/${widget.announcements.length}',
+                  key: const Key('announcement-page-indicator'),
                   style: const TextStyle(fontSize: 11, color: AppTheme.muted),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            if (loading)
+            const SizedBox(height: 12),
+            if (widget.loading)
               const Text('正在读取', style: TextStyle(color: AppTheme.muted))
-            else if (announcements.isEmpty)
-              const Text('暂无公告', key: Key('announcement-empty'), style: TextStyle(color: AppTheme.muted))
+            else if (item == null)
+              const Text(
+                '暂无公告',
+                key: Key('announcement-empty'),
+                style: TextStyle(color: AppTheme.muted),
+              )
             else
-              ...announcements.take(compact ? 3 : 4).map(
-                (item) => Padding(
-                  key: Key('announcement-${item.id}'),
-                  padding: const EdgeInsets.only(bottom: 9),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 5,
-                        height: 5,
-                        margin: const EdgeInsets.only(top: 6, right: 8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: item.pinned ? AppTheme.gold : AppTheme.muted,
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.pinned ? '置顶 · ${item.title}' : item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            if (item.summary.isNotEmpty)
-                              Text(
-                                item.summary,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (item.pinned)
-                        const Text(
-                          '置顶',
-                          key: Key('announcement-pinned-badge'),
-                          style: TextStyle(fontSize: 10, color: AppTheme.gold),
-                        ),
-                    ],
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 320),
+                  transitionBuilder: (child, animation) {
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0, .18),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: _AnnouncementItem(
+                    key: ValueKey(item.id),
+                    item: item,
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnouncementItem extends StatelessWidget {
+  const _AnnouncementItem({required this.item, super.key});
+
+  final HomeAnnouncement item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Container(
+        key: Key('announcement-${item.id}'),
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceSoft.withOpacity(.55),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  item.pinned ? '置顶 · ${item.title}' : item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                if (item.pinned) ...[
+                  const Spacer(),
+                  const Text(
+                    '置顶',
+                    key: Key('announcement-pinned-badge'),
+                    style: TextStyle(fontSize: 10, color: AppTheme.gold),
+                  ),
+                ],
+              ],
+            ),
+            if (item.summary.isNotEmpty) ...[
+              const SizedBox(height: 7),
+              Text(
+                item.summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: AppTheme.muted, height: 1.45),
+              ),
+            ],
           ],
         ),
       ),
@@ -602,6 +738,136 @@ class _GameCard extends StatelessWidget {
   }
 }
 
+class _RecentDrawsPanel extends StatelessWidget {
+  const _RecentDrawsPanel({required this.draws});
+
+  final List<HomeRecentDraw> draws;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('home-recent-draws'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('最新开奖', style: Theme.of(context).textTheme.headlineSmall),
+            const Spacer(),
+            const Text(
+              '仅展示已确认结果',
+              style: TextStyle(fontSize: 11, color: AppTheme.muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: draws.isEmpty
+                ? const SizedBox(
+                    height: 52,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '暂无已确认开奖',
+                        key: Key('home-recent-draws-empty'),
+                        style: TextStyle(color: AppTheme.muted),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < draws.length; i++) ...[
+                        _RecentDrawRow(draw: draws[i]),
+                        if (i != draws.length - 1) const Divider(height: 17),
+                      ],
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentDrawRow extends StatelessWidget {
+  const _RecentDrawRow({required this.draw});
+
+  final HomeRecentDraw draw;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      key: Key('home-draw-${draw.code}'),
+      children: [
+        SizedBox(
+          width: 138,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '福建31 · ${draw.code}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                draw.drawDate,
+                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final number in draw.mainNumbers)
+                _DrawNumber(number: number),
+              for (final number in draw.extraNumbers)
+                _DrawNumber(number: number, extra: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DrawNumber extends StatelessWidget {
+  const _DrawNumber({required this.number, this.extra = false});
+
+  final int number;
+  final bool extra;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 29,
+      height: 29,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: extra ? AppTheme.gold.withOpacity(.16) : AppTheme.teal.withOpacity(.14),
+        border: Border.all(
+          color: extra ? AppTheme.gold.withOpacity(.58) : AppTheme.teal.withOpacity(.48),
+        ),
+      ),
+      child: Text(
+        number.toString().padLeft(2, '0'),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: extra ? AppTheme.gold : AppTheme.ink,
+        ),
+      ),
+    );
+  }
+}
+
 class _HomeBoundaryStrip extends StatelessWidget {
   const _HomeBoundaryStrip();
 
@@ -732,24 +998,21 @@ class _HomePointsCardState extends State<_HomePointsCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.loggedIn) {
-      _load();
-    }
+    if (widget.loggedIn) _load();
   }
 
   @override
   void didUpdateWidget(covariant _HomePointsCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.loggedIn != oldWidget.loggedIn || widget.reader != oldWidget.reader) {
-      if (widget.loggedIn) {
-        _load();
-      } else {
-        setState(() {
-          _snapshot = null;
-          _error = null;
-          _loading = false;
-        });
-      }
+    if (widget.loggedIn == oldWidget.loggedIn && widget.reader == oldWidget.reader) return;
+    if (widget.loggedIn) {
+      _load();
+    } else {
+      setState(() {
+        _snapshot = null;
+        _error = null;
+        _loading = false;
+      });
     }
   }
 
@@ -760,19 +1023,17 @@ class _HomePointsCardState extends State<_HomePointsCard> {
     });
     try {
       final snapshot = await widget.reader.load();
-      if (mounted) {
-        setState(() {
-          _snapshot = snapshot;
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _snapshot = snapshot;
+        _loading = false;
+      });
     } catch (error) {
-      if (mounted) {
-        setState(() {
-          _error = error;
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _loading = false;
+      });
     }
   }
 
@@ -821,7 +1082,9 @@ class _HomePointsCardState extends State<_HomePointsCard> {
                 const Text('积分读取失败'),
                 const SizedBox(height: 6),
                 Text(
-                  _error is PointsLoadException ? (_error! as PointsLoadException).message : '读取失败',
+                  _error is PointsLoadException
+                      ? (_error! as PointsLoadException).message
+                      : '读取失败',
                   style: const TextStyle(color: AppTheme.muted),
                 ),
                 const SizedBox(height: 8),
@@ -833,8 +1096,7 @@ class _HomePointsCardState extends State<_HomePointsCard> {
       );
     }
 
-    final snapshot = _snapshot;
-    final balance = snapshot?.balance;
+    final balance = _snapshot?.balance;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
