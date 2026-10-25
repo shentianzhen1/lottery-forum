@@ -41,7 +41,7 @@ class StandaloneApiClient extends ApiClient {
             {
               'id': 'standalone-note',
               'title': '当前为单机测试包',
-              'body': '登录、积分、选号、投注、撤单与版主入口均在手机本地模拟。\n关闭 App 后本轮测试数据会重置。',
+              'body': '登录、积分、选号、投注、撤单、模拟结算与版主入口均在手机本地完成。\n关闭 App 后本轮测试数据会重置。',
               'pinned': true,
             },
           ],
@@ -82,7 +82,7 @@ class StandaloneApiClient extends ApiClient {
         final status = uri.queryParameters['status'];
         return {
           'items': [
-            for (final bet in _bets)
+            for (final bet in _bets.reversed)
               if ((roundId == null || bet['round_id'] == roundId) &&
                   (status == null || bet['status'] == status))
                 Map<String, Object?>.from(bet),
@@ -131,10 +131,17 @@ class StandaloneApiClient extends ApiClient {
       final row = <String, Object?>{
         'bet_id': betId,
         'round_id': '${body['round_id'] ?? ''}',
+        'round_code': 'TEST-001',
         'play_id': '${body['play_id'] ?? ''}',
         'numbers': numbers,
         'stake': stake,
         'status': 'ACCEPTED',
+        'created_at': DateTime.now().toIso8601String(),
+        'settlement_result': null,
+        'settlement_finalized': false,
+        'settlement_delta': null,
+        'settlement_return': null,
+        'settlement_recorded_at': null,
       };
       _bets.add(row);
       _frozen += stake;
@@ -153,13 +160,7 @@ class StandaloneApiClient extends ApiClient {
     if (uri.path.startsWith('/api/v1/bets/') && uri.path.endsWith('/cancel')) {
       final parts = uri.pathSegments;
       final betId = parts.length >= 4 ? parts[3] : '';
-      Map<String, Object?>? found;
-      for (final bet in _bets) {
-        if (bet['bet_id'] == betId) {
-          found = bet;
-          break;
-        }
-      }
+      final found = _findBet(betId);
       if (found == null || found['status'] != 'ACCEPTED') {
         throw const ApiException('投注不可撤销', code: 'BET_NOT_CANCELLABLE');
       }
@@ -205,5 +206,65 @@ class StandaloneApiClient extends ApiClient {
     }
 
     throw ApiException('单机模式未实现接口：${uri.path}', code: 'NOT_IMPLEMENTED');
+  }
+
+  Future<void> simulateSettlement(String betId, String result) async {
+    _requireLogin();
+    if (result != 'WIN' && result != 'LOSS' && result != 'VOID') {
+      throw const ApiException('模拟结算结果无效', code: 'INVALID_RESULT');
+    }
+    final bet = _findBet(betId);
+    if (bet == null) {
+      throw const ApiException('投注不存在', code: 'BET_NOT_FOUND');
+    }
+    if (bet['status'] != 'ACCEPTED' || bet['settlement_result'] != null) {
+      throw const ApiException('当前投注不可模拟结算', code: 'BET_NOT_SETTLEABLE');
+    }
+
+    final stake = bet['stake'] as int? ?? 0;
+    final now = DateTime.now().toIso8601String();
+    var delta = 0;
+    var returned = stake;
+
+    _frozen -= stake;
+    _entries.add({
+      'direction': 'RELEASE',
+      'amount': stake,
+      'reason': '单机结算解冻 $betId',
+    });
+
+    if (result == 'WIN') {
+      delta = stake;
+      returned = stake * 2;
+      _balance += stake;
+      _entries.add({
+        'direction': 'CREDIT',
+        'amount': stake,
+        'reason': '单机中奖盈利 $betId',
+      });
+    } else if (result == 'LOSS') {
+      delta = -stake;
+      returned = 0;
+      _balance -= stake;
+      _entries.add({
+        'direction': 'DEBIT',
+        'amount': stake,
+        'reason': '单机未中扣除 $betId',
+      });
+    }
+
+    bet['status'] = 'SETTLED';
+    bet['settlement_result'] = result;
+    bet['settlement_finalized'] = true;
+    bet['settlement_delta'] = delta;
+    bet['settlement_return'] = returned;
+    bet['settlement_recorded_at'] = now;
+  }
+
+  Map<String, Object?>? _findBet(String betId) {
+    for (final bet in _bets) {
+      if (bet['bet_id'] == betId) return bet;
+    }
+    return null;
   }
 }

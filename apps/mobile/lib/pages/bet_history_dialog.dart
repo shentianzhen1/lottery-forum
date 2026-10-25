@@ -3,10 +3,17 @@ import 'package:flutter/material.dart';
 import '../design/app_theme.dart';
 import 'bet_history.dart';
 
+typedef SimulateSettlement = Future<void> Function(String betId, String result);
+
 class BetHistoryDialog extends StatefulWidget {
-  const BetHistoryDialog({required this.reader, super.key});
+  const BetHistoryDialog({
+    required this.reader,
+    this.onSimulateSettlement,
+    super.key,
+  });
 
   final BetHistoryReader reader;
+  final SimulateSettlement? onSimulateSettlement;
 
   @override
   State<BetHistoryDialog> createState() => _BetHistoryDialogState();
@@ -15,6 +22,8 @@ class BetHistoryDialog extends StatefulWidget {
 class _BetHistoryDialogState extends State<BetHistoryDialog> {
   List<BetHistoryItem>? _items;
   Object? _error;
+  String? _actionError;
+  String? _simulatingBetId;
   _HistoryFilter _filter = _HistoryFilter.all;
 
   @override
@@ -35,6 +44,24 @@ class _BetHistoryDialogState extends State<BetHistoryDialog> {
         _items = const [];
         _error = error;
       });
+    }
+  }
+
+  Future<void> _simulate(BetHistoryItem item, String result) async {
+    final action = widget.onSimulateSettlement;
+    if (action == null || _simulatingBetId != null) return;
+    setState(() {
+      _simulatingBetId = item.betId;
+      _actionError = null;
+    });
+    try {
+      await action(item.betId, result);
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _actionError = '$error');
+    } finally {
+      if (mounted) setState(() => _simulatingBetId = null);
     }
   }
 
@@ -76,6 +103,26 @@ class _BetHistoryDialogState extends State<BetHistoryDialog> {
                     '我的投注记录',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
+                  if (widget.onSimulateSettlement != null) ...[
+                    const SizedBox(width: 10),
+                    Container(
+                      key: const Key('standalone-settlement-badge'),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.gold.withOpacity(.10),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.gold.withOpacity(.25)),
+                      ),
+                      child: const Text(
+                        '单机模拟结算',
+                        style: TextStyle(
+                          color: AppTheme.gold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   IconButton(
                     key: const Key('bet-history-close'),
@@ -85,10 +132,22 @@ class _BetHistoryDialogState extends State<BetHistoryDialog> {
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
-                '仅展示当前账号自己的投注记录；已结算记录会显示中奖结果和积分变化。',
-                style: TextStyle(fontSize: 11, color: AppTheme.muted),
+              Text(
+                widget.onSimulateSettlement == null
+                    ? '仅展示当前账号自己的投注记录；已结算记录会显示中奖结果和积分变化。'
+                    : '单机测试可对已受理订单模拟中奖、未中或退回；余额、冻结积分和记录会同步变化。',
+                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
+              if (_actionError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '模拟结算失败：$_actionError',
+                  key: const Key('standalone-settlement-error'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10, color: AppTheme.gold),
+                ),
+              ],
               const SizedBox(height: 14),
               Wrap(
                 spacing: 8,
@@ -142,7 +201,16 @@ class _BetHistoryDialogState extends State<BetHistoryDialog> {
                                 itemCount: visible.length,
                                 separatorBuilder: (_, __) => const Divider(height: 1),
                                 itemBuilder: (context, index) {
-                                  return _BetHistoryRow(item: visible[index]);
+                                  final item = visible[index];
+                                  return _BetHistoryRow(
+                                    item: item,
+                                    simulating: _simulatingBetId == item.betId,
+                                    onSimulate: widget.onSimulateSettlement == null ||
+                                            !item.active ||
+                                            item.settlementResult != null
+                                        ? null
+                                        : (result) => _simulate(item, result),
+                                  );
                                 },
                               ),
               ),
@@ -178,9 +246,15 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _BetHistoryRow extends StatelessWidget {
-  const _BetHistoryRow({required this.item});
+  const _BetHistoryRow({
+    required this.item,
+    required this.simulating,
+    this.onSimulate,
+  });
 
   final BetHistoryItem item;
+  final bool simulating;
+  final ValueChanged<String>? onSimulate;
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +303,41 @@ class _BetHistoryRow extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (onSimulate != null) ...[
+                      const SizedBox(width: 8),
+                      if (simulating)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        PopupMenuButton<String>(
+                          key: Key('standalone-settle-${item.betId}'),
+                          tooltip: '模拟结算',
+                          onSelected: onSimulate,
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'WIN', child: Text('模拟中奖')),
+                            PopupMenuItem(value: 'LOSS', child: Text('模拟未中')),
+                            PopupMenuItem(value: 'VOID', child: Text('模拟退回')),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppTheme.gold.withOpacity(.35)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '模拟结算',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.gold,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 5),
