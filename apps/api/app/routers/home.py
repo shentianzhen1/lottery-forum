@@ -15,6 +15,42 @@ def list_announcements(request: Request) -> dict[str, object]:
     return {"announcements": request.app.state.services.home.list_announcements()}
 
 
+@router.get("/draws/recent")
+def list_recent_confirmed_draws(
+    request: Request,
+    lottery_id: str = "fujian-31",
+    limit: int = 3,
+) -> dict[str, object]:
+    if limit < 1 or limit > 5:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "INVALID_LIMIT", "message": "最近开奖数量必须为 1 到 5"},
+        )
+
+    body = request.app.state.services.draw_results.list_results(lottery_id=lottery_id)
+    rows = body.get("items")
+    public_rows: list[dict[str, object]] = []
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict) or row.get("status") != "CONFIRMED":
+            continue
+        public_rows.append(
+            {
+                "lottery_id": row.get("lottery_id"),
+                "normalized_code": row.get("normalized_code"),
+                "draw_date": row.get("draw_date"),
+                "main_numbers": row.get("main_numbers", []),
+                "extra_numbers": row.get("extra_numbers", []),
+                "status": "CONFIRMED",
+            }
+        )
+
+    public_rows.sort(
+        key=lambda row: (str(row.get("draw_date") or ""), str(row.get("normalized_code") or "")),
+        reverse=True,
+    )
+    return {"items": public_rows[:limit]}
+
+
 @router.get("/announcements/{announcement_id}")
 def get_announcement(announcement_id: str, request: Request) -> dict[str, object]:
     try:

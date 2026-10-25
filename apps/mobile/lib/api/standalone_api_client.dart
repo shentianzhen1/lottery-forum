@@ -46,6 +46,8 @@ class StandaloneApiClient extends ApiClient {
             },
           ],
         };
+      case '/api/v1/home/draws/recent':
+        return {'items': <Map<String, Object?>>[]};
       case '/api/v1/points/balance':
         _requireLogin();
         return {'balance': _balance, 'frozen': _frozen};

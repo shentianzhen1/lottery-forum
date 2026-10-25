@@ -36,21 +36,37 @@ void main() {
     expect(item.summary, '第一行 第二行');
   });
 
-  testWidgets('empty feed shows 暂无公告 and no banner strip', (tester) async {
+  test('recent draw parser keeps integer number arrays', () {
+    final item = recentDrawFromApi({
+      'lottery_id': 'fujian-31',
+      'normalized_code': '2026281',
+      'draw_date': '2026-10-22',
+      'main_numbers': [3, 10, 11, 12, 24, 25, 30],
+      'extra_numbers': [22],
+    });
+    expect(item.code, '2026281');
+    expect(item.mainNumbers, [3, 10, 11, 12, 24, 25, 30]);
+    expect(item.extraNumbers, [22]);
+  });
+
+  testWidgets('empty feed shows empty announcement and confirmed draw states', (tester) async {
     await _pumpHome(tester, const EmptyHomeFeed());
     expect(find.text('平台公告'), findsOneWidget);
     expect(find.text('暂无公告'), findsOneWidget);
     expect(find.byKey(const Key('home-banner-strip')), findsNothing);
+    expect(find.byKey(const Key('home-recent-draws')), findsOneWidget);
+    expect(find.text('暂无已确认开奖'), findsOneWidget);
     expect(find.text('管理后台'), findsNothing);
   });
 
-  testWidgets('populated feed shows banners and pinned announcement', (tester) async {
+  testWidgets('home rotates announcements and banners and renders confirmed draws', (tester) async {
     await _pumpHome(
       tester,
       _FakeHomeFeed(
         const HomeFeedData(
           banners: [
             HomeBanner(id: 'b1', title: '横幅一', subtitle: '副文一'),
+            HomeBanner(id: 'b2', title: '横幅二', subtitle: '副文二'),
           ],
           announcements: [
             HomeAnnouncement(
@@ -66,16 +82,39 @@ void main() {
               pinned: false,
             ),
           ],
+          recentDraws: [
+            HomeRecentDraw(
+              lotteryId: 'fujian-31',
+              code: '2026281',
+              drawDate: '2026-10-22',
+              mainNumbers: [3, 10, 11, 12, 24, 25, 30],
+              extraNumbers: [22],
+            ),
+          ],
         ),
       ),
     );
+
     expect(find.byKey(const Key('home-banner-strip')), findsOneWidget);
+    expect(find.byKey(const Key('home-banner-dots')), findsOneWidget);
     expect(find.text('横幅一'), findsOneWidget);
-    expect(find.text('副文一'), findsOneWidget);
-    expect(find.text('暂无公告'), findsNothing);
     expect(find.text('置顶 · 置顶公告'), findsOneWidget);
-    expect(find.text('摘要正文第一行 第二行'), findsOneWidget);
+    expect(find.text('普通公告'), findsNothing);
+    expect(find.text('1/2'), findsOneWidget);
+
+    expect(find.byKey(const Key('home-draw-2026281')), findsOneWidget);
+    expect(find.text('福建31 · 2026281'), findsOneWidget);
+    expect(find.text('03'), findsOneWidget);
+    expect(find.text('22'), findsOneWidget);
+    expect(find.text('暂无已确认开奖'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('普通公告'), findsOneWidget);
-    expect(find.text('管理后台'), findsNothing);
+    expect(find.text('2/2'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 450));
+    expect(find.text('横幅二'), findsOneWidget);
   });
 }
