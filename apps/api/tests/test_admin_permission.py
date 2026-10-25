@@ -161,5 +161,5 @@ def test_reads_and_bets_still_work_for_normal_user() -> None:
     assert bet.json()["status"] == "ACCEPTED"
 
     listed = client.get(f"/api/v1/settlements/{round_id}", headers=auth(user))
-    assert listed.status_code == 200
-    assert listed.json()["settlements"] == []
+    assert listed.status_code == 403
+    assert listed.json()["detail"] == FORBIDDEN

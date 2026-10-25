@@ -113,7 +113,10 @@ def test_record_win_loss_void_without_balance_change() -> None:
     assert bet.status_code == 200
     assert bet.json()["status"] == "ACCEPTED"
 
-    listed = client.get(f"/api/v1/settlements/{round_id}", headers=auth(token))
+    # Players read their own result from /bets; whole-round settlement rows are admin-only.
+    player_listed = client.get(f"/api/v1/settlements/{round_id}", headers=auth(token))
+    assert player_listed.status_code == 403
+    listed = client.get(f"/api/v1/settlements/{round_id}", headers=auth(admin_token()))
     assert listed.status_code == 200
     assert len(listed.json()["settlements"]) == 1
 

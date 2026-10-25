@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.routers.auth import current_account, require_admin
+from app.routers.auth import require_admin
 from app.settlements.service import SettlementError
 
 router = APIRouter(prefix="/settlements", tags=["settlements"])
@@ -37,8 +37,11 @@ def record_settlements(
 def list_settlements(
     round_id: str,
     request: Request,
-    account: object = Depends(current_account),
+    account: object = Depends(require_admin),
 ) -> dict[str, object]:
+    # Whole-round settlement rows contain other players' bet ids/results, so this
+    # endpoint remains an administrative view. Players read only their own
+    # settlement summary through /bets.
     del account
     try:
         return request.app.state.services.settlements.list_for_round(round_id)
