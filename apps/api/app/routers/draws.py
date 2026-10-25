@@ -1,10 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.draws.provider_huiniao import DrawProviderError
 from app.draws.result_service import DrawResultError
 from app.draws.service import DrawObservationError
 from app.routers.auth import require_admin
 
 router = APIRouter(prefix="/draws", tags=["draws"])
+
+
+@router.post("/providers/huiniao/pull")
+def pull_huiniao_observations(
+    request: Request,
+    limit: int = 5,
+    account: object = Depends(require_admin),
+) -> dict[str, object]:
+    del account
+    try:
+        return request.app.state.services.draw_ingestion.pull_huiniao(limit)
+    except DrawProviderError as error:
+        status = 400 if error.code == "DRAW_PROVIDER_INVALID_LIMIT" else 502
+        raise HTTPException(
+            status_code=status,
+            detail={"code": error.code, "message": error.message},
+        ) from error
 
 
 @router.post("/observations")
