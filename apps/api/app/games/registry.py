@@ -1,5 +1,5 @@
 from app.games.model import GameError, GameSpec, ValidationResult
-from app.games.samples import Fujian31AnyPick, Fujian31Pick, NumberPick, RankingPick
+from app.games.samples import CatalogPreview, Fujian31AnyPick, Fujian31Pick, NumberPick, RankingPick
 
 
 class GameRegistry:
@@ -12,6 +12,8 @@ class GameRegistry:
             Fujian31AnyPick(3),
             Fujian31AnyPick(4),
             Fujian31AnyPick(5),
+            CatalogPreview("pailie-3", "排列三", "pailie-3"),
+            CatalogPreview("kuaile-8", "快乐8", "kuaile-8"),
         ]
         self._plugins = {plugin.spec.game_id: plugin for plugin in plugins}  # type: ignore[attr-defined]
 
