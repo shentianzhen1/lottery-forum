@@ -100,3 +100,23 @@ class Fujian31AnyPick:
         ordered = sorted(numbers)
         pair_count = n * (n - 1) // 2
         return ValidationResult(self.spec.game_id, {"numbers": ordered, "pair_count": pair_count})
+
+
+class CatalogPreview:
+    """Visible-to-planning lottery placeholder that cannot accept bets yet."""
+
+    def __init__(self, game_id: str, name: str, lottery_id: str) -> None:
+        self.spec = GameSpec(
+            game_id,
+            name,
+            "number",
+            "0.0.0-preview",
+            False,
+            False,
+            False,
+            lottery_id=lottery_id,
+        )
+
+    def validate(self, payload: dict[str, object]) -> ValidationResult:
+        del payload
+        raise GameError("GAME_NOT_FOUND", "玩法不存在或未启用")
