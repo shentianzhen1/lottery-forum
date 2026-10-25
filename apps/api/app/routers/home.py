@@ -15,6 +15,40 @@ def list_announcements(request: Request) -> dict[str, object]:
     return {"announcements": request.app.state.services.home.list_announcements()}
 
 
+@router.get("/rounds/current")
+def get_current_round_status(
+    request: Request,
+    lottery_id: str = "fujian-31",
+) -> dict[str, object]:
+    rows = request.app.state.services.rounds.list(lottery_id)
+    if not rows:
+        return {"round": None}
+
+    # Prefer the lifecycle state users can act on now, then the newest row in
+    # the next most relevant state. Internal round/board identifiers stay private.
+    priority = ("OPEN", "CLOSED", "DRAWN", "SETTLING", "UPCOMING", "SETTLED")
+    selected: dict[str, object] | None = None
+    for status in priority:
+        for row in reversed(rows):
+            if isinstance(row, dict) and row.get("status") == status:
+                selected = row
+                break
+        if selected is not None:
+            break
+
+    if selected is None:
+        return {"round": None}
+    status = str(selected.get("status") or "")
+    return {
+        "round": {
+            "lottery_id": selected.get("lottery_id"),
+            "code": selected.get("code"),
+            "status": status,
+            "accepts_bets": status == "OPEN",
+        }
+    }
+
+
 @router.get("/draws/recent")
 def list_recent_confirmed_draws(
     request: Request,
