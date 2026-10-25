@@ -8,6 +8,7 @@ from app.bets.service import BetService
 from app.bets.store import BetStore
 from app.db import connect
 from app.draws.ingestion import DrawIngestionService
+from app.draws.reconciliation import DrawReconciliationService
 from app.draws.result_service import DrawResultService
 from app.draws.result_store import DrawResultStore
 from app.draws.service import DrawObservationService
@@ -44,6 +45,7 @@ class AppState:
     draws: DrawObservationService
     draw_results: DrawResultService
     draw_ingestion: DrawIngestionService
+    draw_reconciliation: DrawReconciliationService
 
 
 def build_state(database: Path | None = None) -> AppState:
@@ -60,12 +62,11 @@ def build_state(database: Path | None = None) -> AppState:
     bet_store = BetStore(connection=connection)
     home = HomeService(HomeStore(connection=connection))
     draw_observation_store = DrawObservationStore(connection=connection)
+    draw_result_store = DrawResultStore(connection=connection)
     draws = DrawObservationService(draw_observation_store)
-    draw_results = DrawResultService(
-        draw_observation_store,
-        DrawResultStore(connection=connection),
-    )
+    draw_results = DrawResultService(draw_observation_store, draw_result_store)
     draw_ingestion = DrawIngestionService(draws)
+    draw_reconciliation = DrawReconciliationService(draw_observation_store, draw_result_store)
     if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
         home.seed_demo()
     auth = AuthService(AccountStore(connection=connection), ledger)
@@ -88,4 +89,5 @@ def build_state(database: Path | None = None) -> AppState:
         draws,
         draw_results,
         draw_ingestion,
+        draw_reconciliation,
     )
