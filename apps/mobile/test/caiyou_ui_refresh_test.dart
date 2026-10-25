@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/main.dart';
 
 void main() {
-  testWidgets('彩友论坛 brand and hot-play badges render at compact landscape', (
+  testWidgets('彩友论坛 brand and lottery badges render at compact landscape', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1024, 600);
@@ -21,12 +21,16 @@ void main() {
     expect(find.byKey(const Key('home-main-scroll')), findsOneWidget);
     expect(find.byKey(const Key('home-side-panel')), findsOneWidget);
 
-    expect(find.text('热门玩法'), findsOneWidget);
+    expect(find.text('热门彩种'), findsOneWidget);
     expect(find.text('(门)'), findsNothing);
     expect(find.byKey(const Key('home-game-number-pick-badge')), findsOneWidget);
     expect(find.byKey(const Key('home-game-fujian-31-badge')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-3-badge')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-kuaile-8-badge')), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
     expect(find.text('31'), findsOneWidget);
+    expect(find.text('P3'), findsOneWidget);
+    expect(find.text('8+'), findsOneWidget);
 
     final numberCard = find.byKey(const Key('home-game-number-pick'));
     final fujianCard = find.byKey(const Key('home-game-fujian-31'));
@@ -49,6 +53,8 @@ void main() {
     expect(find.byKey(const Key('brand-mark')), findsOneWidget);
     expect(find.text('CAIYOU FORUM'), findsWidgets);
     expect(find.byKey(const Key('home-welcome-panel')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-3')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-kuaile-8')), findsOneWidget);
 
     for (final label in ['玩法中心', '积分中心', '版主中心', '个人中心']) {
       await tester.tap(find.text(label));
