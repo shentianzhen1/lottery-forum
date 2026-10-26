@@ -38,17 +38,19 @@ class _AccountPageState extends State<AccountPage> {
         'username': _username.text.trim(),
         'password': _password.text,
       });
-      widget.client.session.token = body['token'] as String?;
-      widget.client.session.username = body['username'] as String?;
+      await widget.client.updateSession(
+        token: body['token'] as String?,
+        username: body['username'] as String?,
+      );
       widget.onChanged();
     } catch (error) {
+      if (!mounted) return;
       setState(() => _error = path.endsWith('register') ? '注册失败' : '登录失败');
     }
   }
 
-  void _logout() {
-    widget.client.session.token = null;
-    widget.client.session.username = null;
+  Future<void> _logout() async {
+    await widget.client.clearSession();
     widget.onChanged();
   }
 
