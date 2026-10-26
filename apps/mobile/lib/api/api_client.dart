@@ -13,6 +13,8 @@ class ApiClient {
   final ApiConfig config;
   final Session session;
 
+  bool get supportsLocalReset => false;
+
   Future<void> updateSession({String? token, String? username}) async {
     session.token = token;
     session.username = username;
@@ -22,6 +24,8 @@ class ApiClient {
     session.token = null;
     session.username = null;
   }
+
+  Future<void> resetLocalData() async {}
 
   Future<Map<String, Object?>> getJson(String path) async {
     final response = await http.get(
