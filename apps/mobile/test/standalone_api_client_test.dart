@@ -1,14 +1,39 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/api/standalone_api_client.dart';
+import 'package:lottery_forum/api/standalone_state_store.dart';
 
-Future<StandaloneApiClient> _loggedInClient() async {
-  final client = StandaloneApiClient();
+class _MemoryStore implements StandaloneStateStore {
+  String? raw;
+
+  @override
+  Future<Map<String, Object?>?> load() async {
+    if (raw == null) return null;
+    return Map<String, Object?>.from(jsonDecode(raw!) as Map);
+  }
+
+  @override
+  Future<void> save(Map<String, Object?> state) async {
+    raw = jsonEncode(state);
+  }
+
+  @override
+  Future<void> clear() async {
+    raw = null;
+  }
+}
+
+Future<StandaloneApiClient> _loggedInClient({_MemoryStore? store}) async {
+  final client = StandaloneApiClient(store: store ?? _MemoryStore());
   final auth = await client.postJson('/api/v1/auth/login', {
     'username': 'tester',
     'password': '123456',
   });
-  client.session.token = auth['token'] as String?;
-  client.session.username = auth['username'] as String?;
+  await client.updateSession(
+    token: auth['token'] as String?,
+    username: auth['username'] as String?,
+  );
   return client;
 }
 
@@ -26,14 +51,16 @@ Future<String> _placeFujianBet(StandaloneApiClient client) async {
 
 void main() {
   test('standalone client supports login, points, bet and cancel offline', () async {
-    final client = StandaloneApiClient();
+    final client = StandaloneApiClient(store: _MemoryStore());
 
     final auth = await client.postJson('/api/v1/auth/register', {
       'username': 'tester',
       'password': '123456',
     });
-    client.session.token = auth['token'] as String?;
-    client.session.username = auth['username'] as String?;
+    await client.updateSession(
+      token: auth['token'] as String?,
+      username: auth['username'] as String?,
+    );
 
     var points = await client.getJson('/api/v1/points/balance');
     expect(points['balance'], 1000);
@@ -60,6 +87,44 @@ void main() {
 
     points = await client.getJson('/api/v1/points/balance');
     expect(points['frozen'], 0);
+  });
+
+  test('standalone state survives client recreation', () async {
+    final store = _MemoryStore();
+    final first = await _loggedInClient(store: store);
+    final betId = await _placeFujianBet(first);
+    await first.postJson('/api/v1/moderator/boards', {'lottery_id': 'fujian-31'});
+
+    final restored = StandaloneApiClient(store: store);
+    await restored.initialize();
+
+    expect(restored.session.username, 'tester');
+    expect(restored.session.token, 'standalone-token-tester');
+    final points = await restored.getJson('/api/v1/points/balance');
+    expect(points['balance'], 800);
+    expect(points['frozen'], 10);
+    final bets = await restored.getJson('/api/v1/bets');
+    expect((bets['items'] as List).length, 1);
+    expect(((bets['items'] as List).first as Map)['bet_id'], betId);
+    final boards = await restored.getJson('/api/v1/moderator/boards/me');
+    expect((boards['boards'] as List).length, 1);
+
+    await restored.simulateSettlement(betId, 'WIN');
+    final afterSettlement = StandaloneApiClient(store: store);
+    await afterSettlement.initialize();
+    final settledPoints = await afterSettlement.getJson('/api/v1/points/balance');
+    expect(settledPoints['balance'], 810);
+    expect(settledPoints['frozen'], 0);
+    final settled = await afterSettlement.getJson('/api/v1/bets');
+    final settledRow = (settled['items'] as List).first as Map;
+    expect(settledRow['settlement_result'], 'WIN');
+    expect(settledRow['settlement_delta'], 10);
+
+    await afterSettlement.clearSession();
+    final loggedOut = StandaloneApiClient(store: store);
+    await loggedOut.initialize();
+    expect(loggedOut.session.token, isNull);
+    expect(loggedOut.session.username, isNull);
   });
 
   test('standalone WIN settlement releases hold and credits profit', () async {

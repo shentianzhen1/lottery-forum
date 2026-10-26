@@ -13,6 +13,16 @@ class ApiClient {
   final ApiConfig config;
   final Session session;
 
+  Future<void> updateSession({String? token, String? username}) async {
+    session.token = token;
+    session.username = username;
+  }
+
+  Future<void> clearSession() async {
+    session.token = null;
+    session.username = null;
+  }
+
   Future<Map<String, Object?>> getJson(String path) async {
     final response = await http.get(
       Uri.parse('${config.baseUrl}$path'),

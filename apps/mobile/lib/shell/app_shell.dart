@@ -43,9 +43,23 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   PlayKind _playKind = PlayKind.numberPick;
-  late final ApiClient _client = standaloneMode
-      ? StandaloneApiClient()
-      : ApiClient(const ApiConfig(), Session());
+  late final ApiClient _client;
+  bool _clientReady = !standaloneMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _client = standaloneMode
+        ? StandaloneApiClient()
+        : ApiClient(const ApiConfig(), Session());
+    final client = _client;
+    if (client is StandaloneApiClient) {
+      client.initialize().whenComplete(() {
+        if (!mounted) return;
+        setState(() => _clientReady = true);
+      });
+    }
+  }
 
   void _showBetHistory() {
     if (_client.session.token == null) {
@@ -66,6 +80,15 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_clientReady) {
+      return const Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(key: Key('standalone-restore-progress')),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(

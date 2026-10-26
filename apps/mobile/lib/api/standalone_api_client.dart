@@ -2,10 +2,14 @@ import 'api_client.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
 import 'session.dart';
+import 'standalone_state_store.dart';
 
 class StandaloneApiClient extends ApiClient {
-  StandaloneApiClient()
-      : super(const ApiConfig(baseUrl: 'standalone://local'), Session());
+  StandaloneApiClient({StandaloneStateStore? store})
+      : _store = store ?? SharedPreferencesStandaloneStateStore(),
+        super(const ApiConfig(baseUrl: 'standalone://local'), Session());
+
+  final StandaloneStateStore _store;
 
   int _balance = 1000;
   int _frozen = 0;
@@ -15,6 +19,71 @@ class StandaloneApiClient extends ApiClient {
   final List<Map<String, Object?>> _bets = <Map<String, Object?>>[];
   final List<Map<String, Object?>> _boards = <Map<String, Object?>>[];
 
+  bool _initialized = false;
+  Future<void>? _initializing;
+
+  Future<void> initialize() async {
+    if (_initialized) return;
+    final active = _initializing;
+    if (active != null) return active;
+    final future = _restore();
+    _initializing = future;
+    await future;
+  }
+
+  Future<void> _restore() async {
+    try {
+      final state = await _store.load();
+      if (state == null || state['version'] != 1) return;
+      _balance = _intValue(state['balance'], 1000);
+      _frozen = _intValue(state['frozen'], 0);
+      _betSeq = _intValue(state['bet_seq'], 1);
+      _boardSeq = _intValue(state['board_seq'], 1);
+      _replaceRows(_entries, state['entries']);
+      _replaceRows(_bets, state['bets']);
+      _replaceRows(_boards, state['boards']);
+      session.token = state['token']?.toString();
+      session.username = state['username']?.toString();
+      if (session.token?.isEmpty ?? true) session.token = null;
+      if (session.username?.isEmpty ?? true) session.username = null;
+    } catch (_) {
+      // Corrupt or unavailable local test storage must never stop the app from
+      // starting; fall back to a fresh in-memory test state instead.
+    } finally {
+      _initialized = true;
+      _initializing = null;
+    }
+  }
+
+  Future<void> _persist() async {
+    await _store.save({
+      'version': 1,
+      'balance': _balance,
+      'frozen': _frozen,
+      'bet_seq': _betSeq,
+      'board_seq': _boardSeq,
+      'entries': _entries,
+      'bets': _bets,
+      'boards': _boards,
+      'token': session.token,
+      'username': session.username,
+    });
+  }
+
+  @override
+  Future<void> updateSession({String? token, String? username}) async {
+    await initialize();
+    await super.updateSession(token: token, username: username);
+    await _persist();
+  }
+
+  @override
+  Future<void> clearSession() async {
+    await initialize();
+    await super.clearSession();
+    await _persist();
+  }
+
   void _requireLogin() {
     if (session.token == null) {
       throw const ApiException('需要登录', code: 'UNAUTHORIZED');
@@ -23,6 +92,7 @@ class StandaloneApiClient extends ApiClient {
 
   @override
   Future<Map<String, Object?>> getJson(String path) async {
+    await initialize();
     final uri = Uri.parse(path);
     switch (uri.path) {
       case '/api/v1/home/banners':
@@ -41,7 +111,7 @@ class StandaloneApiClient extends ApiClient {
             {
               'id': 'standalone-note',
               'title': '当前为单机测试包',
-              'body': '登录、积分、选号、投注、撤单、模拟结算与版主入口均在手机本地完成。\n关闭 App 后本轮测试数据会重置。',
+              'body': '登录、积分、选号、投注、撤单、模拟结算与版主入口均在手机本地完成。\n关闭并重新打开 App 后测试数据仍会保留；卸载或清除应用数据后重置。',
               'pinned': true,
             },
           ],
@@ -104,6 +174,7 @@ class StandaloneApiClient extends ApiClient {
     String path,
     Map<String, Object?> body,
   ) async {
+    await initialize();
     final uri = Uri.parse(path);
 
     if (uri.path == '/api/v1/auth/login' || uri.path == '/api/v1/auth/register') {
@@ -150,6 +221,7 @@ class StandaloneApiClient extends ApiClient {
         'amount': stake,
         'reason': '单机投注 $betId',
       });
+      await _persist();
       return {
         'bet_id': betId,
         'status': 'ACCEPTED',
@@ -172,6 +244,7 @@ class StandaloneApiClient extends ApiClient {
         'amount': stake,
         'reason': '单机撤单 $betId',
       });
+      await _persist();
       return {
         'bet_id': betId,
         'status': 'CANCELLED',
@@ -202,6 +275,7 @@ class StandaloneApiClient extends ApiClient {
         'amount': threshold,
         'reason': '单机版主开通',
       });
+      await _persist();
       return Map<String, Object?>.from(board);
     }
 
@@ -209,6 +283,7 @@ class StandaloneApiClient extends ApiClient {
   }
 
   Future<void> simulateSettlement(String betId, String result) async {
+    await initialize();
     _requireLogin();
     if (result != 'WIN' && result != 'LOSS' && result != 'VOID') {
       throw const ApiException('模拟结算结果无效', code: 'INVALID_RESULT');
@@ -259,6 +334,7 @@ class StandaloneApiClient extends ApiClient {
     bet['settlement_delta'] = delta;
     bet['settlement_return'] = returned;
     bet['settlement_recorded_at'] = now;
+    await _persist();
   }
 
   Map<String, Object?>? _findBet(String betId) {
@@ -266,5 +342,18 @@ class StandaloneApiClient extends ApiClient {
       if (bet['bet_id'] == betId) return bet;
     }
     return null;
+  }
+}
+
+int _intValue(Object? value, int fallback) {
+  if (value is int) return value;
+  return int.tryParse('$value') ?? fallback;
+}
+
+void _replaceRows(List<Map<String, Object?>> target, Object? raw) {
+  target.clear();
+  if (raw is! List) return;
+  for (final row in raw) {
+    if (row is Map) target.add(Map<String, Object?>.from(row));
   }
 }
