@@ -22,6 +22,9 @@ class StandaloneApiClient extends ApiClient {
   bool _initialized = false;
   Future<void>? _initializing;
 
+  @override
+  bool get supportsLocalReset => true;
+
   Future<void> initialize() async {
     if (_initialized) return;
     final active = _initializing;
@@ -84,6 +87,21 @@ class StandaloneApiClient extends ApiClient {
     await _persist();
   }
 
+  @override
+  Future<void> resetLocalData() async {
+    await initialize();
+    _balance = 1000;
+    _frozen = 0;
+    _betSeq = 1;
+    _boardSeq = 1;
+    _entries.clear();
+    _bets.clear();
+    _boards.clear();
+    session.token = null;
+    session.username = null;
+    await _store.clear();
+  }
+
   void _requireLogin() {
     if (session.token == null) {
       throw const ApiException('需要登录', code: 'UNAUTHORIZED');
@@ -111,7 +129,7 @@ class StandaloneApiClient extends ApiClient {
             {
               'id': 'standalone-note',
               'title': '当前为单机测试包',
-              'body': '登录、积分、选号、投注、撤单、模拟结算与版主入口均在手机本地完成。\n关闭并重新打开 App 后测试数据仍会保留；卸载或清除应用数据后重置。',
+              'body': '登录、积分、选号、投注、撤单、模拟结算与版主入口均在手机本地完成。\n关闭并重新打开 App 后测试数据仍会保留；可在个人中心重置单机测试数据。',
               'pinned': true,
             },
           ],

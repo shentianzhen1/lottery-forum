@@ -54,6 +54,34 @@ class _AccountPageState extends State<AccountPage> {
     widget.onChanged();
   }
 
+  Future<void> _resetLocalData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置单机测试数据？'),
+        content: const Text('将清空本机测试账号状态、积分、投注/结算记录和版主状态，并恢复 1000 初始积分。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            key: const Key('confirm-standalone-reset'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('确认重置'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await widget.client.resetLocalData();
+    if (!mounted) return;
+    widget.onChanged();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('单机测试数据已重置')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.landscapeReady) {
@@ -91,6 +119,17 @@ class _AccountPageState extends State<AccountPage> {
                   width: 180,
                   child: OutlinedButton(onPressed: _logout, child: const Text('退出')),
                 ),
+                if (widget.client.supportsLocalReset) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: 180,
+                    child: TextButton(
+                      key: const Key('standalone-reset-button'),
+                      onPressed: _resetLocalData,
+                      child: const Text('重置单机测试数据'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -127,6 +127,37 @@ void main() {
     expect(loggedOut.session.username, isNull);
   });
 
+  test('standalone reset clears persisted test data and restores defaults', () async {
+    final store = _MemoryStore();
+    final client = await _loggedInClient(store: store);
+    final betId = await _placeFujianBet(client);
+    await client.simulateSettlement(betId, 'LOSS');
+    await client.postJson('/api/v1/moderator/boards', {'lottery_id': 'fujian-31'});
+    expect(client.supportsLocalReset, isTrue);
+    expect(store.raw, isNotNull);
+
+    await client.resetLocalData();
+    expect(client.session.token, isNull);
+    expect(client.session.username, isNull);
+    expect(store.raw, isNull);
+
+    final fresh = StandaloneApiClient(store: store);
+    await fresh.initialize();
+    final auth = await fresh.postJson('/api/v1/auth/login', {
+      'username': 'tester',
+      'password': '123456',
+    });
+    await fresh.updateSession(
+      token: auth['token'] as String?,
+      username: auth['username'] as String?,
+    );
+    final points = await fresh.getJson('/api/v1/points/balance');
+    expect(points['balance'], 1000);
+    expect(points['frozen'], 0);
+    expect(((await fresh.getJson('/api/v1/bets'))['items'] as List), isEmpty);
+    expect(((await fresh.getJson('/api/v1/moderator/boards/me'))['boards'] as List), isEmpty);
+  });
+
   test('standalone WIN settlement releases hold and credits profit', () async {
     final client = await _loggedInClient();
     final betId = await _placeFujianBet(client);
