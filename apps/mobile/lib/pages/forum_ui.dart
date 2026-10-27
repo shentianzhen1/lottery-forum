@@ -70,6 +70,14 @@ class _ForumOverviewState extends State<ForumOverview> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
+    if (_error != null) {
+      return Card(
+        child: ListTile(
+          title: const Text('论坛内容暂时无法加载'),
+          trailing: TextButton(onPressed: _load, child: const Text('重试')),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -183,6 +191,12 @@ class _BoardDirectoryCard extends StatelessWidget {
                 for (final board in boards.take(5))
                   OutlinedButton(
                     onPressed: () => onBoard(board.id),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('${board.title} · ${board.threadCount}帖'),
                   ),
               ],
@@ -531,7 +545,7 @@ class _CreateThreadDialogState extends State<_CreateThreadDialog> {
       title: const Text('发布帖子'),
       content: SizedBox(
         width: 620,
-        child: Column(
+        child: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
@@ -578,7 +592,7 @@ class _CreateThreadDialogState extends State<_CreateThreadDialog> {
               ),
             ],
           ],
-        ),
+        )),
       ),
       actions: [
         TextButton(
