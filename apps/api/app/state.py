@@ -13,6 +13,8 @@ from app.draws.result_service import DrawResultService
 from app.draws.result_store import DrawResultStore
 from app.draws.service import DrawObservationService
 from app.draws.store import DrawObservationStore
+from app.forum.service import ForumService
+from app.forum.store import ForumStore
 from app.games.participation import GameParticipation
 from app.games.registry import GameRegistry
 from app.games.selections import SelectionStore
@@ -41,6 +43,7 @@ class AppState:
     rounds: RoundService
     bets: BetService
     home: HomeService
+    forum: ForumService
     settlements: SettlementService
     draws: DrawObservationService
     draw_results: DrawResultService
@@ -71,6 +74,7 @@ def build_state(database: Path | None = None) -> AppState:
     if os.environ.get("LOTTERY_FORUM_HOME_SEED") == "1":
         home.seed_demo()
     auth = AuthService(AccountStore(connection=connection), ledger)
+    forum = ForumService(ForumStore(connection=connection))
     # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_MODERATORS is set.
     seed_moderators_from_env(auth, ledger, moderator)
     # Local/test only; no-op unless LOTTERY_FORUM_DEV_SEED_OPEN_ROUNDS is set.
@@ -88,6 +92,7 @@ def build_state(database: Path | None = None) -> AppState:
         rounds,
         bets,
         home,
+        forum,
         settlements,
         draws,
         draw_results,
