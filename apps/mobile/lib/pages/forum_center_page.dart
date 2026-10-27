@@ -91,14 +91,14 @@ class _ForumHero extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: 24),
+          const SizedBox(width: 24),
           SizedBox(
             width: 310,
             child: OutlinedButton.icon(
-              key: Key('forum-search-button'),
+              key: const Key('forum-search-button'),
               onPressed: onSearch,
-              icon: Icon(Icons.search_rounded, size: 18),
-              label: Align(alignment: Alignment.centerLeft, child: Text('搜索帖子、话题或关键词')),
+              icon: const Icon(Icons.search_rounded, size: 18),
+              label: const Align(alignment: Alignment.centerLeft, child: Text('搜索帖子、话题或关键词')),
             ),
           ),
           const SizedBox(width: 10),
