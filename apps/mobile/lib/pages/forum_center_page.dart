@@ -72,10 +72,10 @@ class _ForumHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF203A40), Color(0xFF172A35), Color(0xFF151E2B)],
+          colors: [Color(0xFF234B70), Color(0xFF193653), Color(0xFF142942)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF355054)),
+        border: Border.all(color: const Color(0xFF3B6085)),
       ),
       child: Row(
         children: [

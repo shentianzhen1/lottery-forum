@@ -374,7 +374,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? AppTheme.gold : AppTheme.muted;
+    final foreground = selected ? AppTheme.blue : AppTheme.muted;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -385,10 +385,10 @@ class _NavItem extends StatelessWidget {
           height: compact ? 46 : 48,
           padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF332F27) : Colors.transparent,
+            color: selected ? const Color(0xFF203E60) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: selected
-                ? Border.all(color: AppTheme.gold.withOpacity(.10))
+                ? Border.all(color: AppTheme.blue.withOpacity(.20))
                 : null,
           ),
           child: Row(
