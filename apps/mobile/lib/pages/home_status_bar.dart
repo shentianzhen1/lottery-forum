@@ -128,7 +128,6 @@ class _HomeStatusBarState extends State<HomeStatusBar> {
             width: 90,
             height: 86,
             child: _HistoryAction(
-              loggedIn: widget.loggedIn,
               onTap: widget.loggedIn ? widget.onOpenHistory : widget.onGoToAccount,
             ),
           ),
@@ -286,9 +285,8 @@ class _StatusCard extends StatelessWidget {
 }
 
 class _HistoryAction extends StatelessWidget {
-  const _HistoryAction({required this.loggedIn, this.onTap});
+  const _HistoryAction({this.onTap});
 
-  final bool loggedIn;
   final VoidCallback? onTap;
 
   @override
@@ -306,30 +304,25 @@ class _HistoryAction extends StatelessWidget {
             border: Border.all(color: AppTheme.borderStrong),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppTheme.gold.withOpacity(.10),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: const Icon(Icons.receipt_long_outlined, size: 18, color: AppTheme.gold),
+                  child: const Icon(Icons.receipt_long_outlined, size: 17, color: AppTheme.gold),
                 ),
                 const SizedBox(height: 5),
                 const Text(
                   '全部记录',
                   maxLines: 1,
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  loggedIn ? '查看历史' : '需登录',
-                  maxLines: 1,
-                  style: const TextStyle(fontSize: 9, color: AppTheme.muted),
                 ),
               ],
             ),
