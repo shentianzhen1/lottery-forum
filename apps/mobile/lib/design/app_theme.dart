@@ -11,7 +11,9 @@ class AppTheme {
   static const rail = Color(0xFF0F1824);
   static const surface = Color(0xFF151E2B);
   static const surfaceSoft = Color(0xFF1A2533);
+  static const surfaceRaised = Color(0xFF1D2938);
   static const border = Color(0xFF29384A);
+  static const borderStrong = Color(0xFF354A61);
   static const gold = Color(0xFFE3C58C);
   static const teal = Color(0xFF83C9BC);
   static const muted = Color(0xFFA7B3C4);
@@ -40,6 +42,9 @@ class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: background,
+      splashColor: gold.withOpacity(.06),
+      hoverColor: gold.withOpacity(.04),
+      highlightColor: Colors.transparent,
       textTheme: base.textTheme.copyWith(
         headlineSmall: const TextStyle(
           fontSize: 24,
@@ -71,32 +76,42 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          foregroundColor: background,
+          backgroundColor: gold,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
           minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ink,
-          side: const BorderSide(color: border),
+          side: const BorderSide(color: borderStrong),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: gold,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF101824),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(13),
           borderSide: const BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(13),
           borderSide: const BorderSide(color: gold, width: 1.5),
         ),
       ),
@@ -105,6 +120,20 @@ class AppTheme {
         selectedColor: const Color(0xFF332F27),
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      dialogTheme: DialogTheme(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: border),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: surfaceRaised,
+        contentTextStyle: const TextStyle(color: ink),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 4),
