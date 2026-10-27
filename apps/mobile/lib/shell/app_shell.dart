@@ -38,7 +38,8 @@ const destinations = <AppDestination>[
 ];
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({this.client, super.key});
+  final ApiClient? client;
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -53,9 +54,9 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    _client = standaloneMode
+    _client = widget.client ?? (standaloneMode
         ? StandaloneApiClient()
-        : ApiClient(const ApiConfig(), Session());
+        : ApiClient(const ApiConfig(), Session()));
     _forumApi = ForumApi(_client);
     final client = _client;
     if (client is StandaloneApiClient) {

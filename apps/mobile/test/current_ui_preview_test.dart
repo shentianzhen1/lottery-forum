@@ -6,6 +6,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/design/app_theme.dart';
+import 'package:lottery_forum/api/api_client.dart';
+import 'package:lottery_forum/api/api_config.dart';
+import 'package:lottery_forum/api/session.dart';
 import 'package:lottery_forum/shell/app_shell.dart';
 
 void main() {
@@ -62,6 +65,15 @@ class _PreviewApp extends StatelessWidget {
       theme: theme.copyWith(
         textTheme: theme.textTheme.apply(fontFamily: 'Noto Sans CJK SC'),
         primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Noto Sans CJK SC'),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Noto Sans CJK SC')),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Noto Sans CJK SC')),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Noto Sans CJK SC')),
+        ),
         navigationRailTheme: theme.navigationRailTheme.copyWith(
           selectedLabelTextStyle: theme.navigationRailTheme.selectedLabelTextStyle
               ?.copyWith(fontFamily: 'Noto Sans CJK SC'),
@@ -69,11 +81,38 @@ class _PreviewApp extends StatelessWidget {
               ?.copyWith(fontFamily: 'Noto Sans CJK SC'),
         ),
       ),
-      home: const DefaultTextStyle(
-        style: TextStyle(fontFamily: 'Noto Sans CJK SC'),
-        child: AppShell(),
+      home: DefaultTextStyle(
+        style: const TextStyle(fontFamily: 'Noto Sans CJK SC'),
+        child: AppShell(client: _PreviewClient()),
       ),
     );
+  }
+}
+
+// The preview uses the actual Flutter UI with an empty forum response. No posts
+// or activity are invented; other endpoints retain their normal behavior.
+class _PreviewClient extends ApiClient {
+  _PreviewClient() : super(const ApiConfig(), Session());
+
+  @override
+  Future<Map<String, Object?>> getJson(String path) async {
+    if (path == '/api/v1/forum/home') {
+      return {
+        'boards': [
+          for (final board in const [
+            ('general', '综合讨论'),
+            ('fujian31', '福建31'),
+            ('number-pick', '数字选号'),
+            ('pailie3', '排列三'),
+            ('kuaile8', '快乐8'),
+          ])
+            {'id': board.$1, 'title': board.$2, 'thread_count': 0},
+        ],
+        'hot_topics': [],
+        'latest_threads': [],
+      };
+    }
+    return super.getJson(path);
   }
 }
 
