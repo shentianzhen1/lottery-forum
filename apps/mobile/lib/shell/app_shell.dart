@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/api_config.dart';
 import '../api/bet_history_api.dart';
+import '../api/forum_api.dart';
 import '../api/home_feed_api.dart';
 import '../api/home_status_api.dart';
 import '../api/play_betting_api.dart';
@@ -11,6 +12,7 @@ import '../api/standalone_api_client.dart';
 import '../design/app_theme.dart';
 import '../pages/account_page.dart';
 import '../pages/bet_history_dialog.dart';
+import '../pages/forum_center_page.dart';
 import '../pages/home_page.dart';
 import '../pages/home_status_bar.dart';
 import '../pages/moderator_page.dart';
@@ -32,6 +34,7 @@ const destinations = <AppDestination>[
   AppDestination('积分中心', Icons.account_balance_wallet_outlined),
   AppDestination('版主中心', Icons.verified_user_outlined),
   AppDestination('个人中心', Icons.person_outline),
+  AppDestination('论坛', Icons.forum_outlined),
 ];
 
 class AppShell extends StatefulWidget {
@@ -178,12 +181,21 @@ class _AppShellState extends State<AppShell> {
           gateway: ApiModeratorGateway(_client),
           onGoToAccount: () => setState(() => _index = 4),
         );
-      default:
+      case 4:
         return AccountPage(
           landscapeReady: landscapeReady,
           client: _client,
           onChanged: () => setState(() {}),
         );
+      case 5:
+        return ForumCenterPage(
+          landscapeReady: landscapeReady,
+          loggedIn: loggedIn,
+          api: ForumApi(_client),
+          onGoToAccount: () => setState(() => _index = 4),
+        );
+      default:
+        return const SizedBox.shrink();
     }
   }
 }
