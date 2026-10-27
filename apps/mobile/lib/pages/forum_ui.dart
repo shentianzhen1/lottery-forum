@@ -191,6 +191,12 @@ class _BoardDirectoryCard extends StatelessWidget {
                 for (final board in boards.take(5))
                   OutlinedButton(
                     onPressed: () => onBoard(board.id),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('${board.title} · ${board.threadCount}帖'),
                   ),
               ],
