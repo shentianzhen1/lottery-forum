@@ -47,6 +47,7 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
   PlayKind _playKind = PlayKind.numberPick;
   late final ApiClient _client;
+  late final ForumApi _forumApi;
   bool _clientReady = !standaloneMode;
 
   @override
@@ -55,6 +56,7 @@ class _AppShellState extends State<AppShell> {
     _client = standaloneMode
         ? StandaloneApiClient()
         : ApiClient(const ApiConfig(), Session());
+    _forumApi = ForumApi(_client);
     final client = _client;
     if (client is StandaloneApiClient) {
       client.initialize().whenComplete(() {
@@ -151,6 +153,7 @@ class _AppShellState extends State<AppShell> {
                 loggedIn: loggedIn,
                 reader: ApiPointsReader(_client, includeEntries: false),
                 feed: ApiHomeFeed(_client),
+                forumApi: _forumApi,
                 onGoToAccount: () => setState(() => _index = 4),
                 onGoToModerator: () => setState(() => _index = 3),
                 onOpenPlay: (kind) => setState(() {
@@ -191,7 +194,7 @@ class _AppShellState extends State<AppShell> {
         return ForumCenterPage(
           landscapeReady: landscapeReady,
           loggedIn: loggedIn,
-          api: ForumApi(_client),
+          api: _forumApi,
           onGoToAccount: () => setState(() => _index = 4),
         );
       default:

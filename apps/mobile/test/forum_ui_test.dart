@@ -6,6 +6,7 @@ import 'package:lottery_forum/api/forum_api.dart';
 import 'package:lottery_forum/api/session.dart';
 import 'package:lottery_forum/design/app_theme.dart';
 import 'package:lottery_forum/pages/forum_center_page.dart';
+import 'package:lottery_forum/pages/home_page.dart';
 
 class _FakeForumClient extends ApiClient {
   _FakeForumClient({bool loggedIn = false}) : super(const ApiConfig(baseUrl: 'http://test'), Session()) {
@@ -84,6 +85,34 @@ class _FakeForumClient extends ApiClient {
 }
 
 void main() {
+  for (final size in [const Size(1024, 600), const Size(1366, 768)]) {
+    testWidgets('home exposes forum at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var accountOpened = false;
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.dark,
+        home: Scaffold(body: HomePage(
+          landscapeReady: true,
+          forumApi: ForumApi(_FakeForumClient()),
+          onGoToAccount: () => accountOpened = true,
+        )),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('热门话题'), findsOneWidget);
+      expect(find.text('彩种分区'), findsOneWidget);
+      expect(find.text('福建31 今日讨论'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('home-forum-publish')));
+      expect(accountOpened, isTrue);
+      await tester.tap(find.byKey(const Key('home-forum-search')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('forum-search-field')), findsOneWidget);
+    });
+  }
+
   testWidgets('forum center renders real forum modules without overflow', (tester) async {
     tester.view.physicalSize = const Size(1024, 600);
     tester.view.devicePixelRatio = 1;
