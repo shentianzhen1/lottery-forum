@@ -37,21 +37,27 @@ class _ForumOverviewState extends State<ForumOverview> {
   @override
   void didUpdateWidget(covariant ForumOverview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.api != widget.api || oldWidget.loggedIn != widget.loggedIn) _load();
+    if (oldWidget.api != widget.api || oldWidget.loggedIn != widget.loggedIn) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
     try {
       final data = await widget.api.home();
-      if (mounted) setState(() {
-        _data = data;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _data = data;
+          _error = null;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() {
-        _data = ForumHomeData.empty;
-        _error = error;
-      });
+      if (mounted) {
+        setState(() {
+          _data = ForumHomeData.empty;
+          _error = error;
+        });
+      }
     }
   }
 
@@ -59,7 +65,10 @@ class _ForumOverviewState extends State<ForumOverview> {
   Widget build(BuildContext context) {
     final data = _data;
     if (data == null) {
-      return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,7 +79,11 @@ class _ForumOverviewState extends State<ForumOverview> {
             Expanded(
               child: _HotTopicsCard(
                 topics: data.hotTopics,
-                onTopic: (tag) => showForumSearchDialog(context, widget.api, initialQuery: tag),
+                onTopic: (tag) => showForumSearchDialog(
+                  context,
+                  widget.api,
+                  initialQuery: tag,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -98,6 +111,7 @@ class _ForumOverviewState extends State<ForumOverview> {
 
 class _HotTopicsCard extends StatelessWidget {
   const _HotTopicsCard({required this.topics, required this.onTopic});
+
   final List<ForumTopic> topics;
   final ValueChanged<String> onTopic;
 
@@ -110,16 +124,17 @@ class _HotTopicsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.local_fire_department_outlined, size: 18, color: AppTheme.gold),
-                SizedBox(width: 8),
-                Text('热门话题', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ],
+            const _SectionTitle(
+              icon: Icons.local_fire_department_outlined,
+              color: AppTheme.gold,
+              title: '热门话题',
             ),
             const SizedBox(height: 14),
             if (topics.isEmpty)
-              const Text('暂无热门话题，发布第一篇讨论后这里会自动出现。', style: TextStyle(color: AppTheme.muted, fontSize: 11))
+              const Text(
+                '暂无热门话题，发布第一篇讨论后这里会自动出现。',
+                style: TextStyle(color: AppTheme.muted, fontSize: 11),
+              )
             else
               Wrap(
                 spacing: 8,
@@ -142,6 +157,7 @@ class _HotTopicsCard extends StatelessWidget {
 
 class _BoardDirectoryCard extends StatelessWidget {
   const _BoardDirectoryCard({required this.boards, required this.onBoard});
+
   final List<ForumBoard> boards;
   final ValueChanged<String> onBoard;
 
@@ -154,12 +170,10 @@ class _BoardDirectoryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.forum_outlined, size: 18, color: AppTheme.teal),
-                SizedBox(width: 8),
-                Text('彩种分区', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ],
+            const _SectionTitle(
+              icon: Icons.forum_outlined,
+              color: AppTheme.teal,
+              title: '彩种分区',
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -176,6 +190,25 @@ class _BoardDirectoryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.icon, required this.color, required this.title});
+
+  final IconData icon;
+  final Color color;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+      ],
     );
   }
 }
@@ -209,9 +242,11 @@ class _LatestThreadsCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.dynamic_feed_outlined, size: 18, color: AppTheme.gold),
-                const SizedBox(width: 8),
-                const Text('最新讨论', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                const _SectionTitle(
+                  icon: Icons.dynamic_feed_outlined,
+                  color: AppTheme.gold,
+                  title: '最新讨论',
+                ),
                 const Spacer(),
                 TextButton.icon(
                   key: const Key('forum-create-thread'),
@@ -221,20 +256,32 @@ class _LatestThreadsCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (error != null) ...[
-              const SizedBox(height: 8),
-              Row(children: [
-                const Expanded(child: Text('论坛内容暂时无法加载', style: TextStyle(color: AppTheme.muted))),
-                TextButton(onPressed: onRefresh, child: const Text('重试')),
-              ]),
-            ] else if (threads.isEmpty) ...[
-              const SizedBox(height: 14),
+            if (error != null)
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '论坛内容暂时无法加载',
+                      style: TextStyle(color: AppTheme.muted),
+                    ),
+                  ),
+                  TextButton(onPressed: onRefresh, child: const Text('重试')),
+                ],
+              )
+            else if (threads.isEmpty)
               const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text('还没有讨论帖。可以从综合讨论或彩种分区发布第一篇。', style: TextStyle(color: AppTheme.muted)),
-              ),
-            ] else
-              for (final thread in threads.take(6)) _ThreadRow(thread: thread, onTap: () => onThread(thread.id)),
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Text(
+                  '还没有讨论帖。可以从综合讨论或彩种分区发布第一篇。',
+                  style: TextStyle(color: AppTheme.muted),
+                ),
+              )
+            else
+              for (final thread in threads.take(6))
+                _ThreadRow(
+                  thread: thread,
+                  onTap: () => onThread(thread.id),
+                ),
           ],
         ),
       ),
@@ -244,6 +291,7 @@ class _LatestThreadsCard extends StatelessWidget {
 
 class _ThreadRow extends StatelessWidget {
   const _ThreadRow({required this.thread, required this.onTap});
+
   final ForumThreadSummary thread;
   final VoidCallback onTap;
 
@@ -264,16 +312,27 @@ class _ThreadRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppTheme.gold.withOpacity(.16)),
               ),
-              child: Text(thread.boardTitle, style: const TextStyle(fontSize: 10, color: AppTheme.gold)),
+              child: Text(
+                thread.boardTitle,
+                style: const TextStyle(fontSize: 10, color: AppTheme.gold),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(thread.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    thread.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 3),
-                  Text('${thread.authorUsername} · ${thread.replyCount} 回复', style: const TextStyle(fontSize: 10, color: AppTheme.muted)),
+                  Text(
+                    '${thread.authorUsername} · ${thread.replyCount} 回复',
+                    style: const TextStyle(fontSize: 10, color: AppTheme.muted),
+                  ),
                 ],
               ),
             ),
@@ -293,12 +352,21 @@ Future<void> showForumSearchDialog(
 }) async {
   await showDialog<void>(
     context: context,
-    builder: (_) => _ForumSearchDialog(api: api, initialQuery: initialQuery, boardId: boardId),
+    builder: (_) => _ForumSearchDialog(
+      api: api,
+      initialQuery: initialQuery,
+      boardId: boardId,
+    ),
   );
 }
 
 class _ForumSearchDialog extends StatefulWidget {
-  const _ForumSearchDialog({required this.api, required this.initialQuery, this.boardId});
+  const _ForumSearchDialog({
+    required this.api,
+    required this.initialQuery,
+    this.boardId,
+  });
+
   final ForumApi api;
   final String initialQuery;
   final String? boardId;
@@ -318,6 +386,12 @@ class _ForumSearchDialogState extends State<_ForumSearchDialog> {
     _search();
   }
 
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
   Future<void> _search() async {
     setState(() {
       _threads = null;
@@ -325,12 +399,16 @@ class _ForumSearchDialogState extends State<_ForumSearchDialog> {
     });
     try {
       final rows = await widget.api.search(_query.text, boardId: widget.boardId);
-      if (mounted) setState(() => _threads = rows);
+      if (mounted) {
+        setState(() => _threads = rows);
+      }
     } catch (error) {
-      if (mounted) setState(() {
-        _threads = const [];
-        _error = error;
-      });
+      if (mounted) {
+        setState(() {
+          _threads = const [];
+          _error = error;
+        });
+      }
     }
   }
 
@@ -350,37 +428,58 @@ class _ForumSearchDialogState extends State<_ForumSearchDialog> {
               decoration: InputDecoration(
                 hintText: '搜索帖子、话题或关键词',
                 prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: IconButton(onPressed: _search, icon: const Icon(Icons.arrow_forward_rounded)),
+                suffixIcon: IconButton(
+                  onPressed: _search,
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: _threads == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                      ? const Center(child: Text('搜索暂不可用', style: TextStyle(color: AppTheme.muted)))
-                      : _threads!.isEmpty
-                          ? const Center(child: Text('暂无匹配讨论', style: TextStyle(color: AppTheme.muted)))
-                          : ListView.separated(
-                              itemCount: _threads!.length,
-                              separatorBuilder: (_, __) => const Divider(height: 1),
-                              itemBuilder: (_, index) {
-                                final thread = _threads![index];
-                                return ListTile(
-                                  title: Text(thread.title),
-                                  subtitle: Text('${thread.boardTitle} · ${thread.authorUsername} · ${thread.replyCount} 回复'),
-                                  onTap: () async {
-                                    await showForumThreadDialog(context, widget.api, thread.id);
-                                    if (mounted) await _search();
-                                  },
-                                );
-                              },
-                            ),
-            ),
+            Expanded(child: _searchResults(context)),
           ],
         ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('关闭'),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchResults(BuildContext context) {
+    if (_threads == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return const Center(
+        child: Text('搜索暂不可用', style: TextStyle(color: AppTheme.muted)),
+      );
+    }
+    if (_threads!.isEmpty) {
+      return const Center(
+        child: Text('暂无匹配讨论', style: TextStyle(color: AppTheme.muted)),
+      );
+    }
+    return ListView.separated(
+      itemCount: _threads!.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (_, index) {
+        final thread = _threads![index];
+        return ListTile(
+          title: Text(thread.title),
+          subtitle: Text(
+            '${thread.boardTitle} · ${thread.authorUsername} · ${thread.replyCount} 回复',
+          ),
+          onTap: () async {
+            await showForumThreadDialog(context, widget.api, thread.id);
+            if (mounted) {
+              await _search();
+            }
+          },
+        );
+      },
     );
   }
 }
@@ -392,13 +491,17 @@ Future<bool> showCreateThreadDialog(
 }) async {
   return await showDialog<bool>(
         context: context,
-        builder: (_) => _CreateThreadDialog(api: api, initialBoardId: initialBoardId),
+        builder: (_) => _CreateThreadDialog(
+          api: api,
+          initialBoardId: initialBoardId,
+        ),
       ) ??
       false;
 }
 
 class _CreateThreadDialog extends StatefulWidget {
   const _CreateThreadDialog({required this.api, required this.initialBoardId});
+
   final ForumApi api;
   final String initialBoardId;
 
@@ -413,6 +516,14 @@ class _CreateThreadDialogState extends State<_CreateThreadDialog> {
   final _tags = TextEditingController();
   bool _saving = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _tags.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -433,24 +544,51 @@ class _CreateThreadDialogState extends State<_CreateThreadDialog> {
                 DropdownMenuItem(value: 'pailie3', child: Text('排列三')),
                 DropdownMenuItem(value: 'kuaile8', child: Text('快乐8')),
               ],
-              onChanged: _saving ? null : (value) => setState(() => _boardId = value ?? 'general'),
+              onChanged: _saving
+                  ? null
+                  : (value) => setState(() => _boardId = value ?? 'general'),
             ),
             const SizedBox(height: 10),
-            TextField(controller: _title, maxLength: 80, decoration: const InputDecoration(labelText: '标题')),
+            TextField(
+              controller: _title,
+              maxLength: 80,
+              decoration: const InputDecoration(labelText: '标题'),
+            ),
             const SizedBox(height: 10),
-            TextField(controller: _body, minLines: 4, maxLines: 7, maxLength: 5000, decoration: const InputDecoration(labelText: '正文')),
+            TextField(
+              controller: _body,
+              minLines: 4,
+              maxLines: 7,
+              maxLength: 5000,
+              decoration: const InputDecoration(labelText: '正文'),
+            ),
             const SizedBox(height: 10),
-            TextField(controller: _tags, decoration: const InputDecoration(labelText: '话题标签（用逗号分隔，可选）')),
+            TextField(
+              controller: _tags,
+              decoration: const InputDecoration(labelText: '话题标签（用逗号分隔，可选）'),
+            ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Align(alignment: Alignment.centerLeft, child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
+              ),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: _saving ? null : () => Navigator.pop(context, false), child: const Text('取消')),
-        FilledButton(onPressed: _saving ? null : _submit, child: Text(_saving ? '发布中…' : '发布')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _submit,
+          child: Text(_saving ? '发布中…' : '发布'),
+        ),
       ],
     );
   }
@@ -465,23 +603,41 @@ class _CreateThreadDialogState extends State<_CreateThreadDialog> {
         boardId: _boardId,
         title: _title.text,
         body: _body.text,
-        tags: _tags.text.split(RegExp(r'[,，]')).map((value) => value.trim()).where((value) => value.isNotEmpty).toList(),
+        tags: _tags.text
+            .split(RegExp(r'[,，]'))
+            .map((value) => value.trim())
+            .where((value) => value.isNotEmpty)
+            .toList(),
       );
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 }
 
-Future<void> showForumThreadDialog(BuildContext context, ForumApi api, String threadId) async {
-  await showDialog<void>(context: context, builder: (_) => _ForumThreadDialog(api: api, threadId: threadId));
+Future<void> showForumThreadDialog(
+  BuildContext context,
+  ForumApi api,
+  String threadId,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (_) => _ForumThreadDialog(api: api, threadId: threadId),
+  );
 }
 
 class _ForumThreadDialog extends StatefulWidget {
   const _ForumThreadDialog({required this.api, required this.threadId});
+
   final ForumApi api;
   final String threadId;
 
@@ -501,15 +657,25 @@ class _ForumThreadDialogState extends State<_ForumThreadDialog> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _reply.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     try {
       final detail = await widget.api.detail(widget.threadId);
-      if (mounted) setState(() {
-        _detail = detail;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _detail = detail;
+          _error = null;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+      }
     }
   }
 
@@ -521,64 +687,99 @@ class _ForumThreadDialogState extends State<_ForumThreadDialog> {
       content: SizedBox(
         width: 720,
         height: 500,
-        child: _error != null
-            ? const Center(child: Text('帖子暂时无法加载'))
-            : detail == null
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text('${detail.thread.boardTitle} · ${detail.thread.authorUsername}', style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
-                      const SizedBox(height: 10),
-                      Text(detail.thread.body, style: const TextStyle(height: 1.5)),
-                      const SizedBox(height: 14),
-                      const Divider(),
-                      const Text('回复', style: TextStyle(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: detail.replies.isEmpty
-                            ? const Center(child: Text('暂无回复', style: TextStyle(color: AppTheme.muted)))
-                            : ListView.separated(
-                                itemCount: detail.replies.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1),
-                                itemBuilder: (_, index) {
-                                  final reply = detail.replies[index];
-                                  return ListTile(
-                                    dense: true,
-                                    title: Text(reply.authorUsername, style: const TextStyle(fontSize: 11, color: AppTheme.gold)),
-                                    subtitle: Text(reply.body),
-                                  );
-                                },
-                              ),
-                      ),
-                      if (widget.api.client.session.token != null && !detail.thread.locked) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(child: TextField(controller: _reply, decoration: const InputDecoration(hintText: '写下回复…'))),
-                            const SizedBox(width: 8),
-                            FilledButton(onPressed: _sending ? null : _sendReply, child: const Text('回复')),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
+        child: _threadContent(detail),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('关闭'),
+        ),
+      ],
+    );
+  }
+
+  Widget _threadContent(ForumThreadDetail? detail) {
+    if (_error != null) {
+      return const Center(child: Text('帖子暂时无法加载'));
+    }
+    if (detail == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '${detail.thread.boardTitle} · ${detail.thread.authorUsername}',
+          style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+        ),
+        const SizedBox(height: 10),
+        Text(detail.thread.body, style: const TextStyle(height: 1.5)),
+        const SizedBox(height: 14),
+        const Divider(),
+        const Text('回复', style: TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Expanded(
+          child: detail.replies.isEmpty
+              ? const Center(
+                  child: Text('暂无回复', style: TextStyle(color: AppTheme.muted)),
+                )
+              : ListView.separated(
+                  itemCount: detail.replies.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final reply = detail.replies[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text(
+                        reply.authorUsername,
+                        style: const TextStyle(fontSize: 11, color: AppTheme.gold),
+                      ),
+                      subtitle: Text(reply.body),
+                    );
+                  },
+                ),
+        ),
+        if (widget.api.client.session.token != null && !detail.thread.locked) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _reply,
+                  decoration: const InputDecoration(hintText: '写下回复…'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _sending ? null : _sendReply,
+                child: const Text('回复'),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
   Future<void> _sendReply() async {
-    if (_reply.text.trim().isEmpty) return;
+    if (_reply.text.trim().isEmpty) {
+      return;
+    }
     setState(() => _sending = true);
     try {
       await widget.api.reply(widget.threadId, _reply.text);
       _reply.clear();
       await _load();
     } on ApiException catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) {
+        setState(() => _sending = false);
+      }
     }
   }
 }
