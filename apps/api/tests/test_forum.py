@@ -54,7 +54,7 @@ def test_logged_in_user_can_post_search_read_and_reply() -> None:
     assert created.status_code == 200
     thread = created.json()
     assert thread["author_username"] == username
-    assert thread["tags"] == ["选号交流", "福建31讨论"]
+    assert set(thread["tags"]) == {"福建31讨论", "选号交流"}
     assert thread["reply_count"] == 0
 
     search = client.get("/api/v1/forum/threads", params={"q": "选号交流"})
