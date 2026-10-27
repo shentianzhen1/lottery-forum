@@ -7,13 +7,14 @@ import 'package:flutter/material.dart';
 /// reason about. Popular-play identity also uses text badges instead of icon
 /// font glyphs, so the cards remain stable across Android/CI renderers.
 class AppTheme {
-  static const background = Color(0xFF0B111A);
-  static const rail = Color(0xFF0F1824);
-  static const surface = Color(0xFF151E2B);
-  static const surfaceSoft = Color(0xFF1A2533);
-  static const surfaceRaised = Color(0xFF1D2938);
-  static const border = Color(0xFF29384A);
-  static const borderStrong = Color(0xFF354A61);
+  static const background = Color(0xFF091525);
+  static const rail = Color(0xFF0E1E33);
+  static const surface = Color(0xFF142942);
+  static const surfaceSoft = Color(0xFF1A3552);
+  static const surfaceRaised = Color(0xFF203C5B);
+  static const border = Color(0xFF2A4868);
+  static const borderStrong = Color(0xFF3B6085);
+  static const blue = Color(0xFF91BFF0);
   static const gold = Color(0xFFE3C58C);
   static const teal = Color(0xFF83C9BC);
   static const muted = Color(0xFFA7B3C4);
@@ -21,10 +22,10 @@ class AppTheme {
 
   static ThemeData get dark {
     final scheme = ColorScheme.fromSeed(
-      seedColor: gold,
+      seedColor: blue,
       brightness: Brightness.dark,
     ).copyWith(
-      primary: gold,
+      primary: blue,
       onPrimary: background,
       secondary: teal,
       onSecondary: background,
@@ -42,8 +43,8 @@ class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: background,
-      splashColor: gold.withOpacity(.06),
-      hoverColor: gold.withOpacity(.04),
+      splashColor: blue.withOpacity(.08),
+      hoverColor: blue.withOpacity(.06),
       highlightColor: Colors.transparent,
       textTheme: base.textTheme.copyWith(
         headlineSmall: const TextStyle(
@@ -68,16 +69,16 @@ class AppTheme {
       ),
       navigationRailTheme: const NavigationRailThemeData(
         backgroundColor: rail,
-        indicatorColor: Color(0xFF332F27),
-        selectedIconTheme: IconThemeData(color: gold, size: 22),
+        indicatorColor: Color(0xFF203E60),
+        selectedIconTheme: IconThemeData(color: blue, size: 22),
         unselectedIconTheme: IconThemeData(color: muted, size: 22),
-        selectedLabelTextStyle: TextStyle(color: gold, fontWeight: FontWeight.w600),
+        selectedLabelTextStyle: TextStyle(color: blue, fontWeight: FontWeight.w600),
         unselectedLabelTextStyle: TextStyle(color: muted),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           foregroundColor: background,
-          backgroundColor: gold,
+          backgroundColor: blue,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
@@ -96,14 +97,14 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: gold,
+          foregroundColor: blue,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF101824),
+        fillColor: const Color(0xFF10233A),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
         enabledBorder: OutlineInputBorder(
@@ -112,12 +113,12 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: gold, width: 1.5),
+          borderSide: const BorderSide(color: blue, width: 1.5),
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: surface,
-        selectedColor: const Color(0xFF332F27),
+        selectedColor: const Color(0xFF203E60),
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
