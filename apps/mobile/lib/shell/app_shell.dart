@@ -101,7 +101,6 @@ class _AppShellState extends State<AppShell> {
                   compact: !landscapeReady,
                   onSelected: (index) => setState(() => _index = index),
                 ),
-                if (landscapeReady) const VerticalDivider(width: 1),
                 Expanded(
                   child: Column(
                     children: [
@@ -203,7 +202,11 @@ class _WorkspaceHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(destination, key: const Key('workspace-title'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(
+            destination,
+            key: const Key('workspace-title'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(width: 10),
           const Text('·', style: TextStyle(color: AppTheme.muted)),
           const SizedBox(width: 10),
@@ -218,11 +221,26 @@ class _WorkspaceHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppTheme.gold.withOpacity(.3)),
               ),
-              child: const Text('单机测试', style: TextStyle(color: AppTheme.gold, fontSize: 10, fontWeight: FontWeight.w700)),
+              child: const Text(
+                '单机测试',
+                style: TextStyle(
+                  color: AppTheme.gold,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
           const Spacer(),
-          const Text('CAIYOU FORUM', style: TextStyle(fontSize: 10, letterSpacing: 2.2, color: AppTheme.muted, fontWeight: FontWeight.w600)),
+          const Text(
+            'CAIYOU FORUM',
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 2.2,
+              color: AppTheme.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -230,34 +248,164 @@ class _WorkspaceHeader extends StatelessWidget {
 }
 
 class _NavRail extends StatelessWidget {
-  const _NavRail({required this.selected, required this.compact, required this.onSelected});
+  const _NavRail({
+    required this.selected,
+    required this.compact,
+    required this.onSelected,
+  });
+
   final int selected;
   final bool compact;
   final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return NavigationRail(
-      key: const Key('primary-nav'),
-      selectedIndex: selected,
-      onDestinationSelected: onSelected,
-      extended: !compact,
-      minExtendedWidth: 204,
-      labelType: compact ? NavigationRailLabelType.all : NavigationRailLabelType.none,
-      groupAlignment: -0.72,
-      leading: compact
-          ? const Padding(padding: EdgeInsets.only(top: 14, bottom: 18), child: _CompactBrandMark())
-          : const Padding(padding: EdgeInsets.fromLTRB(18, 20, 18, 30), child: _ExtendedBrandMark()),
-      destinations: [
-        for (final item in destinations)
-          NavigationRailDestination(icon: Icon(item.icon), selectedIcon: Icon(item.icon), label: Text(item.label)),
-      ],
+    final width = compact ? 76.0 : 190.0;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 8 : 12,
+        compact ? 8 : 12,
+        compact ? 8 : 10,
+        compact ? 8 : 12,
+      ),
+      child: Container(
+        key: const Key('primary-nav'),
+        width: width,
+        decoration: BoxDecoration(
+          color: AppTheme.rail,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (compact)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(12, 14, 12, 20),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: _CompactBrandMark(),
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 18, 16, 24),
+                child: _ExtendedBrandMark(),
+              ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10),
+              child: Column(
+                children: [
+                  for (var index = 0; index < 3; index++) ...[
+                    _NavItem(
+                      index: index,
+                      destination: destinations[index],
+                      selected: selected == index,
+                      compact: compact,
+                      onTap: () => onSelected(index),
+                    ),
+                    if (index != 2) const SizedBox(height: 4),
+                  ],
+                  SizedBox(height: compact ? 14 : 18),
+                  for (var index = 3; index < destinations.length; index++) ...[
+                    _NavItem(
+                      index: index,
+                      destination: destinations[index],
+                      selected: selected == index,
+                      compact: compact,
+                      onTap: () => onSelected(index),
+                    ),
+                    if (index != destinations.length - 1) const SizedBox(height: 4),
+                  ],
+                ],
+              ),
+            ),
+            const Spacer(),
+            if (!compact)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 18),
+                child: Text(
+                  'CAIYOU FORUM',
+                  style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 1.8,
+                    color: AppTheme.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.index,
+    required this.destination,
+    required this.selected,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final int index;
+  final AppDestination destination;
+  final bool selected;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? AppTheme.gold : AppTheme.muted;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: Key('nav-item-$index'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          height: compact ? 46 : 48,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF332F27) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: selected
+                ? Border.all(color: AppTheme.gold.withOpacity(.10))
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(destination.icon, size: 18, color: foreground),
+              if (!compact) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    destination.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _CompactBrandMark extends StatelessWidget {
   const _CompactBrandMark();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -269,32 +417,55 @@ class _CompactBrandMark extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.gold.withOpacity(.28)),
       ),
-      child: const Text('彩', style: TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w800)),
+      child: const Text(
+        '彩',
+        style: TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w800),
+      ),
     );
   }
 }
 
 class _ExtendedBrandMark extends StatelessWidget {
   const _ExtendedBrandMark();
+
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 44,
+          height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: const Color(0xFF332F27),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(color: AppTheme.gold.withOpacity(.3)),
           ),
-          child: const Text('彩', style: TextStyle(color: AppTheme.gold, fontSize: 20, fontWeight: FontWeight.w800)),
+          child: const Text(
+            '彩',
+            style: TextStyle(
+              color: AppTheme.gold,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
         const SizedBox(height: 14),
-        const Text('彩友论坛', key: Key('brand-mark'), style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: .8)),
+        const Text(
+          '彩友论坛',
+          key: Key('brand-mark'),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            letterSpacing: .6,
+          ),
+        ),
         const SizedBox(height: 6),
-        const Text('每一笔，都有迹可循', style: TextStyle(fontSize: 10, color: AppTheme.muted)),
+        const Text(
+          '每一笔，都有迹可循',
+          style: TextStyle(fontSize: 10, color: AppTheme.muted),
+        ),
       ],
     );
   }
