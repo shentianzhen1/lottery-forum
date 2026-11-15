@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../design/app_theme.dart';
 import 'play_betting.dart';
 
 class PlayCenterPage extends StatefulWidget {
