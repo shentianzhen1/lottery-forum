@@ -55,13 +55,22 @@ class AppTheme {
         displayColor: ink,
       ).copyWith(
         headlineSmall: const TextStyle(
+          color: ink,
           fontSize: 24,
           fontWeight: FontWeight.w700,
           letterSpacing: .2,
         ),
-        titleLarge: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-        titleMedium: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        bodyMedium: const TextStyle(fontSize: 14, height: 1.5),
+        titleLarge: const TextStyle(
+          color: ink,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: const TextStyle(
+          color: ink,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyMedium: const TextStyle(color: ink, fontSize: 14, height: 1.5),
         bodySmall: const TextStyle(fontSize: 12, height: 1.45, color: muted),
       ),
       cardTheme: CardTheme(
