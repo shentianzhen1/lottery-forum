@@ -267,10 +267,10 @@ class _PromoPanelState extends State<_PromoPanel> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF234B70), Color(0xFF193653), Color(0xFF142942)],
+          colors: [Color(0xFF1769E8), Color(0xFF2458D8), Color(0xFF4935D4)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3B6085)),
+        border: Border.all(color: const Color(0xFF4F7FE7)),
       ),
       child: widget.banners.isEmpty
           ? _DefaultPromo(compact: widget.compact)
@@ -347,7 +347,7 @@ class _DefaultPromo extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'CAIYOU FORUM',
+                'CAIYOU PLAY',
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 2.6,
@@ -357,18 +357,18 @@ class _DefaultPromo extends StatelessWidget {
               ),
               const SizedBox(height: 9),
               Text(
-                '分享经验 · 交流心得',
+                '多种彩票 · 快乐体验',
                 style: TextStyle(
                   fontSize: compact ? 23 : 29,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.ink,
+                  color: Colors.white,
                   height: 1.15,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
-                '一起讨论彩种、开奖与玩法',
-                style: TextStyle(fontSize: 12, color: AppTheme.muted),
+                '公平透明 · 理性参与 · 娱乐积分',
+                style: TextStyle(fontSize: 12, color: Color(0xFFD9E6FF)),
               ),
             ],
           ),
@@ -405,14 +405,18 @@ class _BannerPage extends StatelessWidget {
             banner.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             banner.subtitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppTheme.muted, height: 1.35),
+            style: const TextStyle(color: Color(0xFFD9E6FF), height: 1.35),
           ),
         ],
       ),

@@ -117,16 +117,18 @@ class _Summary extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF234B70), Color(0xFF142942)],
+              colors: [Color(0xFF1769E8), Color(0xFF2458D8)],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF3B6085)),
+            border: Border.all(color: const Color(0xFF4F7FE7)),
           ),
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('账面余额', style: TextStyle(color: AppTheme.muted)),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: Colors.white),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              const Text('账面余额', style: TextStyle(color: Color(0xFFD9E6FF))),
               const SizedBox(height: 6),
               Text(
                 '${snapshot.balance}',
@@ -147,6 +149,7 @@ class _Summary extends StatelessWidget {
                 key: const Key('points-available'),
               ),
             ],
+            ),
           ),
         ),
         const SizedBox(height: 12),

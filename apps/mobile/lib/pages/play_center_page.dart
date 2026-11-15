@@ -493,7 +493,7 @@ class _ComingSoonPlayTile extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: const Text(
           '筹备中',
-          style: TextStyle(fontSize: 11, color: Colors.white54),
+          style: TextStyle(fontSize: 11, color: AppTheme.muted),
         ),
       ),
     );

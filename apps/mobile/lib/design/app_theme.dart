@@ -7,28 +7,32 @@ import 'package:flutter/material.dart';
 /// reason about. Popular-play identity also uses text badges instead of icon
 /// font glyphs, so the cards remain stable across Android/CI renderers.
 class AppTheme {
-  static const background = Color(0xFF091525);
-  static const rail = Color(0xFF0E1E33);
-  static const surface = Color(0xFF142942);
-  static const surfaceSoft = Color(0xFF1A3552);
-  static const surfaceRaised = Color(0xFF203C5B);
-  static const border = Color(0xFF2A4868);
-  static const borderStrong = Color(0xFF3B6085);
-  static const blue = Color(0xFF91BFF0);
-  static const gold = Color(0xFFE3C58C);
-  static const teal = Color(0xFF83C9BC);
-  static const muted = Color(0xFFA7B3C4);
-  static const ink = Color(0xFFF4F6F8);
+  static const background = Color(0xFFEEF4FC);
+  static const rail = Color(0xFF0B2A55);
+  static const railSelected = Color(0xFF1769E8);
+  static const railBorder = Color(0xFF234C7E);
+  static const railInk = Color(0xFFF7FAFF);
+  static const railMuted = Color(0xFFADC0D9);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceSoft = Color(0xFFEAF2FD);
+  static const surfaceRaised = Color(0xFFF7FAFF);
+  static const border = Color(0xFFD7E3F2);
+  static const borderStrong = Color(0xFFB7CCE6);
+  static const blue = Color(0xFF1769E8);
+  static const gold = Color(0xFFF1B941);
+  static const teal = Color(0xFF19A98C);
+  static const muted = Color(0xFF68778C);
+  static const ink = Color(0xFF12233F);
 
   static ThemeData get dark {
     final scheme = ColorScheme.fromSeed(
       seedColor: blue,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
     ).copyWith(
       primary: blue,
-      onPrimary: background,
+      onPrimary: Colors.white,
       secondary: teal,
-      onSecondary: background,
+      onSecondary: Colors.white,
       surface: surface,
       onSurface: ink,
       onSurfaceVariant: muted,
@@ -38,7 +42,7 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
     );
 
     return base.copyWith(
@@ -60,7 +64,8 @@ class AppTheme {
       cardTheme: CardTheme(
         color: surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: 1,
+        shadowColor: const Color(0x1A174A83),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -69,15 +74,15 @@ class AppTheme {
       ),
       navigationRailTheme: const NavigationRailThemeData(
         backgroundColor: rail,
-        indicatorColor: Color(0xFF203E60),
-        selectedIconTheme: IconThemeData(color: blue, size: 22),
-        unselectedIconTheme: IconThemeData(color: muted, size: 22),
-        selectedLabelTextStyle: TextStyle(color: blue, fontWeight: FontWeight.w600),
-        unselectedLabelTextStyle: TextStyle(color: muted),
+        indicatorColor: railSelected,
+        selectedIconTheme: IconThemeData(color: railInk, size: 22),
+        unselectedIconTheme: IconThemeData(color: railMuted, size: 22),
+        selectedLabelTextStyle: TextStyle(color: railInk, fontWeight: FontWeight.w600),
+        unselectedLabelTextStyle: TextStyle(color: railMuted),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          foregroundColor: background,
+          foregroundColor: Colors.white,
           backgroundColor: blue,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
           minimumSize: const Size(48, 48),
@@ -104,7 +109,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF10233A),
+        fillColor: surfaceRaised,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
         enabledBorder: OutlineInputBorder(
@@ -118,7 +123,7 @@ class AppTheme {
       ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: surface,
-        selectedColor: const Color(0xFF203E60),
+        selectedColor: surfaceSoft,
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
