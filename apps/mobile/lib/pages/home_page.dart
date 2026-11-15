@@ -528,11 +528,11 @@ class _AnnouncementTicker extends StatelessWidget {
           children: [
             const Row(
               children: [
-                const Icon(Icons.campaign_rounded, size: 19, color: AppTheme.blue),
-                const SizedBox(width: 7),
-                const Text('平台公告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                const Text(
+                Icon(Icons.campaign_rounded, size: 19, color: AppTheme.blue),
+                SizedBox(width: 7),
+                Text('平台公告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Spacer(),
+                Text(
                   '更多 ›',
                   key: Key('announcement-more'),
                   style: TextStyle(fontSize: 11, color: AppTheme.muted),
