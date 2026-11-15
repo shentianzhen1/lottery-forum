@@ -25,6 +25,19 @@ Future<void> _pumpHome(WidgetTester tester, HomeFeed feed) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpCompactHome(WidgetTester tester, HomeFeed feed) async {
+  tester.view.physicalSize = const Size(720, 360);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(
+    MaterialApp(
+      home: HomePage(landscapeReady: true, feed: feed),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   test('announcement summary keeps first two non-empty lines', () {
     const item = HomeAnnouncement(
@@ -57,6 +70,16 @@ void main() {
     expect(find.byKey(const Key('home-recent-draws')), findsOneWidget);
     expect(find.text('暂无已确认开奖'), findsOneWidget);
     expect(find.text('管理后台'), findsNothing);
+  });
+
+  testWidgets('compact landscape keeps banner and announcement side by side', (tester) async {
+    await _pumpCompactHome(tester, const EmptyHomeFeed());
+
+    final banner = tester.getRect(find.byKey(const Key('home-welcome-panel')));
+    final announcement = tester.getRect(find.byKey(const Key('announcement-board')));
+    expect(announcement.left, greaterThan(banner.right));
+    expect(announcement.top, banner.top);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('home lists announcements, rotates banners and renders confirmed draws', (tester) async {
