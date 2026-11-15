@@ -8,7 +8,7 @@ class PlayCenterPage extends StatefulWidget {
     required this.landscapeReady,
     required this.loggedIn,
     required this.gateway,
-    this.initialKind = PlayKind.numberPick,
+    this.initialKind = PlayKind.fujian31,
     this.onGoToAccount,
     super.key,
   });
@@ -39,14 +39,6 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
   final _n2 = TextEditingController(text: '2');
   final _n3 = TextEditingController(text: '3');
   final Set<int> _fujianPicks = <int>{};
-
-  static const _fujianKinds = <PlayKind>[
-    PlayKind.fujian31Any2,
-    PlayKind.fujian31Any3,
-    PlayKind.fujian31Any4,
-    PlayKind.fujian31Any5,
-    PlayKind.fujian31,
-  ];
 
   @override
   void initState() {
@@ -303,28 +295,22 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                 const SizedBox(height: 12),
                 Card(
                   child: ListTile(
-                    key: _gameKey(PlayKind.numberPick),
-                    selected: _kind == PlayKind.numberPick,
-                    title: Text(titleFor(PlayKind.numberPick)),
-                    subtitle: Text(subtitleFor(PlayKind.numberPick)),
-                    onTap: () => _selectKind(PlayKind.numberPick),
+                    key: _gameKey(PlayKind.fujian31),
+                    selected: _kind == PlayKind.fujian31,
+                    title: Text(titleFor(PlayKind.fujian31)),
+                    subtitle: const Text('福建31 · 已开放'),
+                    onTap: () => _selectKind(PlayKind.fujian31),
                   ),
                 ),
-                const Card(
-                  child: ListTile(
-                    title: Text('排名竞猜'),
-                    subtitle: Text('本片不接投注'),
-                  ),
+                const _ComingSoonPlayTile(
+                  key: Key('play-game-fucai-3d'),
+                  title: '福彩3D',
+                  subtitle: '规则与结算筹备中',
                 ),
-                for (final kind in _fujianKinds)
-                  Card(
-                    child: ListTile(
-                      key: _gameKey(kind),
-                      selected: _kind == kind,
-                      title: Text(titleFor(kind)),
-                      subtitle: Text(subtitleFor(kind)),
-                      onTap: () => _selectKind(kind),
-                    ),
+                const _ComingSoonPlayTile(
+                  key: Key('play-game-pailie-5'),
+                  title: '排列五',
+                  subtitle: '规则与结算筹备中',
                   ),
               ],
             ),
@@ -483,6 +469,31 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingSoonPlayTile extends StatelessWidget {
+  const _ComingSoonPlayTile({
+    required this.title,
+    required this.subtitle,
+    super.key,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Text(
+          '筹备中',
+          style: TextStyle(fontSize: 11, color: Colors.white54),
         ),
       ),
     );

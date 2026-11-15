@@ -46,7 +46,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
-  PlayKind _playKind = PlayKind.numberPick;
+  PlayKind _playKind = PlayKind.fujian31;
   late final ApiClient _client;
   late final ForumApi _forumApi;
   bool _clientReady = !standaloneMode;
