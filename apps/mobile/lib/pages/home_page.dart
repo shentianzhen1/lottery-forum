@@ -75,14 +75,15 @@ class HomePage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 920;
+        final singleColumn = constraints.maxWidth < 820;
         final sideWidth = compact ? 248.0 : 288.0;
-        final outerPadding = compact ? 18.0 : 24.0;
+        final outerPadding = singleColumn ? 10.0 : (compact ? 18.0 : 24.0);
         final gap = compact ? 14.0 : 20.0;
 
         return Padding(
           padding: EdgeInsets.fromLTRB(
             outerPadding,
-            compact ? 16 : 20,
+            singleColumn ? 8 : (compact ? 16 : 20),
             outerPadding,
             outerPadding,
           ),
@@ -100,16 +101,18 @@ class HomePage extends StatelessWidget {
                   onOpenPlay: onOpenPlay,
                 ),
               ),
-              SizedBox(width: gap),
-              SizedBox(
-                width: sideWidth,
-                child: _SidePanel(
-                  loggedIn: loggedIn,
-                  reader: reader,
-                  onGoToAccount: onGoToAccount,
-                  onGoToModerator: onGoToModerator,
+              if (!singleColumn) ...[
+                SizedBox(width: gap),
+                SizedBox(
+                  width: sideWidth,
+                  child: _SidePanel(
+                    loggedIn: loggedIn,
+                    reader: reader,
+                    onGoToAccount: onGoToAccount,
+                    onGoToModerator: onGoToModerator,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );

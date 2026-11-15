@@ -288,12 +288,12 @@ class _NavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = compact ? 76.0 : 190.0;
+    final width = dense ? 58.0 : (compact ? 76.0 : 190.0);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         compact ? (dense ? 5 : 8) : 12,
         compact ? (dense ? 5 : 8) : 12,
-        compact ? 8 : 10,
+        compact ? (dense ? 5 : 8) : 10,
         compact ? (dense ? 5 : 8) : 12,
       ),
       child: Container(
