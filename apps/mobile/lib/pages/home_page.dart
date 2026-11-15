@@ -409,7 +409,7 @@ class _BannerPage extends StatelessWidget {
             banner.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: compact ? 22 : 26,
               fontWeight: FontWeight.w800,
