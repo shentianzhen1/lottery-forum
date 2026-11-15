@@ -213,4 +213,45 @@ void main() {
     final points = await client.getJson('/api/v1/points/balance');
     expect(points['balance'], 800);
   });
+
+  test('standalone forum exposes clearly labelled demo content', () async {
+    final client = StandaloneApiClient(store: _MemoryStore());
+    final home = await client.getJson('/api/v1/forum/home');
+    final threads = home['latest_threads'] as List;
+
+    expect(threads, isNotEmpty);
+    expect(
+      threads.every((thread) => (thread as Map)['tags'].contains('演示内容')),
+      isTrue,
+    );
+
+    final search = await client.getJson('/api/v1/forum/threads?q=选号思路');
+    expect((search['threads'] as List), isNotEmpty);
+    final detail = await client.getJson('/api/v1/forum/threads/DEMO-THREAD-1');
+    expect(detail['author_username'], '演示账号');
+  });
+
+  test('standalone forum posts and replies survive client recreation', () async {
+    final store = _MemoryStore();
+    final client = await _loggedInClient(store: store);
+    final thread = await client.postJson('/api/v1/forum/threads', {
+      'board_id': 'general',
+      'title': '我的本机测试帖',
+      'body': '这是一条由测试用户发布的本机内容。',
+      'tags': ['本机测试'],
+    });
+    await client.postJson(
+      '/api/v1/forum/threads/${thread['id']}/replies',
+      {'body': '本机回复'},
+    );
+
+    final restored = StandaloneApiClient(store: store);
+    await restored.initialize();
+    final detail = await restored.getJson(
+      '/api/v1/forum/threads/${thread['id']}',
+    );
+    expect(detail['title'], '我的本机测试帖');
+    expect(detail['reply_count'], 1);
+    expect((detail['replies'] as List).length, 1);
+  });
 }

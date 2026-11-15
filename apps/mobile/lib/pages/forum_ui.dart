@@ -11,6 +11,7 @@ class ForumOverview extends StatefulWidget {
     required this.onOpenBoard,
     required this.onOpenThread,
     required this.onCreateThread,
+    this.feedLayout = false,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class ForumOverview extends StatefulWidget {
   final ValueChanged<String> onOpenBoard;
   final ValueChanged<String> onOpenThread;
   final VoidCallback onCreateThread;
+  final bool feedLayout;
 
   @override
   State<ForumOverview> createState() => _ForumOverviewState();
@@ -78,6 +80,21 @@ class _ForumOverviewState extends State<ForumOverview> {
         ),
       );
     }
+    if (widget.feedLayout) {
+      return _ForumFeedLayout(
+        data: data,
+        loggedIn: widget.loggedIn,
+        onTopic: (tag) => showForumSearchDialog(
+          context,
+          widget.api,
+          initialQuery: tag,
+        ),
+        onBoard: widget.onOpenBoard,
+        onThread: widget.onOpenThread,
+        onCreate: widget.onCreateThread,
+        onRefresh: _load,
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -113,6 +130,164 @@ class _ForumOverviewState extends State<ForumOverview> {
           onRefresh: _load,
         ),
       ],
+    );
+  }
+}
+
+class _ForumFeedLayout extends StatelessWidget {
+  const _ForumFeedLayout({
+    required this.data,
+    required this.loggedIn,
+    required this.onTopic,
+    required this.onBoard,
+    required this.onThread,
+    required this.onCreate,
+    required this.onRefresh,
+  });
+
+  final ForumHomeData data;
+  final bool loggedIn;
+  final ValueChanged<String> onTopic;
+  final ValueChanged<String> onBoard;
+  final ValueChanged<String> onThread;
+  final VoidCallback onCreate;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _HotTopicsStrip(topics: data.hotTopics, onTopic: onTopic),
+        const SizedBox(height: 12),
+        _BoardTabs(boards: data.boards, onBoard: onBoard),
+        const SizedBox(height: 12),
+        _LatestThreadsCard(
+          threads: data.latestThreads,
+          error: null,
+          loggedIn: loggedIn,
+          onThread: onThread,
+          onCreate: onCreate,
+          onRefresh: onRefresh,
+          feedStyle: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _HotTopicsStrip extends StatelessWidget {
+  const _HotTopicsStrip({required this.topics, required this.onTopic});
+
+  final List<ForumTopic> topics;
+  final ValueChanged<String> onTopic;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('forum-feed-topics'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            const _SectionTitle(
+              icon: Icons.local_fire_department_outlined,
+              color: AppTheme.gold,
+              title: '热门话题',
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: topics.isEmpty
+                  ? const Text(
+                      '暂无热门话题，发布第一篇讨论后自动生成',
+                      style: TextStyle(color: AppTheme.muted, fontSize: 11),
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final topic in topics.take(8)) ...[
+                            ActionChip(
+                              onPressed: () => onTopic(topic.tag),
+                              avatar: const Icon(Icons.tag_rounded, size: 13),
+                              label: Text('${topic.tag} · ${topic.threadCount}'),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BoardTabs extends StatelessWidget {
+  const _BoardTabs({required this.boards, required this.onBoard});
+
+  final List<ForumBoard> boards;
+  final ValueChanged<String> onBoard;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('forum-feed-boards'),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final visible = boards.take(5).toList();
+            if (visible.isEmpty) {
+              return const Text(
+                '论坛板块正在准备中',
+                style: TextStyle(color: AppTheme.muted),
+              );
+            }
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < visible.length; index++)
+                  SizedBox(
+                    width: (constraints.maxWidth - 8 * (visible.length - 1)) /
+                        visible.length,
+                    child: OutlinedButton.icon(
+                      key: Key('forum-feed-board-${visible[index].id}'),
+                      onPressed: () => onBoard(visible[index].id),
+                      icon: Icon(
+                        index == 0
+                            ? Icons.forum_outlined
+                            : Icons.chat_bubble_outline_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        '${visible[index].title} · ${visible[index].threadCount}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 42),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        backgroundColor: index == 0
+                            ? AppTheme.gold.withOpacity(.08)
+                            : AppTheme.surfaceSoft.withOpacity(.45),
+                        side: BorderSide(
+                          color: index == 0
+                              ? AppTheme.gold.withOpacity(.45)
+                              : AppTheme.border,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -235,6 +410,7 @@ class _LatestThreadsCard extends StatelessWidget {
     required this.onThread,
     required this.onCreate,
     required this.onRefresh,
+    this.feedStyle = false,
   });
 
   final List<ForumThreadSummary> threads;
@@ -243,6 +419,7 @@ class _LatestThreadsCard extends StatelessWidget {
   final ValueChanged<String> onThread;
   final VoidCallback onCreate;
   final VoidCallback onRefresh;
+  final bool feedStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +472,7 @@ class _LatestThreadsCard extends StatelessWidget {
                 _ThreadRow(
                   thread: thread,
                   onTap: () => onThread(thread.id),
+                  feedStyle: feedStyle,
                 ),
           ],
         ),
@@ -304,10 +482,15 @@ class _LatestThreadsCard extends StatelessWidget {
 }
 
 class _ThreadRow extends StatelessWidget {
-  const _ThreadRow({required this.thread, required this.onTap});
+  const _ThreadRow({
+    required this.thread,
+    required this.onTap,
+    this.feedStyle = false,
+  });
 
   final ForumThreadSummary thread;
   final VoidCallback onTap;
+  final bool feedStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +499,7 @@ class _ThreadRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: feedStyle ? 12 : 10),
         child: Row(
           children: [
             Container(
@@ -343,10 +526,58 @@ class _ThreadRow extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 3),
+                  if (feedStyle && thread.body.trim().isNotEmpty) ...[
+                    Text(
+                      thread.body.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                  ],
                   Text(
                     '${thread.authorUsername} · ${thread.replyCount} 回复',
                     style: const TextStyle(fontSize: 10, color: AppTheme.muted),
                   ),
+                  if (feedStyle && thread.tags.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final tag in thread.tags.take(3))
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: tag == '演示内容'
+                                  ? AppTheme.gold.withOpacity(.10)
+                                  : AppTheme.teal.withOpacity(.08),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: tag == '演示内容'
+                                    ? AppTheme.gold.withOpacity(.28)
+                                    : AppTheme.teal.withOpacity(.18),
+                              ),
+                            ),
+                            child: Text(
+                              '#$tag',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: tag == '演示内容'
+                                    ? AppTheme.gold
+                                    : AppTheme.teal,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

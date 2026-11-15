@@ -103,8 +103,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('热门话题'), findsOneWidget);
-      expect(find.text('彩种分区'), findsOneWidget);
       expect(find.text('福建31 今日讨论'), findsOneWidget);
+      expect(find.byKey(const Key('forum-feed-topics')), findsOneWidget);
+      expect(find.byKey(const Key('forum-feed-boards')), findsOneWidget);
       await tester.tap(find.byKey(const Key('home-forum-publish')));
       expect(accountOpened, isTrue);
       await tester.tap(find.byKey(const Key('home-forum-search')));
