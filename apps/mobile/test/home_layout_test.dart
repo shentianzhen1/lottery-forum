@@ -17,18 +17,19 @@ class _FakeHomePointsReader implements PointsReader {
 }
 
 void main() {
-  testWidgets('16:9 landscape home keeps dashboard regions and four lotteries', (tester) async {
+  testWidgets('16:9 landscape home keeps the three requested lotteries', (tester) async {
     await _pumpAt(tester, const Size(1920, 1080));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
     expect(find.text('热门彩种'), findsOneWidget);
-    expect(find.byKey(const Key('home-game-number-pick')), findsOneWidget);
     expect(find.byKey(const Key('home-game-fujian-31')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-pailie-3')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-kuaile-8')), findsOneWidget);
-    expect(find.text('数字选号'), findsWidgets);
-    expect(find.text('福建31'), findsWidgets);
-    expect(find.text('排列三'), findsOneWidget);
-    expect(find.text('快乐8'), findsOneWidget);
+    expect(find.byKey(const Key('home-game-fucai-3d')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-5')), findsOneWidget);
+    expect(find.text('31选7'), findsWidgets);
+    expect(find.text('福彩3D'), findsOneWidget);
+    expect(find.text('排列五'), findsOneWidget);
+    expect(find.text('数字选号'), findsNothing);
+    expect(find.text('排列三'), findsNothing);
+    expect(find.text('快乐8'), findsNothing);
     expect(find.text('筹备中'), findsNWidgets(2));
     expect(find.textContaining('未接入'), findsNothing);
     expect(find.text('排名竞猜'), findsNothing);
@@ -52,7 +53,7 @@ void main() {
   testWidgets('16:10 landscape home uses the same skeleton', (tester) async {
     await _pumpAt(tester, const Size(2560, 1600));
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
-    expect(find.text('数字选号'), findsWidgets);
+    expect(find.text('31选7'), findsWidgets);
     expect(find.text('版主中心'), findsWidgets);
   });
 
@@ -133,16 +134,12 @@ void main() {
     expect(find.text('去个人中心登录后再投注'), findsOneWidget);
   });
 
-  testWidgets('home hot number-pick card opens play center', (tester) async {
-    await _pumpAt(tester, const Size(1920, 1080));
-    await tester.tap(find.byKey(const Key('home-game-number-pick')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
-  });
-
   testWidgets('preview lottery cards do not open betting flow', (tester) async {
     await _pumpAt(tester, const Size(1920, 1080));
-    await tester.tap(find.byKey(const Key('home-game-pailie-3')));
+    await tester.tap(find.byKey(const Key('home-game-fucai-3d')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('home-game-pailie-5')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
     expect(find.text('筹备中'), findsNWidgets(2));

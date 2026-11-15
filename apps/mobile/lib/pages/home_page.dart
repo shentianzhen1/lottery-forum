@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../api/forum_api.dart';
 import '../design/app_theme.dart';
-import 'forum_ui.dart';
 import 'home_feed.dart';
 import 'play_betting.dart';
 import 'points_reader.dart';
@@ -15,7 +13,6 @@ class HomePage extends StatelessWidget {
     this.loggedIn = false,
     this.reader = const DisconnectedPointsReader(),
     this.feed = const EmptyHomeFeed(),
-    this.forumApi,
     this.onGoToAccount,
     this.onGoToModerator,
     this.onOpenPlay,
@@ -26,7 +23,6 @@ class HomePage extends StatelessWidget {
   final bool loggedIn;
   final PointsReader reader;
   final HomeFeed feed;
-  final ForumApi? forumApi;
   final VoidCallback? onGoToAccount;
   final VoidCallback? onGoToModerator;
   final ValueChanged<PlayKind>? onOpenPlay;
@@ -34,37 +30,28 @@ class HomePage extends StatelessWidget {
   static const games = <_HomeGameEntry>[
     _HomeGameEntry(
       kind: PlayKind.fujian31,
-      title: '福建31',
-      subtitle: '任选2–5与选7',
+      title: '31选7',
+      subtitle: '福建31 · 选择7个号码',
       keyName: 'home-game-fujian-31',
       badge: '31',
       status: '已开放',
       accent: Color(0xFF83C9BC),
     ),
     _HomeGameEntry(
-      kind: PlayKind.numberPick,
-      title: '数字选号',
-      subtitle: '选择3个不重复数字',
-      keyName: 'home-game-number-pick',
-      badge: '3',
-      status: '已开放',
+      title: '福彩3D',
+      subtitle: '规则与结算筹备中',
+      keyName: 'home-game-fucai-3d',
+      badge: '3D',
+      status: '筹备中',
       accent: Color(0xFFE3C58C),
     ),
     _HomeGameEntry(
-      title: '排列三',
-      subtitle: '彩种目录已加入',
-      keyName: 'home-game-pailie-3',
-      badge: 'P3',
+      title: '排列五',
+      subtitle: '规则与结算筹备中',
+      keyName: 'home-game-pailie-5',
+      badge: 'P5',
       status: '筹备中',
       accent: Color(0xFF9D8AC7),
-    ),
-    _HomeGameEntry(
-      title: '快乐8',
-      subtitle: '彩种目录已加入',
-      keyName: 'home-game-kuaile-8',
-      badge: '8+',
-      status: '筹备中',
-      accent: Color(0xFF73B2E8),
     ),
   ];
 
@@ -96,9 +83,6 @@ class HomePage extends StatelessWidget {
                 child: _MainColumn(
                   feed: feed,
                   compact: compact,
-                  forumApi: forumApi,
-                  loggedIn: loggedIn,
-                  onGoToAccount: onGoToAccount,
                   onOpenPlay: onOpenPlay,
                 ),
               ),
@@ -126,17 +110,11 @@ class _MainColumn extends StatefulWidget {
   const _MainColumn({
     required this.feed,
     required this.compact,
-    required this.forumApi,
-    required this.loggedIn,
-    this.onGoToAccount,
     this.onOpenPlay,
   });
 
   final HomeFeed feed;
   final bool compact;
-  final ForumApi? forumApi;
-  final bool loggedIn;
-  final VoidCallback? onGoToAccount;
   final ValueChanged<PlayKind>? onOpenPlay;
 
   @override
@@ -146,17 +124,6 @@ class _MainColumn extends StatefulWidget {
 class _MainColumnState extends State<_MainColumn> {
   HomeFeedData? _data;
   Object? _error;
-  int _forumRevision = 0;
-
-  Future<void> _createThread() async {
-    if (!widget.loggedIn) {
-      widget.onGoToAccount?.call();
-      return;
-    }
-    final created = await showCreateThreadDialog(context, widget.forumApi!);
-    if (created && mounted) setState(() => _forumRevision++);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -195,44 +162,6 @@ class _MainColumnState extends State<_MainColumn> {
       key: const Key('home-main-scroll'),
       padding: EdgeInsets.zero,
       children: [
-        if (widget.forumApi != null) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('home-forum-search'),
-                  onPressed: () => showForumSearchDialog(context, widget.forumApi!),
-                  icon: const Icon(Icons.search_rounded, size: 18),
-                  label: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('搜索帖子、话题或关键词'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                key: const Key('home-forum-publish'),
-                onPressed: _createThread,
-                icon: const Icon(Icons.edit_outlined, size: 17),
-                label: Text(widget.loggedIn ? '发布帖子' : '登录后发帖'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ForumOverview(
-            key: ValueKey('home-forum-$_forumRevision'),
-            api: widget.forumApi!,
-            loggedIn: widget.loggedIn,
-            feedLayout: true,
-            onOpenBoard: (id) => showForumSearchDialog(context, widget.forumApi!, boardId: id),
-            onOpenThread: (id) async {
-              await showForumThreadDialog(context, widget.forumApi!, id);
-              if (mounted) setState(() => _forumRevision++);
-            },
-            onCreateThread: _createThread,
-          ),
-          const SizedBox(height: 18),
-        ],
         if (widget.compact) ...[
           _PromoPanel(banners: banners, compact: true),
           const SizedBox(height: 12),
@@ -678,7 +607,7 @@ class _GameBoard extends StatelessWidget {
           children: [
             Text('热门彩种', style: Theme.of(context).textTheme.headlineSmall),
             const Spacer(),
-            const Text('4 个入口', style: TextStyle(fontSize: 11, color: AppTheme.muted)),
+            const Text('3 个入口', style: TextStyle(fontSize: 11, color: AppTheme.muted)),
           ],
         ),
         const SizedBox(height: 14),
@@ -687,7 +616,7 @@ class _GameBoard extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: HomePage.games.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: compact ? 2 : 4,
+            crossAxisCount: compact ? 2 : 3,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             mainAxisExtent: compact ? 126 : 142,
@@ -1027,11 +956,9 @@ class _SidePanel extends StatelessWidget {
               children: [
                 Text('彩种进度', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                 SizedBox(height: 10),
-                Text('福建31 · 已开放', style: TextStyle(fontSize: 12)),
+                Text('31选7 · 已开放', style: TextStyle(fontSize: 12)),
                 SizedBox(height: 6),
-                Text('数字选号 · 已开放', style: TextStyle(fontSize: 12)),
-                SizedBox(height: 6),
-                Text('排列三 / 快乐8 · 筹备中', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+                Text('福彩3D / 排列五 · 筹备中', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
               ],
             ),
           ),

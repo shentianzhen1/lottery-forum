@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/api_config.dart';
 import '../api/bet_history_api.dart';
-import '../api/forum_api.dart';
 import '../api/home_feed_api.dart';
 import '../api/home_status_api.dart';
 import '../api/play_betting_api.dart';
@@ -12,7 +11,6 @@ import '../api/standalone_api_client.dart';
 import '../design/app_theme.dart';
 import '../pages/account_page.dart';
 import '../pages/bet_history_dialog.dart';
-import '../pages/forum_center_page.dart';
 import '../pages/home_page.dart';
 import '../pages/home_status_bar.dart';
 import '../pages/moderator_page.dart';
@@ -34,7 +32,6 @@ const destinations = <AppDestination>[
   AppDestination('积分中心', Icons.account_balance_wallet_outlined),
   AppDestination('版主中心', Icons.verified_user_outlined),
   AppDestination('个人中心', Icons.person_outline),
-  AppDestination('论坛', Icons.forum_outlined),
 ];
 
 class AppShell extends StatefulWidget {
@@ -46,9 +43,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
-  PlayKind _playKind = PlayKind.numberPick;
+  PlayKind _playKind = PlayKind.fujian31;
   late final ApiClient _client;
-  late final ForumApi _forumApi;
   bool _clientReady = !standaloneMode;
 
   @override
@@ -57,7 +53,6 @@ class _AppShellState extends State<AppShell> {
     _client = widget.client ?? (standaloneMode
         ? StandaloneApiClient()
         : ApiClient(const ApiConfig(), Session()));
-    _forumApi = ForumApi(_client);
     final client = _client;
     if (client is StandaloneApiClient) {
       client.initialize().whenComplete(() {
@@ -164,7 +159,6 @@ class _AppShellState extends State<AppShell> {
                 loggedIn: loggedIn,
                 reader: ApiPointsReader(_client, includeEntries: false),
                 feed: ApiHomeFeed(_client),
-                forumApi: _forumApi,
                 onGoToAccount: () => setState(() => _index = 4),
                 onGoToModerator: () => setState(() => _index = 3),
                 onOpenPlay: (kind) => setState(() {
@@ -200,13 +194,6 @@ class _AppShellState extends State<AppShell> {
           landscapeReady: landscapeReady,
           client: _client,
           onChanged: () => setState(() {}),
-        );
-      case 5:
-        return ForumCenterPage(
-          landscapeReady: landscapeReady,
-          loggedIn: loggedIn,
-          api: _forumApi,
-          onGoToAccount: () => setState(() => _index = 4),
         );
       default:
         return const SizedBox.shrink();

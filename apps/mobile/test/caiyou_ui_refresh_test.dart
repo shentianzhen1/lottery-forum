@@ -17,7 +17,8 @@ void main() {
       expect(find.byKey(const Key('landscape-required')), findsNothing);
       expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
       expect(find.byKey(const Key('primary-nav')), findsOneWidget);
-      expect(find.byKey(const Key('nav-item-5')), findsOneWidget);
+      expect(find.byKey(const Key('nav-item-4')), findsOneWidget);
+      expect(find.text('论坛'), findsNothing);
       expect(find.byKey(const Key('home-side-panel')), findsNothing);
       if (size.height < 520) {
         expect(find.byKey(const Key('workspace-title')), findsNothing);
@@ -47,18 +48,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('热门彩种'), findsOneWidget);
     expect(find.text('(门)'), findsNothing);
-    expect(find.byKey(const Key('home-game-number-pick-badge')), findsOneWidget);
     expect(find.byKey(const Key('home-game-fujian-31-badge')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-pailie-3-badge')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-kuaile-8-badge')), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
+    expect(find.byKey(const Key('home-game-fucai-3d-badge')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-5-badge')), findsOneWidget);
     expect(find.text('31'), findsOneWidget);
-    expect(find.text('P3'), findsOneWidget);
-    expect(find.text('8+'), findsOneWidget);
+    expect(find.text('3D'), findsOneWidget);
+    expect(find.text('P5'), findsOneWidget);
 
-    final numberCard = find.byKey(const Key('home-game-number-pick'));
+    final fucaiCard = find.byKey(const Key('home-game-fucai-3d'));
     final fujianCard = find.byKey(const Key('home-game-fujian-31'));
-    expect(find.descendant(of: numberCard, matching: find.byType(Icon)), findsNothing);
+    expect(find.descendant(of: fucaiCard, matching: find.byType(Icon)), findsNothing);
     expect(find.descendant(of: fujianCard, matching: find.byType(Icon)), findsNothing);
   });
 
@@ -77,8 +76,8 @@ void main() {
     expect(find.byKey(const Key('brand-mark')), findsOneWidget);
     expect(find.text('CAIYOU FORUM'), findsWidgets);
     expect(find.byKey(const Key('home-welcome-panel')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-pailie-3')), findsOneWidget);
-    expect(find.byKey(const Key('home-game-kuaile-8')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-pailie-5')), findsOneWidget);
+    expect(find.byKey(const Key('home-game-fucai-3d')), findsOneWidget);
 
     for (final label in ['玩法中心', '积分中心', '版主中心', '个人中心']) {
       await tester.tap(find.text(label));

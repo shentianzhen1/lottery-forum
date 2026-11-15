@@ -144,7 +144,7 @@ String titleFor(PlayKind kind) {
     case PlayKind.fujian31Any5:
       return '福建31任选5';
     case PlayKind.fujian31:
-      return '福建31选7';
+      return '31选7';
   }
 }
 

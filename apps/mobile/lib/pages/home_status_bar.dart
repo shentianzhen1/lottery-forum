@@ -75,7 +75,7 @@ class _HomeStatusBarState extends State<HomeStatusBar> {
             child: _StatusCard(
               key: const Key('home-current-round-card'),
               icon: Icons.schedule_rounded,
-              eyebrow: '福建31 · 当前期号',
+              eyebrow: '31选7 · 当前期号',
               title: _loading
                   ? '正在读取…'
                   : round == null

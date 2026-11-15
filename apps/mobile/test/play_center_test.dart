@@ -149,6 +149,7 @@ void main() {
         landscapeReady: true,
         loggedIn: true,
         gateway: gateway,
+        initialKind: PlayKind.numberPick,
       ),
     );
     await tester.tap(find.byKey(const Key('play-submit-bet')));
@@ -176,6 +177,7 @@ void main() {
         landscapeReady: true,
         loggedIn: true,
         gateway: gateway,
+        initialKind: PlayKind.numberPick,
       ),
     );
     await tester.tap(find.byKey(const Key('play-submit-bet')));
@@ -218,16 +220,13 @@ void main() {
     expect(gateway.lastPayload?['numbers'], [1, 2, 3, 4, 5, 6, 7]);
   });
 
-  testWidgets('fujian-31-any-3 picks three numbers and posts bets', (tester) async {
-    final gateway = _FakeGateway(
-      openFor: {
-        numberPickLotteryId: null,
-        fujian31LotteryId: const OpenRound(
-          roundId: 'fj-open',
-          lotteryId: 'fujian-31',
-          code: 'fj-1',
-        ),
-      },
+  testWidgets('play catalog only exposes 31选7, 福彩3D and 排列五', (tester) async {
+    final gateway = _FakeGateway.simple(
+      open: const OpenRound(
+        roundId: 'fj-open',
+        lotteryId: 'fujian-31',
+        code: 'fj-1',
+      ),
     );
     await _pump(
       tester,
@@ -237,22 +236,16 @@ void main() {
         gateway: gateway,
       ),
     );
-    expect(find.byKey(const Key('play-game-fujian-31-any-2')), findsOneWidget);
-    expect(find.byKey(const Key('play-game-fujian-31-any-5')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('play-game-fujian-31-any-3')));
-    await tester.pumpAndSettle();
-    expect(find.text('福建31任选3'), findsWidgets);
-    expect(find.textContaining('已选 0/3'), findsOneWidget);
-    for (final n in [1, 2, 3]) {
-      await tester.tap(find.byKey(Key('fujian-n-$n')));
-      await tester.pumpAndSettle();
-    }
-    expect(find.textContaining('已选 3/3'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('play-submit-bet')));
-    await tester.pumpAndSettle();
-    expect(find.text('投注已受理，积分已冻结，结算后按结果派奖'), findsOneWidget);
-    expect(gateway.lastPayload?['play_id'], 'fujian-31-any-3');
-    expect(gateway.lastPayload?['numbers'], [1, 2, 3]);
+    expect(find.byKey(const Key('play-game-fujian-31')), findsOneWidget);
+    expect(find.byKey(const Key('play-game-fucai-3d')), findsOneWidget);
+    expect(find.byKey(const Key('play-game-pailie-5')), findsOneWidget);
+    expect(find.byKey(const Key('play-game-number-pick')), findsNothing);
+    expect(find.byKey(const Key('play-game-fujian-31-any-2')), findsNothing);
+    expect(find.byKey(const Key('play-game-fujian-31-any-5')), findsNothing);
+    expect(find.text('31选7'), findsWidgets);
+    expect(find.text('福彩3D'), findsOneWidget);
+    expect(find.text('排列五'), findsOneWidget);
+    expect(find.text('排名竞猜'), findsNothing);
   });
 
   testWidgets('cancellable list shows accepted bets for open round', (tester) async {
@@ -274,6 +267,7 @@ void main() {
         landscapeReady: true,
         loggedIn: true,
         gateway: gateway,
+        initialKind: PlayKind.numberPick,
       ),
     );
     expect(gateway.listQueries, contains('r1'));
@@ -294,6 +288,7 @@ void main() {
         landscapeReady: true,
         loggedIn: true,
         gateway: gateway,
+        initialKind: PlayKind.numberPick,
       ),
     );
     await tester.tap(find.byKey(const Key('play-submit-bet')));
@@ -333,6 +328,7 @@ void main() {
         landscapeReady: true,
         loggedIn: true,
         gateway: gateway,
+        initialKind: PlayKind.numberPick,
       ),
     );
     await tester.tap(find.byKey(const Key('play-cancel-bet-bet-x')));
