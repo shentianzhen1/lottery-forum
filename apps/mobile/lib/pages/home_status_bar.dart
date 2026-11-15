@@ -181,9 +181,9 @@ class _StatusCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(.12),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                color: const Color(0xFF174A83).withOpacity(.07),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),

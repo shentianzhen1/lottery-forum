@@ -211,19 +211,27 @@ class _WorkspaceHeader extends StatelessWidget {
       height: 58,
       padding: const EdgeInsets.symmetric(horizontal: 28),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
+        color: AppTheme.rail,
+        border: Border(bottom: BorderSide(color: AppTheme.railBorder)),
       ),
       child: Row(
         children: [
           Text(
             destination,
             key: const Key('workspace-title'),
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: AppTheme.railInk,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(width: 10),
-          const Text('·', style: TextStyle(color: AppTheme.muted)),
+          const Text('·', style: TextStyle(color: AppTheme.railMuted)),
           const SizedBox(width: 10),
-          const Text('彩友论坛', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+          const Text(
+            '彩友论坛',
+            style: TextStyle(fontSize: 12, color: AppTheme.railMuted),
+          ),
           if (standaloneMode) ...[
             const SizedBox(width: 10),
             Container(
@@ -250,7 +258,7 @@ class _WorkspaceHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               letterSpacing: 2.2,
-              color: AppTheme.muted,
+              color: AppTheme.railMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -289,7 +297,7 @@ class _NavRail extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.rail,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppTheme.border),
+          border: Border.all(color: AppTheme.railBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -346,7 +354,7 @@ class _NavRail extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9,
                     letterSpacing: 1.8,
-                    color: AppTheme.muted,
+                    color: AppTheme.railMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -377,7 +385,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? AppTheme.blue : AppTheme.muted;
+    final foreground = selected ? AppTheme.railInk : AppTheme.railMuted;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -388,10 +396,10 @@ class _NavItem extends StatelessWidget {
           height: dense ? 38 : (compact ? 46 : 48),
           padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF203E60) : Colors.transparent,
+            color: selected ? AppTheme.railSelected : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: selected
-                ? Border.all(color: AppTheme.blue.withOpacity(.20))
+                ? Border.all(color: Colors.white.withOpacity(.14))
                 : null,
           ),
           child: Row(
@@ -475,6 +483,7 @@ class _ExtendedBrandMark extends StatelessWidget {
           '彩友论坛',
           key: Key('brand-mark'),
           style: TextStyle(
+            color: AppTheme.railInk,
             fontSize: 20,
             fontWeight: FontWeight.w700,
             letterSpacing: .6,
@@ -483,7 +492,7 @@ class _ExtendedBrandMark extends StatelessWidget {
         const SizedBox(height: 6),
         const Text(
           '每一笔，都有迹可循',
-          style: TextStyle(fontSize: 10, color: AppTheme.muted),
+          style: TextStyle(fontSize: 10, color: AppTheme.railMuted),
         ),
       ],
     );
