@@ -44,6 +44,7 @@ class HomePage extends StatelessWidget {
       badge: '3D',
       status: '筹备中',
       accent: Color(0xFFE3C58C),
+      sampleNumbers: ['1', '6', '8'],
     ),
     _HomeGameEntry(
       title: '排列五',
@@ -52,6 +53,7 @@ class HomePage extends StatelessWidget {
       badge: 'P5',
       status: '筹备中',
       accent: Color(0xFF9D8AC7),
+      sampleNumbers: ['2', '4', '7', '9', '0'],
     ),
   ];
 
@@ -643,6 +645,7 @@ class _HomeGameEntry {
     required this.badge,
     required this.status,
     required this.accent,
+    this.sampleNumbers = const [],
   });
 
   final PlayKind? kind;
@@ -652,6 +655,7 @@ class _HomeGameEntry {
   final String badge;
   final String status;
   final Color accent;
+  final List<String> sampleNumbers;
 }
 
 class _GameCard extends StatelessWidget {
@@ -720,12 +724,38 @@ class _GameCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
-              Text(
-                entry.subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
-              ),
+              if (entry.sampleNumbers.isEmpty)
+                Text(
+                  entry.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                )
+              else
+                Row(
+                  children: [
+                    for (final number in entry.sampleNumbers)
+                      Container(
+                        width: 22,
+                        height: 22,
+                        margin: const EdgeInsets.only(right: 5),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: entry.accent.withOpacity(.12),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: entry.accent.withOpacity(.45)),
+                        ),
+                        child: Text(
+                          number,
+                          style: TextStyle(
+                            color: entry.accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
             ],
           ),
         ),

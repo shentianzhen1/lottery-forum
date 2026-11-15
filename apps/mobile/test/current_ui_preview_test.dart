@@ -188,7 +188,7 @@ class _PreviewClient extends ApiClient {
         'banners': [
           {
             'id': 'demo-banner',
-            'title': '演示：三种彩票，轻松体验',
+            'title': '三种彩票，轻松体验',
             'subtitle': '31选7已开放 · 福彩3D与排列五筹备中',
           },
         ],
@@ -198,30 +198,30 @@ class _PreviewClient extends ApiClient {
       return {
         'announcements': [
           {
-            'id': 'demo-notice',
-            'title': '演示数据说明',
-            'body': '当前画面仅用于展示界面布局，不代表真实开奖或用户参与。',
+            'id': 'preview-notice',
+            'title': '关于系统维护的通知',
+            'body': '系统维护期间部分功能可能短暂不可用。',
             'published_at': '2026-11-15T09:00:00Z',
             'pinned': true,
           },
           {
-            'id': 'demo-notice-2',
-            'title': '31选7玩法演示已开放',
-            'body': '演示内容',
+            'id': 'preview-notice-2',
+            'title': '31选7玩法已开放',
+            'body': '玩法说明',
             'published_at': '2026-11-14T09:00:00Z',
             'pinned': false,
           },
           {
-            'id': 'demo-notice-3',
+            'id': 'preview-notice-3',
             'title': '福彩3D规则正在筹备',
-            'body': '演示内容',
+            'body': '玩法进度',
             'published_at': '2026-11-13T09:00:00Z',
             'pinned': false,
           },
           {
-            'id': 'demo-notice-4',
+            'id': 'preview-notice-4',
             'title': '排列五目录已加入',
-            'body': '演示内容',
+            'body': '玩法进度',
             'published_at': '2026-11-12T09:00:00Z',
             'pinned': false,
           },
@@ -233,7 +233,7 @@ class _PreviewClient extends ApiClient {
         'items': [
           {
             'lottery_id': 'fujian-31',
-            'normalized_code': 'DEMO-20261115',
+            'normalized_code': '2026115',
             'draw_date': '2026-11-15',
             'main_numbers': [3, 7, 12, 18, 22, 26, 31],
             'extra_numbers': [9],
@@ -245,7 +245,7 @@ class _PreviewClient extends ApiClient {
       return {
         'round': {
           'lottery_id': 'fujian-31',
-          'code': '演示期 DEMO-001',
+          'code': '2026115-001',
           'status': 'OPEN',
           'accepts_bets': true,
         },
@@ -255,9 +255,9 @@ class _PreviewClient extends ApiClient {
       return {
         'rounds': [
           {
-            'round_id': 'demo-round',
+            'round_id': 'preview-round',
             'lottery_id': 'fujian-31',
-            'code': 'DEMO-001',
+            'code': '2026115-001',
             'status': 'OPEN',
           },
         ],
@@ -266,7 +266,7 @@ class _PreviewClient extends ApiClient {
     if (uri.path == '/api/v1/bets') {
       return {
         'items': [
-          {'bet_id': 'demo-bet'},
+          {'bet_id': 'preview-bet'},
         ],
       };
     }
