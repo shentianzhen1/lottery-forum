@@ -16,12 +16,20 @@ class HomeAnnouncement {
     required this.title,
     required this.body,
     required this.pinned,
+    this.publishedAt = '',
   });
 
   final String id;
   final String title;
   final String body;
   final bool pinned;
+  final String publishedAt;
+
+  String get dateLabel {
+    final value = publishedAt.trim();
+    if (value.length < 10) return '';
+    return value.substring(5, 10).replaceFirst('-', '/');
+  }
 
   String get summary {
     final lines = body
@@ -88,6 +96,7 @@ HomeAnnouncement announcementFromApi(Map<String, Object?> row) {
     title: '${row['title'] ?? ''}',
     body: '${row['body'] ?? ''}',
     pinned: row['pinned'] == true,
+    publishedAt: '${row['published_at'] ?? ''}',
   );
 }
 
