@@ -99,18 +99,28 @@ class _AppShellState extends State<AppShell> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final landscapeReady = constraints.maxWidth >= 960;
+            // Android reports logical pixels after display scaling. A phone or
+            // foldable can be physically wide in landscape while still
+            // reporting less than 960 logical pixels.
+            final landscapeReady = constraints.maxWidth > constraints.maxHeight &&
+                constraints.maxWidth >= 600;
+            final compactNavigation = constraints.maxWidth < 1100 ||
+                constraints.maxHeight < 640;
+            final denseNavigation = constraints.maxHeight < 520;
+            final showWorkspaceHeader = landscapeReady &&
+                constraints.maxHeight >= 520;
             return Row(
               children: [
                 _NavRail(
                   selected: _index,
-                  compact: !landscapeReady,
+                  compact: compactNavigation,
+                  dense: denseNavigation,
                   onSelected: (index) => setState(() => _index = index),
                 ),
                 Expanded(
                   child: Column(
                     children: [
-                      if (landscapeReady)
+                      if (showWorkspaceHeader)
                         _WorkspaceHeader(destination: destinations[_index].label),
                       Expanded(child: _pageFor(_index, landscapeReady)),
                     ],
@@ -267,11 +277,13 @@ class _NavRail extends StatelessWidget {
   const _NavRail({
     required this.selected,
     required this.compact,
+    required this.dense,
     required this.onSelected,
   });
 
   final int selected;
   final bool compact;
+  final bool dense;
   final ValueChanged<int> onSelected;
 
   @override
@@ -279,10 +291,10 @@ class _NavRail extends StatelessWidget {
     final width = compact ? 76.0 : 190.0;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        compact ? 8 : 12,
-        compact ? 8 : 12,
+        compact ? (dense ? 5 : 8) : 12,
+        compact ? (dense ? 5 : 8) : 12,
         compact ? 8 : 10,
-        compact ? 8 : 12,
+        compact ? (dense ? 5 : 8) : 12,
       ),
       child: Container(
         key: const Key('primary-nav'),
@@ -296,9 +308,9 @@ class _NavRail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (compact)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 14, 12, 20),
-                child: Align(
+              Padding(
+                padding: EdgeInsets.fromLTRB(12, dense ? 8 : 14, 12, dense ? 10 : 20),
+                child: const Align(
                   alignment: Alignment.center,
                   child: _CompactBrandMark(),
                 ),
@@ -318,17 +330,19 @@ class _NavRail extends StatelessWidget {
                       destination: destinations[index],
                       selected: selected == index,
                       compact: compact,
+                      dense: dense,
                       onTap: () => onSelected(index),
                     ),
                     if (index != 2) const SizedBox(height: 4),
                   ],
-                  SizedBox(height: compact ? 14 : 18),
+                  SizedBox(height: dense ? 8 : (compact ? 14 : 18)),
                   for (var index = 3; index < destinations.length; index++) ...[
                     _NavItem(
                       index: index,
                       destination: destinations[index],
                       selected: selected == index,
                       compact: compact,
+                      dense: dense,
                       onTap: () => onSelected(index),
                     ),
                     if (index != destinations.length - 1) const SizedBox(height: 4),
@@ -363,6 +377,7 @@ class _NavItem extends StatelessWidget {
     required this.destination,
     required this.selected,
     required this.compact,
+    required this.dense,
     required this.onTap,
   });
 
@@ -370,6 +385,7 @@ class _NavItem extends StatelessWidget {
   final AppDestination destination;
   final bool selected;
   final bool compact;
+  final bool dense;
   final VoidCallback onTap;
 
   @override
@@ -382,7 +398,7 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Ink(
-          height: compact ? 46 : 48,
+          height: dense ? 38 : (compact ? 46 : 48),
           padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
           decoration: BoxDecoration(
             color: selected ? const Color(0xFF203E60) : Colors.transparent,

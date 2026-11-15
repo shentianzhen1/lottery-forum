@@ -3,6 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/main.dart';
 
 void main() {
+  for (final size in [const Size(854, 480), const Size(800, 360)]) {
+    testWidgets('scaled Android landscape adapts at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const LotteryForumApp());
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('landscape-required')), findsNothing);
+      expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
+      expect(find.byKey(const Key('primary-nav')), findsOneWidget);
+      expect(find.byKey(const Key('nav-item-5')), findsOneWidget);
+      if (size.height < 520) {
+        expect(find.byKey(const Key('workspace-title')), findsNothing);
+      }
+    });
+  }
+
   testWidgets('彩友论坛 brand and lottery badges render at compact landscape', (
     tester,
   ) async {
@@ -22,7 +43,7 @@ void main() {
     expect(find.byKey(const Key('home-side-panel')), findsOneWidget);
 
     await tester.drag(find.byKey(const Key('home-main-scroll')), const Offset(0, -500));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('热门彩种'), findsOneWidget);
     expect(find.text('(门)'), findsNothing);
     expect(find.byKey(const Key('home-game-number-pick-badge')), findsOneWidget);
