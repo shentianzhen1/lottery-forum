@@ -65,6 +65,7 @@ class HomePage extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 920;
         final singleColumn = constraints.maxWidth < 820;
+        final stackHeader = constraints.maxWidth < 640;
         final showSidePanel = constraints.maxWidth >= 1600;
         final sideWidth = compact ? 248.0 : 288.0;
         final outerPadding = singleColumn ? 10.0 : (compact ? 18.0 : 24.0);
@@ -85,6 +86,7 @@ class HomePage extends StatelessWidget {
                 child: _MainColumn(
                   feed: feed,
                   compact: compact,
+                  stackHeader: stackHeader,
                   onOpenPlay: onOpenPlay,
                 ),
               ),
@@ -112,11 +114,13 @@ class _MainColumn extends StatefulWidget {
   const _MainColumn({
     required this.feed,
     required this.compact,
+    required this.stackHeader,
     this.onOpenPlay,
   });
 
   final HomeFeed feed;
   final bool compact;
+  final bool stackHeader;
   final ValueChanged<PlayKind>? onOpenPlay;
 
   @override
@@ -164,7 +168,7 @@ class _MainColumnState extends State<_MainColumn> {
       key: const Key('home-main-scroll'),
       padding: EdgeInsets.zero,
       children: [
-        if (widget.compact) ...[
+        if (widget.stackHeader) ...[
           _PromoPanel(banners: banners, compact: true),
           const SizedBox(height: 12),
           _AnnouncementTicker(
@@ -174,13 +178,16 @@ class _MainColumnState extends State<_MainColumn> {
           ),
         ] else
           SizedBox(
-            height: 190,
+            height: widget.compact ? 152 : 190,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
                   flex: 5,
-                  child: _PromoPanel(banners: banners, compact: false),
+                  child: _PromoPanel(
+                    banners: banners,
+                    compact: widget.compact,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -188,7 +195,7 @@ class _MainColumnState extends State<_MainColumn> {
                   child: _AnnouncementTicker(
                     announcements: announcements,
                     loading: loading,
-                    compact: false,
+                    compact: widget.compact,
                   ),
                 ),
               ],
