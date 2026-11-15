@@ -76,6 +76,7 @@ class HomePage extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 920;
         final singleColumn = constraints.maxWidth < 820;
+        final showSidePanel = constraints.maxWidth >= 1600;
         final sideWidth = compact ? 248.0 : 288.0;
         final outerPadding = singleColumn ? 10.0 : (compact ? 18.0 : 24.0);
         final gap = compact ? 14.0 : 20.0;
@@ -101,7 +102,7 @@ class HomePage extends StatelessWidget {
                   onOpenPlay: onOpenPlay,
                 ),
               ),
-              if (!singleColumn) ...[
+              if (showSidePanel) ...[
                 SizedBox(width: gap),
                 SizedBox(
                   width: sideWidth,
@@ -222,6 +223,7 @@ class _MainColumnState extends State<_MainColumn> {
             key: ValueKey('home-forum-$_forumRevision'),
             api: widget.forumApi!,
             loggedIn: widget.loggedIn,
+            feedLayout: true,
             onOpenBoard: (id) => showForumSearchDialog(context, widget.forumApi!, boardId: id),
             onOpenThread: (id) async {
               await showForumThreadDialog(context, widget.forumApi!, id);

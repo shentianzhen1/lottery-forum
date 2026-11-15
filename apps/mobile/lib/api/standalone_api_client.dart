@@ -15,9 +15,13 @@ class StandaloneApiClient extends ApiClient {
   int _frozen = 0;
   int _betSeq = 1;
   int _boardSeq = 1;
+  int _forumThreadSeq = 1;
+  int _forumReplySeq = 1;
   final List<Map<String, Object?>> _entries = <Map<String, Object?>>[];
   final List<Map<String, Object?>> _bets = <Map<String, Object?>>[];
   final List<Map<String, Object?>> _boards = <Map<String, Object?>>[];
+  final List<Map<String, Object?>> _forumThreads = <Map<String, Object?>>[];
+  final List<Map<String, Object?>> _forumReplies = <Map<String, Object?>>[];
 
   bool _initialized = false;
   Future<void>? _initializing;
@@ -42,9 +46,13 @@ class StandaloneApiClient extends ApiClient {
       _frozen = _intValue(state['frozen'], 0);
       _betSeq = _intValue(state['bet_seq'], 1);
       _boardSeq = _intValue(state['board_seq'], 1);
+      _forumThreadSeq = _intValue(state['forum_thread_seq'], 1);
+      _forumReplySeq = _intValue(state['forum_reply_seq'], 1);
       _replaceRows(_entries, state['entries']);
       _replaceRows(_bets, state['bets']);
       _replaceRows(_boards, state['boards']);
+      _replaceRows(_forumThreads, state['forum_threads']);
+      _replaceRows(_forumReplies, state['forum_replies']);
       session.token = state['token']?.toString();
       session.username = state['username']?.toString();
       if (session.token?.isEmpty ?? true) session.token = null;
@@ -65,9 +73,13 @@ class StandaloneApiClient extends ApiClient {
       'frozen': _frozen,
       'bet_seq': _betSeq,
       'board_seq': _boardSeq,
+      'forum_thread_seq': _forumThreadSeq,
+      'forum_reply_seq': _forumReplySeq,
       'entries': _entries,
       'bets': _bets,
       'boards': _boards,
+      'forum_threads': _forumThreads,
+      'forum_replies': _forumReplies,
       'token': session.token,
       'username': session.username,
     });
@@ -94,9 +106,13 @@ class StandaloneApiClient extends ApiClient {
     _frozen = 0;
     _betSeq = 1;
     _boardSeq = 1;
+    _forumThreadSeq = 1;
+    _forumReplySeq = 1;
     _entries.clear();
     _bets.clear();
     _boards.clear();
+    _forumThreads.clear();
+    _forumReplies.clear();
     session.token = null;
     session.username = null;
     await _store.clear();
@@ -112,6 +128,38 @@ class StandaloneApiClient extends ApiClient {
   Future<Map<String, Object?>> getJson(String path) async {
     await initialize();
     final uri = Uri.parse(path);
+    if (uri.path == '/api/v1/forum/threads') {
+      final query = (uri.queryParameters['q'] ?? '').trim().toLowerCase();
+      final boardId = uri.queryParameters['board_id'];
+      final threads = _allForumThreads();
+      return {
+        'threads': [
+          for (final thread in threads)
+            if ((boardId == null || thread['board_id'] == boardId) &&
+                (query.isEmpty || _threadMatches(thread, query)))
+              thread,
+        ],
+      };
+    }
+    if (uri.pathSegments.length == 5 &&
+        uri.pathSegments[0] == 'api' &&
+        uri.pathSegments[1] == 'v1' &&
+        uri.pathSegments[2] == 'forum' &&
+        uri.pathSegments[3] == 'threads') {
+      final threadId = uri.pathSegments[4];
+      final thread = _findForumThread(threadId);
+      if (thread == null) {
+        throw const ApiException('帖子不存在', code: 'FORUM_THREAD_NOT_FOUND');
+      }
+      return {
+        ...thread,
+        'replies': [
+          for (final reply in _forumReplies)
+            if (reply['thread_id'] == threadId)
+              Map<String, Object?>.from(reply),
+        ],
+      };
+    }
     switch (uri.path) {
       case '/api/v1/home/banners':
         return {
@@ -144,6 +192,37 @@ class StandaloneApiClient extends ApiClient {
             'status': 'OPEN',
             'accepts_bets': true,
           },
+        };
+      case '/api/v1/forum/home':
+        final threads = _allForumThreads();
+        final topics = <String, int>{};
+        for (final thread in threads) {
+          final tags = thread['tags'];
+          if (tags is! List) continue;
+          for (final tag in tags) {
+            final value = '$tag'.trim();
+            if (value.isNotEmpty && value != '演示内容') {
+              topics[value] = (topics[value] ?? 0) + 1;
+            }
+          }
+        }
+        final sortedTopics = topics.entries.toList()
+          ..sort((left, right) => right.value.compareTo(left.value));
+        return {
+          'boards': [
+            for (final board in _forumBoardDefinitions)
+              {
+                ...board,
+                'thread_count': threads
+                    .where((thread) => thread['board_id'] == board['id'])
+                    .length,
+              },
+          ],
+          'hot_topics': [
+            for (final topic in sortedTopics.take(8))
+              {'tag': topic.key, 'thread_count': topic.value},
+          ],
+          'latest_threads': threads.take(8).toList(),
         };
       case '/api/v1/points/balance':
         _requireLogin();
@@ -206,6 +285,69 @@ class StandaloneApiClient extends ApiClient {
     }
 
     _requireLogin();
+
+    if (uri.path == '/api/v1/forum/threads') {
+      final boardId = '${body['board_id'] ?? ''}'.trim();
+      final title = '${body['title'] ?? ''}'.trim();
+      final content = '${body['body'] ?? ''}'.trim();
+      Map<String, Object?>? board;
+      for (final candidate in _forumBoardDefinitions) {
+        if (candidate['id'] == boardId) {
+          board = candidate;
+          break;
+        }
+      }
+      if (board == null || title.isEmpty || content.isEmpty) {
+        throw const ApiException('帖子内容不完整', code: 'INVALID_FORUM_THREAD');
+      }
+      final now = DateTime.now().toIso8601String();
+      final rawTags = body['tags'];
+      final thread = <String, Object?>{
+        'id': 'LOCAL-THREAD-${_forumThreadSeq++}',
+        'board_id': boardId,
+        'board_title': board['title'],
+        'author_username': session.username ?? '本机用户',
+        'title': title,
+        'body': content,
+        'tags': [
+          for (final tag in rawTags is List ? rawTags.take(5) : const [])
+            if ('$tag'.trim().isNotEmpty) '$tag'.trim(),
+        ],
+        'reply_count': 0,
+        'created_at': now,
+        'updated_at': now,
+        'locked': false,
+      };
+      _forumThreads.add(thread);
+      await _persist();
+      return Map<String, Object?>.from(thread);
+    }
+
+    if (uri.pathSegments.length == 6 &&
+        uri.pathSegments[0] == 'api' &&
+        uri.pathSegments[1] == 'v1' &&
+        uri.pathSegments[2] == 'forum' &&
+        uri.pathSegments[3] == 'threads' &&
+        uri.pathSegments[5] == 'replies') {
+      final threadId = uri.pathSegments[4];
+      if (_findForumThread(threadId) == null) {
+        throw const ApiException('帖子不存在', code: 'FORUM_THREAD_NOT_FOUND');
+      }
+      final content = '${body['body'] ?? ''}'.trim();
+      if (content.isEmpty) {
+        throw const ApiException('回复内容不能为空', code: 'INVALID_FORUM_REPLY');
+      }
+      final reply = <String, Object?>{
+        'id': 'LOCAL-REPLY-${_forumReplySeq++}',
+        'thread_id': threadId,
+        'author_username': session.username ?? '本机用户',
+        'body': content,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      _forumReplies.add(reply);
+      await _persist();
+      return Map<String, Object?>.from(reply);
+    }
 
     if (uri.path == '/api/v1/bets') {
       const stake = 10;
@@ -300,6 +442,40 @@ class StandaloneApiClient extends ApiClient {
     throw ApiException('单机模式未实现接口：${uri.path}', code: 'NOT_IMPLEMENTED');
   }
 
+  List<Map<String, Object?>> _allForumThreads() {
+    final rows = <Map<String, Object?>>[
+      for (final thread in _forumThreads.reversed)
+        Map<String, Object?>.from(thread),
+      for (final thread in _demoForumThreads)
+        Map<String, Object?>.from(thread),
+    ];
+    for (final thread in rows) {
+      final threadId = thread['id'];
+      final replies = _forumReplies
+          .where((reply) => reply['thread_id'] == threadId)
+          .length;
+      thread['reply_count'] = _intValue(thread['reply_count'], 0) + replies;
+    }
+    return rows;
+  }
+
+  Map<String, Object?>? _findForumThread(String threadId) {
+    for (final thread in _allForumThreads()) {
+      if (thread['id'] == threadId) return thread;
+    }
+    return null;
+  }
+
+  bool _threadMatches(Map<String, Object?> thread, String query) {
+    final tags = thread['tags'];
+    final searchable = [
+      '${thread['title'] ?? ''}',
+      '${thread['body'] ?? ''}',
+      if (tags is List) ...tags.map((tag) => '$tag'),
+    ].join(' ').toLowerCase();
+    return searchable.contains(query);
+  }
+
   Future<void> simulateSettlement(String betId, String result) async {
     await initialize();
     _requireLogin();
@@ -362,6 +538,94 @@ class StandaloneApiClient extends ApiClient {
     return null;
   }
 }
+
+const _forumBoardDefinitions = <Map<String, Object?>>[
+  {
+    'id': 'general',
+    'title': '综合讨论',
+    'description': '彩友交流与使用帮助',
+    'lottery_id': '',
+  },
+  {
+    'id': 'fujian31',
+    'title': '福建31',
+    'description': '福建31交流专区',
+    'lottery_id': 'fujian-31',
+  },
+  {
+    'id': 'number-pick',
+    'title': '数字选号',
+    'description': '数字选号思路与记录',
+    'lottery_id': 'demo-digit',
+  },
+  {
+    'id': 'pailie3',
+    'title': '排列三',
+    'description': '排列三讨论区，玩法筹备中',
+    'lottery_id': 'pailie-3',
+  },
+  {
+    'id': 'kuaile8',
+    'title': '快乐8',
+    'description': '快乐8讨论区，玩法筹备中',
+    'lottery_id': 'kuaile-8',
+  },
+];
+
+const _demoForumThreads = <Map<String, Object?>>[
+  {
+    'id': 'DEMO-THREAD-1',
+    'board_id': 'general',
+    'board_title': '综合讨论',
+    'author_username': '演示账号',
+    'title': '第一次来到彩友论坛，可以从哪些板块开始？',
+    'body': '这里可以交流彩种信息、选号思路和使用心得；论坛讨论与积分玩法相互独立。',
+    'tags': ['演示内容', '新手指南'],
+    'reply_count': 0,
+    'created_at': '2026-11-15T10:30:00Z',
+    'updated_at': '2026-11-15T10:30:00Z',
+    'locked': false,
+  },
+  {
+    'id': 'DEMO-THREAD-2',
+    'board_id': 'fujian31',
+    'board_title': '福建31',
+    'author_username': '演示账号',
+    'title': '福建31讨论区：如何整理自己的选号思路',
+    'body': '演示帖子用于展示标题、摘要、标签和回复入口，不代表真实用户观点。',
+    'tags': ['演示内容', '选号思路'],
+    'reply_count': 0,
+    'created_at': '2026-11-15T09:45:00Z',
+    'updated_at': '2026-11-15T09:45:00Z',
+    'locked': false,
+  },
+  {
+    'id': 'DEMO-THREAD-3',
+    'board_id': 'number-pick',
+    'board_title': '数字选号',
+    'author_username': '演示账号',
+    'title': '记录选号过程，比只看结果更容易复盘',
+    'body': '可以在帖子中记录选择依据，后续再回来对照自己的判断过程。',
+    'tags': ['演示内容', '经验分享'],
+    'reply_count': 0,
+    'created_at': '2026-11-15T08:20:00Z',
+    'updated_at': '2026-11-15T08:20:00Z',
+    'locked': false,
+  },
+  {
+    'id': 'DEMO-THREAD-4',
+    'board_id': 'pailie3',
+    'board_title': '排列三',
+    'author_username': '演示账号',
+    'title': '排列三板块已开放讨论，玩法功能仍在筹备',
+    'body': '当前可以浏览和交流，规则完成前不会开放真实投注与结算。',
+    'tags': ['演示内容', '板块公告'],
+    'reply_count': 0,
+    'created_at': '2026-11-15T07:10:00Z',
+    'updated_at': '2026-11-15T07:10:00Z',
+    'locked': false,
+  },
+];
 
 int _intValue(Object? value, int fallback) {
   if (value is int) return value;

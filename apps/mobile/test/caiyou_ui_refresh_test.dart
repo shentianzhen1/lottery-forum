@@ -41,7 +41,7 @@ void main() {
     expect(find.text('彩票论坛'), findsNothing);
     expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
     expect(find.byKey(const Key('home-main-scroll')), findsOneWidget);
-    expect(find.byKey(const Key('home-side-panel')), findsOneWidget);
+    expect(find.byKey(const Key('home-side-panel')), findsNothing);
 
     await tester.drag(find.byKey(const Key('home-main-scroll')), const Offset(0, -500));
     await tester.pump(const Duration(milliseconds: 500));
