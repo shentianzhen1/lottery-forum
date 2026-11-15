@@ -50,7 +50,10 @@ class AppTheme {
       splashColor: blue.withOpacity(.08),
       hoverColor: blue.withOpacity(.06),
       highlightColor: Colors.transparent,
-      textTheme: base.textTheme.copyWith(
+      textTheme: base.textTheme.apply(
+        bodyColor: ink,
+        displayColor: ink,
+      ).copyWith(
         headlineSmall: const TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w700,
