@@ -514,7 +514,7 @@ class _AnnouncementTickerState extends State<_AnnouncementTicker> {
               )
             else
               SizedBox(
-                height: widget.compact ? 72 : 112,
+                height: widget.compact ? 86 : 112,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 320),
                   transitionBuilder: (child, animation) {
