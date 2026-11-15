@@ -17,7 +17,8 @@ void main() {
       expect(find.byKey(const Key('landscape-required')), findsNothing);
       expect(find.byKey(const Key('home-landscape-columns')), findsOneWidget);
       expect(find.byKey(const Key('primary-nav')), findsOneWidget);
-      expect(find.byKey(const Key('nav-item-5')), findsOneWidget);
+      expect(find.byKey(const Key('nav-item-4')), findsOneWidget);
+      expect(find.text('论坛'), findsNothing);
       expect(find.byKey(const Key('home-side-panel')), findsNothing);
       if (size.height < 520) {
         expect(find.byKey(const Key('workspace-title')), findsNothing);

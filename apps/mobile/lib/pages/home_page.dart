@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../api/forum_api.dart';
 import '../design/app_theme.dart';
-import 'forum_ui.dart';
 import 'home_feed.dart';
 import 'play_betting.dart';
 import 'points_reader.dart';
@@ -15,7 +13,6 @@ class HomePage extends StatelessWidget {
     this.loggedIn = false,
     this.reader = const DisconnectedPointsReader(),
     this.feed = const EmptyHomeFeed(),
-    this.forumApi,
     this.onGoToAccount,
     this.onGoToModerator,
     this.onOpenPlay,
@@ -26,7 +23,6 @@ class HomePage extends StatelessWidget {
   final bool loggedIn;
   final PointsReader reader;
   final HomeFeed feed;
-  final ForumApi? forumApi;
   final VoidCallback? onGoToAccount;
   final VoidCallback? onGoToModerator;
   final ValueChanged<PlayKind>? onOpenPlay;
@@ -87,9 +83,6 @@ class HomePage extends StatelessWidget {
                 child: _MainColumn(
                   feed: feed,
                   compact: compact,
-                  forumApi: forumApi,
-                  loggedIn: loggedIn,
-                  onGoToAccount: onGoToAccount,
                   onOpenPlay: onOpenPlay,
                 ),
               ),
@@ -117,17 +110,11 @@ class _MainColumn extends StatefulWidget {
   const _MainColumn({
     required this.feed,
     required this.compact,
-    required this.forumApi,
-    required this.loggedIn,
-    this.onGoToAccount,
     this.onOpenPlay,
   });
 
   final HomeFeed feed;
   final bool compact;
-  final ForumApi? forumApi;
-  final bool loggedIn;
-  final VoidCallback? onGoToAccount;
   final ValueChanged<PlayKind>? onOpenPlay;
 
   @override
@@ -137,17 +124,6 @@ class _MainColumn extends StatefulWidget {
 class _MainColumnState extends State<_MainColumn> {
   HomeFeedData? _data;
   Object? _error;
-  int _forumRevision = 0;
-
-  Future<void> _createThread() async {
-    if (!widget.loggedIn) {
-      widget.onGoToAccount?.call();
-      return;
-    }
-    final created = await showCreateThreadDialog(context, widget.forumApi!);
-    if (created && mounted) setState(() => _forumRevision++);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -186,44 +162,6 @@ class _MainColumnState extends State<_MainColumn> {
       key: const Key('home-main-scroll'),
       padding: EdgeInsets.zero,
       children: [
-        if (widget.forumApi != null) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('home-forum-search'),
-                  onPressed: () => showForumSearchDialog(context, widget.forumApi!),
-                  icon: const Icon(Icons.search_rounded, size: 18),
-                  label: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('搜索帖子、话题或关键词'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                key: const Key('home-forum-publish'),
-                onPressed: _createThread,
-                icon: const Icon(Icons.edit_outlined, size: 17),
-                label: Text(widget.loggedIn ? '发布帖子' : '登录后发帖'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ForumOverview(
-            key: ValueKey('home-forum-$_forumRevision'),
-            api: widget.forumApi!,
-            loggedIn: widget.loggedIn,
-            feedLayout: true,
-            onOpenBoard: (id) => showForumSearchDialog(context, widget.forumApi!, boardId: id),
-            onOpenThread: (id) async {
-              await showForumThreadDialog(context, widget.forumApi!, id);
-              if (mounted) setState(() => _forumRevision++);
-            },
-            onCreateThread: _createThread,
-          ),
-          const SizedBox(height: 18),
-        ],
         if (widget.compact) ...[
           _PromoPanel(banners: banners, compact: true),
           const SizedBox(height: 12),
