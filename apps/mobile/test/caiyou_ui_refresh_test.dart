@@ -74,6 +74,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('brand-mark')), findsOneWidget);
+    expect(find.byKey(const Key('new-user-benefit-card')), findsOneWidget);
     expect(find.text('CAIYOU FORUM'), findsWidgets);
     expect(find.byKey(const Key('home-welcome-panel')), findsOneWidget);
     expect(find.byKey(const Key('home-game-pailie-5')), findsOneWidget);

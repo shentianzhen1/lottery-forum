@@ -44,6 +44,7 @@ class HomePage extends StatelessWidget {
       badge: '3D',
       status: '筹备中',
       accent: Color(0xFFE3C58C),
+      sampleNumbers: ['1', '6', '8'],
     ),
     _HomeGameEntry(
       title: '排列五',
@@ -52,6 +53,7 @@ class HomePage extends StatelessWidget {
       badge: 'P5',
       status: '筹备中',
       accent: Color(0xFF9D8AC7),
+      sampleNumbers: ['2', '4', '7', '9', '0'],
     ),
   ];
 
@@ -286,6 +288,12 @@ class _PromoPanelState extends State<_PromoPanel> {
                     compact: widget.compact,
                   ),
                 ),
+                Positioned(
+                  right: widget.compact ? 10 : 18,
+                  top: widget.compact ? 18 : 20,
+                  bottom: widget.compact ? 18 : 20,
+                  child: _LotteryArtwork(compact: widget.compact),
+                ),
                 if (widget.banners.length > 1)
                   Positioned(
                     left: 26,
@@ -325,16 +333,10 @@ class _DefaultPromo extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          right: compact ? -38 : -10,
-          top: compact ? -72 : -56,
-          child: Container(
-            width: compact ? 180 : 230,
-            height: compact ? 180 : 230,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.gold.withOpacity(.14), width: 28),
-            ),
-          ),
+          right: compact ? 10 : 18,
+          top: compact ? 18 : 20,
+          bottom: compact ? 18 : 20,
+          child: _LotteryArtwork(compact: compact),
         ),
         Padding(
           padding: EdgeInsets.fromLTRB(
@@ -379,6 +381,79 @@ class _DefaultPromo extends StatelessWidget {
   }
 }
 
+class _LotteryArtwork extends StatelessWidget {
+  const _LotteryArtwork({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ballSize = compact ? 30.0 : 38.0;
+    return SizedBox(
+      width: compact ? 112 : 158,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            Icons.emoji_events_rounded,
+            size: compact ? 86 : 118,
+            color: AppTheme.gold.withOpacity(.92),
+          ),
+          Positioned(
+            left: 0,
+            bottom: 2,
+            child: _LotteryBall(label: '3', size: ballSize, color: const Color(0xFF19A98C)),
+          ),
+          Positioned(
+            right: compact ? 4 : 8,
+            bottom: compact ? 8 : 4,
+            child: _LotteryBall(label: '7', size: ballSize, color: const Color(0xFFFF8A3D)),
+          ),
+          Positioned(
+            right: compact ? 0 : 2,
+            top: 0,
+            child: _LotteryBall(label: '31', size: ballSize, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LotteryBall extends StatelessWidget {
+  const _LotteryBall({required this.label, required this.size, required this.color});
+
+  final String label;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final light = color == Colors.white;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(.82), width: 2),
+        boxShadow: const [
+          BoxShadow(color: Color(0x330B2450), blurRadius: 10, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: light ? AppTheme.blue : Colors.white,
+          fontSize: size < 34 ? 11 : 13,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
 class _BannerPage extends StatelessWidget {
   const _BannerPage({required this.banner, required this.compact});
 
@@ -390,8 +465,8 @@ class _BannerPage extends StatelessWidget {
     return Padding(
       key: Key('home-banner-${banner.id}'),
       padding: compact
-          ? const EdgeInsets.fromLTRB(20, 16, 20, 28)
-          : const EdgeInsets.fromLTRB(26, 24, 26, 40),
+          ? const EdgeInsets.fromLTRB(20, 16, 126, 28)
+          : const EdgeInsets.fromLTRB(26, 24, 184, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -428,7 +503,7 @@ class _BannerPage extends StatelessWidget {
   }
 }
 
-class _AnnouncementTicker extends StatefulWidget {
+class _AnnouncementTicker extends StatelessWidget {
   const _AnnouncementTicker({
     required this.announcements,
     required this.loading,
@@ -440,103 +515,44 @@ class _AnnouncementTicker extends StatefulWidget {
   final bool compact;
 
   @override
-  State<_AnnouncementTicker> createState() => _AnnouncementTickerState();
-}
-
-class _AnnouncementTickerState extends State<_AnnouncementTicker> {
-  Timer? _timer;
-  int _index = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTimer();
-  }
-
-  @override
-  void didUpdateWidget(covariant _AnnouncementTicker oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.announcements.length != widget.announcements.length) {
-      _index = 0;
-      _timer?.cancel();
-      _startTimer();
-    }
-  }
-
-  void _startTimer() {
-    if (widget.announcements.length <= 1) return;
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted || widget.announcements.length <= 1) return;
-      setState(() => _index = (_index + 1) % widget.announcements.length);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final item = widget.announcements.isEmpty
-        ? null
-        : widget.announcements[_index % widget.announcements.length];
+    final visible = announcements.take(compact ? 3 : 4).toList();
 
     return Card(
       key: const Key('announcement-board'),
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 14, 16, widget.compact ? 14 : 12),
+        padding: EdgeInsets.fromLTRB(16, 13, 16, compact ? 13 : 11),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Text(
-                  '平台公告',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
+                Icon(Icons.campaign_rounded, size: 19, color: AppTheme.blue),
+                SizedBox(width: 7),
+                Text('平台公告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Spacer(),
                 Text(
-                  widget.announcements.isEmpty
-                      ? ''
-                      : '${_index + 1}/${widget.announcements.length}',
-                  key: const Key('announcement-page-indicator'),
-                  style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                  '更多 ›',
+                  key: Key('announcement-more'),
+                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (widget.loading)
+            const SizedBox(height: 8),
+            if (loading)
               const Text('正在读取', style: TextStyle(color: AppTheme.muted))
-            else if (item == null)
+            else if (visible.isEmpty)
               const Text(
                 '暂无公告',
                 key: Key('announcement-empty'),
                 style: TextStyle(color: AppTheme.muted),
               )
             else
-              SizedBox(
-                height: widget.compact ? 86 : 112,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 320),
-                  transitionBuilder: (child, animation) {
-                    final slide = Tween<Offset>(
-                      begin: const Offset(0, .18),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(position: slide, child: child),
-                    );
-                  },
-                  child: _AnnouncementItem(
-                    key: ValueKey(item.id),
-                    item: item,
-                  ),
-                ),
-              ),
+              for (var index = 0; index < visible.length; index++) ...[
+                _AnnouncementItem(item: visible[index]),
+                if (index != visible.length - 1) const Divider(height: 1),
+              ],
           ],
         ),
       ),
@@ -545,56 +561,33 @@ class _AnnouncementTickerState extends State<_AnnouncementTicker> {
 }
 
 class _AnnouncementItem extends StatelessWidget {
-  const _AnnouncementItem({required this.item, super.key});
+  const _AnnouncementItem({required this.item});
 
   final HomeAnnouncement item;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Container(
-        key: Key('announcement-${item.id}'),
-        padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceSoft.withOpacity(.55),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.pinned ? '置顶 · ${item.title}' : item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                if (item.pinned) ...[
-                  const SizedBox(width: 8),
-                  const Text(
-                    '置顶',
-                    key: Key('announcement-pinned-badge'),
-                    style: TextStyle(fontSize: 10, color: AppTheme.gold),
-                  ),
-                ],
-              ],
-            ),
-            if (item.summary.isNotEmpty) ...[
-              const SizedBox(height: 7),
-              Text(
-                item.summary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, color: AppTheme.muted, height: 1.45),
+    return SizedBox(
+      key: Key('announcement-${item.id}'),
+      height: 30,
+      child: Row(
+        children: [
+          Text('•', style: TextStyle(color: item.pinned ? AppTheme.gold : AppTheme.blue)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: item.pinned ? FontWeight.w700 : FontWeight.w500,
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+          if (item.dateLabel.isNotEmpty)
+            Text(item.dateLabel, style: const TextStyle(fontSize: 10, color: AppTheme.muted)),
+        ],
       ),
     );
   }
@@ -652,6 +645,7 @@ class _HomeGameEntry {
     required this.badge,
     required this.status,
     required this.accent,
+    this.sampleNumbers = const [],
   });
 
   final PlayKind? kind;
@@ -661,6 +655,7 @@ class _HomeGameEntry {
   final String badge;
   final String status;
   final Color accent;
+  final List<String> sampleNumbers;
 }
 
 class _GameCard extends StatelessWidget {
@@ -729,12 +724,38 @@ class _GameCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
-              Text(
-                entry.subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, color: AppTheme.muted),
-              ),
+              if (entry.sampleNumbers.isEmpty)
+                Text(
+                  entry.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                )
+              else
+                Row(
+                  children: [
+                    for (final number in entry.sampleNumbers)
+                      Container(
+                        width: 22,
+                        height: 22,
+                        margin: const EdgeInsets.only(right: 5),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: entry.accent.withOpacity(.12),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: entry.accent.withOpacity(.45)),
+                        ),
+                        child: Text(
+                          number,
+                          style: TextStyle(
+                            color: entry.accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
             ],
           ),
         ),

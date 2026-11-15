@@ -346,6 +346,12 @@ class _NavRail extends StatelessWidget {
               ),
             ),
             const Spacer(),
+            if (!compact) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+                child: _NewUserBenefitCard(onTap: () => onSelected(2)),
+              ),
+            ],
             if (!compact)
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 18),
@@ -360,6 +366,69 @@ class _NavRail extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NewUserBenefitCard extends StatelessWidget {
+  const _NewUserBenefitCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('new-user-benefit-card'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(12, 12, 10, 11),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF174E9C), Color(0xFF1B67D8)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(.14)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.gold.withOpacity(.16),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.card_giftcard_rounded, color: AppTheme.gold, size: 22),
+              ),
+              const SizedBox(width: 9),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '新用户福利',
+                      style: TextStyle(
+                        color: AppTheme.railInk,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text('登录领取积分 ›', style: TextStyle(color: AppTheme.railMuted, fontSize: 9)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

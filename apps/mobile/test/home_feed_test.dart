@@ -59,7 +59,7 @@ void main() {
     expect(find.text('管理后台'), findsNothing);
   });
 
-  testWidgets('home rotates announcements and banners and renders confirmed draws', (tester) async {
+  testWidgets('home lists announcements, rotates banners and renders confirmed draws', (tester) async {
     await _pumpHome(
       tester,
       _FakeHomeFeed(
@@ -74,12 +74,14 @@ void main() {
               title: '置顶公告',
               body: '摘要正文第一行\n第二行',
               pinned: true,
+              publishedAt: '2026-10-22T08:00:00Z',
             ),
             HomeAnnouncement(
               id: 'a2',
               title: '普通公告',
               body: '普通摘要',
               pinned: false,
+              publishedAt: '2026-10-21T08:00:00Z',
             ),
           ],
           recentDraws: [
@@ -98,9 +100,10 @@ void main() {
     expect(find.byKey(const Key('home-banner-strip')), findsOneWidget);
     expect(find.byKey(const Key('home-banner-dots')), findsOneWidget);
     expect(find.text('横幅一'), findsOneWidget);
-    expect(find.text('置顶 · 置顶公告'), findsOneWidget);
-    expect(find.text('普通公告'), findsNothing);
-    expect(find.text('1/2'), findsOneWidget);
+    expect(find.text('置顶公告'), findsOneWidget);
+    expect(find.text('普通公告'), findsOneWidget);
+    expect(find.text('10/22'), findsOneWidget);
+    expect(find.byKey(const Key('announcement-more')), findsOneWidget);
 
     expect(find.byKey(const Key('home-draw-2026281')), findsOneWidget);
     expect(find.text('福建31 · 2026281'), findsOneWidget);
@@ -108,12 +111,7 @@ void main() {
     expect(find.text('22'), findsOneWidget);
     expect(find.text('暂无已确认开奖'), findsNothing);
 
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('普通公告'), findsOneWidget);
-    expect(find.text('2/2'), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump(const Duration(milliseconds: 450));
     expect(find.text('横幅二'), findsOneWidget);
   });
