@@ -524,7 +524,7 @@ class _AnnouncementTicker extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 const Icon(Icons.campaign_rounded, size: 19, color: AppTheme.blue),
                 const SizedBox(width: 7),
@@ -559,7 +559,7 @@ class _AnnouncementTicker extends StatelessWidget {
 }
 
 class _AnnouncementItem extends StatelessWidget {
-  const _AnnouncementItem({required this.item, super.key});
+  const _AnnouncementItem({required this.item});
 
   final HomeAnnouncement item;
 
