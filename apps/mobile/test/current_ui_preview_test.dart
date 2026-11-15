@@ -36,7 +36,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    for (final size in [const Size(1024, 600), const Size(1366, 768)]) {
+    for (final size in [
+      const Size(800, 360),
+      const Size(854, 480),
+      const Size(1024, 600),
+      const Size(1366, 768),
+    ]) {
       tester.view.physicalSize = size;
       final boundaryKey = GlobalKey();
       await tester.pumpWidget(
