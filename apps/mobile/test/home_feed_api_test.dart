@@ -18,7 +18,12 @@ class _FakeClient extends ApiClient {
     if (path == '/api/v1/home/banners') {
       return {
         'banners': [
-          {'id': 'b1', 'title': '横幅', 'subtitle': '副标题'},
+          {
+            'id': 'b1',
+            'title': '横幅',
+            'subtitle': '副标题',
+            'image_key': 'lottery-balls',
+          },
         ],
       };
     }
@@ -55,6 +60,7 @@ void main() {
     final data = await ApiHomeFeed(client).load();
 
     expect(data.banners.single.title, '横幅');
+    expect(data.banners.single.imageKey, 'lottery-balls');
     expect(data.announcements.single.title, '公告');
     expect(data.recentDraws.single.code, '2026281');
     expect(data.recentDraws.single.mainNumbers, [3, 10, 11, 12, 24, 25, 30]);

@@ -65,8 +65,24 @@ void main() {
       _FakeHomeFeed(
         const HomeFeedData(
           banners: [
-            HomeBanner(id: 'b1', title: '横幅一', subtitle: '副文一'),
-            HomeBanner(id: 'b2', title: '横幅二', subtitle: '副文二'),
+            HomeBanner(
+              id: 'b1',
+              title: '横幅一',
+              subtitle: '副文一',
+              imageKey: 'lottery-trophy',
+            ),
+            HomeBanner(
+              id: 'b2',
+              title: '横幅二',
+              subtitle: '副文二',
+              imageKey: 'lottery-balls',
+            ),
+            HomeBanner(
+              id: 'b3',
+              title: '横幅三',
+              subtitle: '副文三',
+              imageKey: 'new-user-gift',
+            ),
           ],
           announcements: [
             HomeAnnouncement(
@@ -114,5 +130,11 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pump(const Duration(milliseconds: 450));
     expect(find.text('横幅二'), findsOneWidget);
+    expect(find.byKey(const Key('banner-art-lottery-balls')), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(milliseconds: 450));
+    expect(find.text('横幅三'), findsOneWidget);
+    expect(find.byKey(const Key('banner-art-new-user-gift')), findsOneWidget);
   });
 }

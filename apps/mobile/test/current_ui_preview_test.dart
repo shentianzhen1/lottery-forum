@@ -187,9 +187,22 @@ class _PreviewClient extends ApiClient {
       return {
         'banners': [
           {
-            'id': 'demo-banner',
+            'id': 'demo-lottery',
             'title': '三种彩票，轻松体验',
             'subtitle': '31选7已开放 · 福彩3D与排列五筹备中',
+            'image_key': 'lottery-trophy',
+          },
+          {
+            'id': 'demo-numbers',
+            'title': '31选7号码组合',
+            'subtitle': '选择喜欢的号码，使用娱乐积分参与',
+            'image_key': 'lottery-balls',
+          },
+          {
+            'id': 'demo-benefit',
+            'title': '新用户积分福利',
+            'subtitle': '登录后领取积分，体验完整单机流程',
+            'image_key': 'new-user-gift',
           },
         ],
       };

@@ -3,11 +3,13 @@ class HomeBanner {
     required this.id,
     required this.title,
     required this.subtitle,
+    this.imageKey = '',
   });
 
   final String id;
   final String title;
   final String subtitle;
+  final String imageKey;
 }
 
 class HomeAnnouncement {
@@ -87,6 +89,7 @@ HomeBanner bannerFromApi(Map<String, Object?> row) {
     id: '${row['id']}',
     title: '${row['title'] ?? ''}',
     subtitle: '${row['subtitle'] ?? ''}',
+    imageKey: '${row['image_key'] ?? ''}',
   );
 }
 

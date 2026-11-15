@@ -286,13 +286,8 @@ class _PromoPanelState extends State<_PromoPanel> {
                   itemBuilder: (context, index) => _BannerPage(
                     banner: widget.banners[index],
                     compact: widget.compact,
+                    fallbackIndex: index,
                   ),
-                ),
-                Positioned(
-                  right: widget.compact ? 10 : 18,
-                  top: widget.compact ? 18 : 20,
-                  bottom: widget.compact ? 18 : 20,
-                  child: _LotteryArtwork(compact: widget.compact),
                 ),
                 if (widget.banners.length > 1)
                   Positioned(
@@ -455,47 +450,173 @@ class _LotteryBall extends StatelessWidget {
 }
 
 class _BannerPage extends StatelessWidget {
-  const _BannerPage({required this.banner, required this.compact});
+  const _BannerPage({
+    required this.banner,
+    required this.compact,
+    required this.fallbackIndex,
+  });
 
   final HomeBanner banner;
+  final bool compact;
+  final int fallbackIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      key: Key('home-banner-${banner.id}'),
+      children: [
+        Positioned(
+          right: compact ? 10 : 18,
+          top: compact ? 18 : 20,
+          bottom: compact ? 18 : 20,
+          child: _BannerArtwork(
+            imageKey: banner.imageKey,
+            fallbackIndex: fallbackIndex,
+            compact: compact,
+          ),
+        ),
+        Padding(
+          padding: compact
+              ? const EdgeInsets.fromLTRB(20, 16, 126, 28)
+              : const EdgeInsets.fromLTRB(26, 24, 184, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '平台推荐',
+                style: TextStyle(
+                  color: AppTheme.gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: compact ? 7 : 10),
+              Text(
+                banner.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 22 : 26,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: compact ? 5 : 8),
+              Text(
+                banner.subtitle,
+                maxLines: compact ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Color(0xFFD9E6FF), height: 1.35),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerArtwork extends StatelessWidget {
+  const _BannerArtwork({
+    required this.imageKey,
+    required this.fallbackIndex,
+    required this.compact,
+  });
+
+  final String imageKey;
+  final int fallbackIndex;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      key: Key('home-banner-${banner.id}'),
-      padding: compact
-          ? const EdgeInsets.fromLTRB(20, 16, 126, 28)
-          : const EdgeInsets.fromLTRB(26, 24, 184, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+    final variant = imageKey.isNotEmpty
+        ? imageKey
+        : ['lottery-trophy', 'lottery-balls', 'new-user-gift'][fallbackIndex % 3];
+    if (variant == 'lottery-balls') {
+      return _BallClusterArtwork(compact: compact);
+    }
+    if (variant == 'new-user-gift') {
+      return _GiftArtwork(compact: compact);
+    }
+    return _LotteryArtwork(compact: compact);
+  }
+}
+
+class _BallClusterArtwork extends StatelessWidget {
+  const _BallClusterArtwork({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = compact ? 39.0 : 52.0;
+    return SizedBox(
+      key: const Key('banner-art-lottery-balls'),
+      width: compact ? 112 : 158,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          const Text(
-            '平台推荐',
-            style: TextStyle(
-              color: AppTheme.gold,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
+          Positioned(
+            left: compact ? 8 : 12,
+            top: compact ? 16 : 20,
+            child: _LotteryBall(label: '5', size: size, color: const Color(0xFF19A98C)),
           ),
-          SizedBox(height: compact ? 7 : 10),
-          Text(
-            banner.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: compact ? 22 : 26,
-              fontWeight: FontWeight.w800,
-            ),
+          Positioned(
+            right: compact ? 5 : 8,
+            top: compact ? 4 : 2,
+            child: _LotteryBall(label: '3', size: size, color: const Color(0xFFFF8A3D)),
           ),
-          SizedBox(height: compact ? 5 : 8),
-          Text(
-            banner.subtitle,
-            maxLines: compact ? 1 : 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFD9E6FF), height: 1.35),
+          Positioned(
+            left: compact ? 36 : 50,
+            bottom: compact ? 4 : 2,
+            child: _LotteryBall(label: '7', size: size, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GiftArtwork extends StatelessWidget {
+  const _GiftArtwork({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const Key('banner-art-new-user-gift'),
+      width: compact ? 112 : 158,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            Icons.card_giftcard_rounded,
+            size: compact ? 82 : 112,
+            color: const Color(0xFFFFC64B),
+          ),
+          Positioned(
+            right: compact ? 2 : 6,
+            top: compact ? 6 : 4,
+            child: Container(
+              width: compact ? 35 : 44,
+              height: compact ? 35 : 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFFD36C), width: 3),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x330B2450), blurRadius: 10, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Icon(
+                Icons.stars_rounded,
+                color: AppTheme.gold,
+                size: compact ? 20 : 25,
+              ),
+            ),
           ),
         ],
       ),
