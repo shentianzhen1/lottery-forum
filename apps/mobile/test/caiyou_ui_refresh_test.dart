@@ -43,7 +43,7 @@ void main() {
     expect(find.byKey(const Key('home-side-panel')), findsOneWidget);
 
     await tester.drag(find.byKey(const Key('home-main-scroll')), const Offset(0, -500));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('热门彩种'), findsOneWidget);
     expect(find.text('(门)'), findsNothing);
     expect(find.byKey(const Key('home-game-number-pick-badge')), findsOneWidget);
