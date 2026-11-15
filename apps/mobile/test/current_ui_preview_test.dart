@@ -89,7 +89,10 @@ class _PreviewApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: _previewTheme(),
       home: DefaultTextStyle(
-        style: const TextStyle(fontFamily: 'Noto Sans CJK SC'),
+        style: const TextStyle(
+          fontFamily: 'Noto Sans CJK SC',
+          color: AppTheme.ink,
+        ),
         child: AppShell(client: _PreviewClient()),
       ),
     );
@@ -106,7 +109,10 @@ class _PreviewPlayApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: _previewTheme(),
       home: DefaultTextStyle(
-        style: const TextStyle(fontFamily: 'Noto Sans CJK SC'),
+        style: const TextStyle(
+          fontFamily: 'Noto Sans CJK SC',
+          color: AppTheme.ink,
+        ),
         child: AppShell(client: _PreviewPlayClient()),
       ),
     );
@@ -169,7 +175,87 @@ ThemeData _previewTheme() {
 }
 
 class _PreviewClient extends ApiClient {
-  _PreviewClient() : super(const ApiConfig(), Session());
+  _PreviewClient() : super(const ApiConfig(), Session()) {
+    session.token = 'preview-token';
+    session.username = '演示账号';
+  }
+
+  @override
+  Future<Map<String, Object?>> getJson(String path) async {
+    final uri = Uri.parse(path);
+    if (uri.path == '/api/v1/home/banners') {
+      return {
+        'banners': [
+          {
+            'id': 'demo-banner',
+            'title': '演示：三种彩票，轻松体验',
+            'subtitle': '31选7已开放 · 福彩3D与排列五筹备中',
+          },
+        ],
+      };
+    }
+    if (uri.path == '/api/v1/home/announcements') {
+      return {
+        'announcements': [
+          {
+            'id': 'demo-notice',
+            'title': '演示数据说明',
+            'body': '当前画面仅用于展示界面布局，不代表真实开奖或用户参与。',
+            'pinned': true,
+          },
+        ],
+      };
+    }
+    if (uri.path == '/api/v1/home/draws/recent') {
+      return {
+        'items': [
+          {
+            'lottery_id': 'fujian-31',
+            'normalized_code': 'DEMO-20261115',
+            'draw_date': '2026-11-15',
+            'main_numbers': [3, 7, 12, 18, 22, 26, 31],
+            'extra_numbers': [9],
+          },
+        ],
+      };
+    }
+    if (uri.path == '/api/v1/home/rounds/current') {
+      return {
+        'round': {
+          'lottery_id': 'fujian-31',
+          'code': '演示期 DEMO-001',
+          'status': 'OPEN',
+          'accepts_bets': true,
+        },
+      };
+    }
+    if (uri.path == '/api/v1/rounds') {
+      return {
+        'rounds': [
+          {
+            'round_id': 'demo-round',
+            'lottery_id': 'fujian-31',
+            'code': 'DEMO-001',
+            'status': 'OPEN',
+          },
+        ],
+      };
+    }
+    if (uri.path == '/api/v1/bets') {
+      return {
+        'items': [
+          {'bet_id': 'demo-bet'},
+        ],
+      };
+    }
+    if (uri.path == '/api/v1/points/balance') {
+      return {'balance': 12580, 'frozen': 120};
+    }
+    if (uri.path == '/api/v1/points/entries') {
+      return {'entries': <Map<String, Object?>>[]};
+    }
+    return super.getJson(path);
+  }
 }
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
