@@ -283,6 +283,7 @@ class _PromoPanelState extends State<_PromoPanel> {
                   onPageChanged: (index) => setState(() => _current = index),
                   itemBuilder: (context, index) => _BannerPage(
                     banner: widget.banners[index],
+                    compact: widget.compact,
                   ),
                 ),
                 if (widget.banners.length > 1)
@@ -379,15 +380,18 @@ class _DefaultPromo extends StatelessWidget {
 }
 
 class _BannerPage extends StatelessWidget {
-  const _BannerPage({required this.banner});
+  const _BannerPage({required this.banner, required this.compact});
 
   final HomeBanner banner;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       key: Key('home-banner-${banner.id}'),
-      padding: const EdgeInsets.fromLTRB(26, 24, 26, 40),
+      padding: compact
+          ? const EdgeInsets.fromLTRB(20, 16, 20, 28)
+          : const EdgeInsets.fromLTRB(26, 24, 26, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -400,21 +404,21 @@ class _BannerPage extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: compact ? 7 : 10),
           Text(
             banner.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 26,
+              fontSize: compact ? 22 : 26,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 5 : 8),
           Text(
             banner.subtitle,
-            maxLines: 2,
+            maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Color(0xFFD9E6FF), height: 1.35),
           ),
