@@ -165,9 +165,22 @@ class StandaloneApiClient extends ApiClient {
         return {
           'banners': [
             {
-              'id': 'standalone-welcome',
-              'title': '单机测试模式',
-              'subtitle': '无需电脑或服务器，数据仅用于本机测试',
+              'id': 'standalone-lottery',
+              'title': '三种彩票，轻松体验',
+              'subtitle': '31选7已开放 · 福彩3D与排列五筹备中',
+              'image_key': 'lottery-trophy',
+            },
+            {
+              'id': 'standalone-numbers',
+              'title': '31选7号码组合',
+              'subtitle': '选择喜欢的号码，使用娱乐积分参与',
+              'image_key': 'lottery-balls',
+            },
+            {
+              'id': 'standalone-benefit',
+              'title': '新用户积分福利',
+              'subtitle': '登录后领取积分，体验完整单机流程',
+              'image_key': 'new-user-gift',
             },
           ],
         };
