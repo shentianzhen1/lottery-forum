@@ -191,7 +191,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
       if (_fujianPicks.length != need) {
         setState(() {
           _resultOk = false;
-          _resultMessage = '选号未通过校验';
+          _resultMessage = '请选择 $need 个号码后再投注';
           _resultBetId = null;
         });
         return;
@@ -390,12 +390,10 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    key: const Key('play-submit-bet'),
-                    onPressed: _submitting || open == null ? null : _submit,
-                    child: Text(_submitting ? '提交中' : '确认投注'),
-                  ),
+                  if (!scroll) ...[
+                    const SizedBox(height: 12),
+                    _submitButton(open),
+                  ],
                 ],
               ),
             ),
@@ -429,7 +427,39 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         _buildCancellableSection(open),
       ],
     );
-    return scroll ? SingleChildScrollView(child: panel) : panel;
+    if (!scroll) return panel;
+    return Column(
+      children: [
+        Expanded(child: SingleChildScrollView(child: panel)),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _resultMessage ??
+                      (open == null
+                          ? roundLine
+                          : '已选 ${_fujianPicks.length}/$pickNeed'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _submitButton(open),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _submitButton(OpenRound? open) {
+    return FilledButton(
+      key: const Key('play-submit-bet'),
+      onPressed: _submitting || _loadingRound || open == null ? null : _submit,
+      child: Text(_submitting ? '提交中' : '确认投注'),
+    );
   }
 
   Widget _buildCancellableSection(OpenRound? open) {

@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:lottery_forum/api/play_betting_api.dart';
+import 'package:lottery_forum/pages/play_betting.dart';
+import 'package:lottery_forum/pages/play_center_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottery_forum/api/standalone_api_client.dart';
 import 'package:lottery_forum/api/standalone_state_store.dart';
@@ -50,6 +54,42 @@ Future<String> _placeFujianBet(StandaloneApiClient client) async {
 }
 
 void main() {
+  testWidgets('short landscape can place a 31选7 standalone bet', (tester) async {
+    tester.view.physicalSize = const Size(512, 230);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final client = await _loggedInClient();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: PlayCenterPage(
+          landscapeReady: true,
+          loggedIn: true,
+          initialKind: PlayKind.fujian31,
+          gateway: ApiPlayBettingGateway(client),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    for (var n = 1; n <= 7; n++) {
+      final number = find.byKey(Key('fujian-n-$n'));
+      await tester.ensureVisible(number);
+      await tester.pumpAndSettle();
+      await tester.tap(number);
+      await tester.pumpAndSettle();
+    }
+    final submit = find.byKey(const Key('play-submit-bet')).hitTestable();
+    expect(submit, findsOneWidget);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+
+    final bets = await ApiPlayBettingGateway(client)
+        .listAcceptedBets('standalone-fujian-31-round');
+    expect(bets.single.numbersLabel, '1 2 3 4 5 6 7');
+    expect(bets.single.stake, 10);
+    expect(tester.takeException(), isNull);
+  });
+
   test('standalone client supports login, points, bet and cancel offline', () async {
     final client = StandaloneApiClient(store: _MemoryStore());
 
