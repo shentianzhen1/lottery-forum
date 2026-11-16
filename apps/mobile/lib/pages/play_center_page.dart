@@ -282,48 +282,52 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         ),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        key: const Key('play-landscape-columns'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 280,
-            child: ListView(
-              children: [
-                Text('玩法', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                Card(
-                  child: ListTile(
-                    key: _gameKey(PlayKind.fujian31),
-                    selected: _kind == PlayKind.fujian31,
-                    title: Text(titleFor(PlayKind.fujian31)),
-                    subtitle: const Text('福建31 · 已开放'),
-                    onTap: () => _selectKind(PlayKind.fujian31),
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 760;
+      return Padding(
+        padding: EdgeInsets.all(compact ? 10 : 24),
+        child: Row(
+          key: const Key('play-landscape-columns'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: compact ? constraints.maxWidth * .30 : 280,
+              child: ListView(
+                children: [
+                  Text('玩法', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      key: _gameKey(PlayKind.fujian31),
+                      selected: _kind == PlayKind.fujian31,
+                      title: Text(titleFor(PlayKind.fujian31)),
+                      subtitle: const Text('福建31 · 已开放'),
+                      onTap: () => _selectKind(PlayKind.fujian31),
+                    ),
                   ),
-                ),
-                const _ComingSoonPlayTile(
-                  key: Key('play-game-fucai-3d'),
-                  title: '福彩3D',
-                  subtitle: '规则与结算筹备中',
-                ),
-                const _ComingSoonPlayTile(
-                  key: Key('play-game-pailie-5'),
-                  title: '排列五',
-                  subtitle: '规则与结算筹备中',
+                  const _ComingSoonPlayTile(
+                    key: Key('play-game-fucai-3d'),
+                    title: '福彩3D',
+                    subtitle: '规则与结算筹备中',
                   ),
-              ],
+                  const _ComingSoonPlayTile(
+                    key: Key('play-game-pailie-5'),
+                    title: '排列五',
+                    subtitle: '规则与结算筹备中',
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(child: _buildPanel(context)),
-        ],
-      ),
-    );
+            SizedBox(width: compact ? 10 : 20),
+            Expanded(child: _buildPanel(context, scroll: constraints.maxHeight < 500)),
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildPanel(BuildContext context) {
+  Widget _buildPanel(BuildContext context, {required bool scroll}) {
+    Widget fit(Widget child) => scroll ? child : Expanded(child: child);
     final open = _openRound;
     final title = titleFor(_kind);
     final roundLine = _loadingRound
@@ -334,15 +338,15 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     final pickNeed = isFujianKind(_kind) ? fujianPickCount(_kind) : 3;
     final canCancelLast = _resultOk && _resultBetId != null && open != null;
 
-    return Column(
+    final panel = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         Text(roundLine, key: const Key('play-round-status')),
         const SizedBox(height: 16),
-        Expanded(
-          child: Card(
+        fit(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -367,9 +371,10 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                       ],
                     )
                   else
-                    Expanded(
-                      child: SingleChildScrollView(
+                    fit(
+                      SingleChildScrollView(
                         key: const Key('fujian-number-grid'),
+                        physics: scroll ? const NeverScrollableScrollPhysics() : null,
                         child: Wrap(
                           spacing: 6,
                           runSpacing: 6,
@@ -424,6 +429,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         _buildCancellableSection(open),
       ],
     );
+    return scroll ? SingleChildScrollView(child: panel) : panel;
   }
 
   Widget _buildCancellableSection(OpenRound? open) {

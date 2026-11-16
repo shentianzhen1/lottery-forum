@@ -97,8 +97,8 @@ class _AppShellState extends State<AppShell> {
             // Android reports logical pixels after display scaling. A phone or
             // foldable can be physically wide in landscape while still
             // reporting less than 960 logical pixels.
-            final landscapeReady = constraints.maxWidth > constraints.maxHeight &&
-                constraints.maxWidth >= 600;
+            final landscapeReady = MediaQuery.orientationOf(context) ==
+                Orientation.landscape;
             final compactNavigation = constraints.maxWidth < 1100 ||
                 constraints.maxHeight < 640;
             final denseNavigation = constraints.maxHeight < 520;
@@ -315,37 +315,39 @@ class _NavRail extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(16, 18, 16, 24),
                 child: _ExtendedBrandMark(),
               ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10),
-              child: Column(
-                children: [
-                  for (var index = 0; index < 3; index++) ...[
-                    _NavItem(
-                      index: index,
-                      destination: destinations[index],
-                      selected: selected == index,
-                      compact: compact,
-                      dense: dense,
-                      onTap: () => onSelected(index),
-                    ),
-                    if (index != 2) const SizedBox(height: 4),
+            Expanded(
+              child: SingleChildScrollView(
+                key: const Key('primary-nav-scroll'),
+                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10),
+                child: Column(
+                  children: [
+                    for (var index = 0; index < 3; index++) ...[
+                      _NavItem(
+                        index: index,
+                        destination: destinations[index],
+                        selected: selected == index,
+                        compact: compact,
+                        dense: dense,
+                        onTap: () => onSelected(index),
+                      ),
+                      if (index != 2) const SizedBox(height: 4),
+                    ],
+                    SizedBox(height: dense ? 8 : (compact ? 14 : 18)),
+                    for (var index = 3; index < destinations.length; index++) ...[
+                      _NavItem(
+                        index: index,
+                        destination: destinations[index],
+                        selected: selected == index,
+                        compact: compact,
+                        dense: dense,
+                        onTap: () => onSelected(index),
+                      ),
+                      if (index != destinations.length - 1) const SizedBox(height: 4),
+                    ],
                   ],
-                  SizedBox(height: dense ? 8 : (compact ? 14 : 18)),
-                  for (var index = 3; index < destinations.length; index++) ...[
-                    _NavItem(
-                      index: index,
-                      destination: destinations[index],
-                      selected: selected == index,
-                      compact: compact,
-                      dense: dense,
-                      onTap: () => onSelected(index),
-                    ),
-                    if (index != destinations.length - 1) const SizedBox(height: 4),
-                  ],
-                ],
+                ),
               ),
             ),
-            const Spacer(),
             if (!compact) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),

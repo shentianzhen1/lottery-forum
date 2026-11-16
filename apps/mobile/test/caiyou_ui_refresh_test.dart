@@ -4,7 +4,26 @@ import 'package:lottery_forum/main.dart';
 
 void main() {
   for (final size in [const Size(854, 480), const Size(800, 360)]) {
-    testWidgets('scaled Android landscape adapts at $size', (tester) async {
+    testWidgets('short scaled landscape can reach all navigation items', (tester) async {
+    tester.view.physicalSize = const Size(1740, 690);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const LotteryForumApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-item-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('play-landscape-required')), findsNothing);
+    expect(find.byKey(const Key('play-login-hint')), findsOneWidget);
+    final account = find.byKey(const Key('nav-item-4'));
+    await tester.ensureVisible(account);
+    await tester.tap(account);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scaled Android landscape adapts at $size', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
