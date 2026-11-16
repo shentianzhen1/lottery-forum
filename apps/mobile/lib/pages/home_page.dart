@@ -748,7 +748,7 @@ class _GameBoard extends StatelessWidget {
             crossAxisCount: compact ? 2 : 3,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            mainAxisExtent: compact ? 126 : 142,
+            mainAxisExtent: compact ? 140 : 142,
           ),
           itemBuilder: (context, index) {
             final game = HomePage.games[index];
