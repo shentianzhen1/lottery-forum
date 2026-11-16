@@ -282,45 +282,48 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         ),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        key: const Key('play-landscape-columns'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 280,
-            child: ListView(
-              children: [
-                Text('玩法', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                Card(
-                  child: ListTile(
-                    key: _gameKey(PlayKind.fujian31),
-                    selected: _kind == PlayKind.fujian31,
-                    title: Text(titleFor(PlayKind.fujian31)),
-                    subtitle: const Text('福建31 · 已开放'),
-                    onTap: () => _selectKind(PlayKind.fujian31),
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 760;
+      return Padding(
+        padding: EdgeInsets.all(compact ? 10 : 24),
+        child: Row(
+          key: const Key('play-landscape-columns'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: compact ? constraints.maxWidth * .30 : 280,
+              child: ListView(
+                children: [
+                  Text('玩法', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      key: _gameKey(PlayKind.fujian31),
+                      selected: _kind == PlayKind.fujian31,
+                      title: Text(titleFor(PlayKind.fujian31)),
+                      subtitle: const Text('福建31 · 已开放'),
+                      onTap: () => _selectKind(PlayKind.fujian31),
+                    ),
                   ),
-                ),
-                const _ComingSoonPlayTile(
-                  key: Key('play-game-fucai-3d'),
-                  title: '福彩3D',
-                  subtitle: '规则与结算筹备中',
-                ),
-                const _ComingSoonPlayTile(
-                  key: Key('play-game-pailie-5'),
-                  title: '排列五',
-                  subtitle: '规则与结算筹备中',
+                  const _ComingSoonPlayTile(
+                    key: Key('play-game-fucai-3d'),
+                    title: '福彩3D',
+                    subtitle: '规则与结算筹备中',
                   ),
-              ],
+                  const _ComingSoonPlayTile(
+                    key: Key('play-game-pailie-5'),
+                    title: '排列五',
+                    subtitle: '规则与结算筹备中',
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(child: _buildPanel(context)),
-        ],
-      ),
-    );
+            SizedBox(width: compact ? 10 : 20),
+            Expanded(child: _buildPanel(context)),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildPanel(BuildContext context) {
