@@ -100,7 +100,7 @@ class _HomeStatusBarState extends State<HomeStatusBar> {
           ),
           const SizedBox(width: 12),
           SizedBox(
-            width: 258,
+            width: MediaQuery.sizeOf(context).width < 720 ? 160 : 258,
             child: _StatusCard(
               key: const Key('home-my-bets-card'),
               icon: Icons.confirmation_number_outlined,
