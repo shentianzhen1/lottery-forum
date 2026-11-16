@@ -319,14 +319,15 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
               ),
             ),
             SizedBox(width: compact ? 10 : 20),
-            Expanded(child: _buildPanel(context)),
+            Expanded(child: _buildPanel(context, scroll: constraints.maxHeight < 500)),
           ],
         ),
       );
     });
   }
 
-  Widget _buildPanel(BuildContext context) {
+  Widget _buildPanel(BuildContext context, {required bool scroll}) {
+    Widget fit(Widget child) => scroll ? child : Expanded(child: child);
     final open = _openRound;
     final title = titleFor(_kind);
     final roundLine = _loadingRound
@@ -337,15 +338,15 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
     final pickNeed = isFujianKind(_kind) ? fujianPickCount(_kind) : 3;
     final canCancelLast = _resultOk && _resultBetId != null && open != null;
 
-    return Column(
+    final panel = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         Text(roundLine, key: const Key('play-round-status')),
         const SizedBox(height: 16),
-        Expanded(
-          child: Card(
+        fit(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -370,9 +371,10 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
                       ],
                     )
                   else
-                    Expanded(
-                      child: SingleChildScrollView(
+                    fit(
+                      SingleChildScrollView(
                         key: const Key('fujian-number-grid'),
+                        physics: scroll ? const NeverScrollableScrollPhysics() : null,
                         child: Wrap(
                           spacing: 6,
                           runSpacing: 6,
@@ -427,6 +429,7 @@ class _PlayCenterPageState extends State<PlayCenterPage> {
         _buildCancellableSection(open),
       ],
     );
+    return scroll ? SingleChildScrollView(child: panel) : panel;
   }
 
   Widget _buildCancellableSection(OpenRound? open) {
